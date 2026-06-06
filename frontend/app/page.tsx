@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 async function getHealth() {
   try {
     const response = await fetch("http://localhost:3000/api/health", {
@@ -41,6 +43,9 @@ export default async function Home() {
           <p className="lede">
             A clean starting point with Django, PostgreSQL, Redis, Celery, Docker
             Compose, and a Next.js frontend already wired together.
+          </p>
+          <p className="lede">
+            <Link href="/compounds">Browse compounds &rarr;</Link>
           </p>
         </div>
 
