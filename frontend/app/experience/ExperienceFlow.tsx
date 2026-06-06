@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
+import { Button } from "../../components/Button";
+import { UploadButton } from "../../components/UploadButton";
 import FaceMap from "./FaceMap";
 
 type Step =
@@ -327,12 +329,6 @@ export default function ExperienceFlow() {
     setStep("analysis");
   }
 
-  function handlePhotoChange(event: React.ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0];
-    if (!file) return;
-    setPhotoPreview(URL.createObjectURL(file));
-  }
-
   return (
     <div className="experience-flow">
       <ol className="experience-steps" aria-label="Progress">
@@ -354,17 +350,18 @@ export default function ExperienceFlow() {
       </ol>
 
       {step === "scan" && (
-        <section className="experience-panel experience-panel-split">
+        <section className="experience-panel experience-panel-split experience-panel-accent">
           <div className="experience-copy">
             <h2>Facial analysis</h2>
             <p className="lede">
               Upload a clear, front-facing photo. Blueskies maps texture, tone,
               and congestion patterns to guide your routine.
             </p>
-            <label className="photo-upload">
-              <input type="file" accept="image/*" onChange={handlePhotoChange} />
-              <span>{photoPreview ? "Replace photo" : "Upload facial photo"}</span>
-            </label>
+            <UploadButton
+              onFileSelect={(file) => setPhotoPreview(URL.createObjectURL(file))}
+            >
+              {photoPreview ? "Replace photo" : "Upload facial photo"}
+            </UploadButton>
             {photoPreview ? (
               <img src={photoPreview} alt="Uploaded facial preview" className="photo-preview" />
             ) : (
@@ -376,9 +373,9 @@ export default function ExperienceFlow() {
           </div>
           <FaceMap activeZones={activeZones} analyzing={analyzing} />
           <div className="experience-actions">
-            <button className="primary-button" type="button" onClick={goNext}>
+            <Button type="button" onPress={goNext}>
               Continue to intake
-            </button>
+            </Button>
           </div>
         </section>
       )}

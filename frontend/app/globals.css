@@ -1,12 +1,15 @@
+@import "tailwindcss";
+@import "@heroui/styles";
+
 :root {
   color-scheme: light;
-  --background: #f5f5f4;
+  --background: #ffffff;
   --foreground: #1c1917;
-  --muted: #78716c;
+  --muted: #6b7280;
   --panel: #ffffff;
   --border: #e7e5e4;
-  --accent: #7ec5f5;
-  --accent-strong: #4da8e8;
+  --accent: #96B5D9;
+  --accent-strong: #346faa;
   --accent-soft: #f0f9ff;
   --accent-glow: rgba(126, 197, 245, 0.38);
   --warning: #d97706;
@@ -26,7 +29,7 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family:
-    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    aktiv-grotesk, Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
     sans-serif;
 }
 
@@ -430,7 +433,8 @@ h1 {
   line-height: 1.5;
 }
 
-.primary-button {
+.primary-button,
+.button.primary-button {
   background: var(--accent-strong);
   border: none;
   border-radius: 8px;
@@ -442,12 +446,14 @@ h1 {
   padding: 12px 18px;
 }
 
-.primary-button:hover:not(:disabled) {
+.primary-button:hover:not(:disabled),
+.button.primary-button:hover:not([data-disabled="true"]) {
   background: var(--accent);
   color: var(--foreground);
 }
 
-.primary-button:disabled {
+.primary-button:disabled,
+.button.primary-button[data-disabled="true"] {
   cursor: wait;
   opacity: 0.7;
 }
@@ -599,6 +605,35 @@ h1 {
   grid-template-columns: minmax(0, 1.2fr) minmax(240px, 320px);
 }
 
+.experience-panel.experience-panel-accent {
+  background: linear-gradient(155deg, #c5d9ef 0%, var(--accent) 48%, #7aafd8 100%);
+  border: none;
+  box-shadow: 0 20px 48px rgba(52, 111, 170, 0.22);
+}
+
+.experience-panel.experience-panel-accent .experience-copy h2,
+.experience-panel.experience-panel-accent .experience-copy .lede {
+  color: #0f2d4a;
+}
+
+.experience-panel.experience-panel-accent .field-hint {
+  color: rgba(15, 45, 74, 0.78);
+}
+
+.experience-panel.experience-panel-accent .face-outline {
+  fill: rgba(255, 255, 255, 0.55);
+  stroke: rgba(15, 45, 74, 0.28);
+  stroke-width: 1.5;
+}
+
+.experience-panel.experience-panel-accent .face-feature {
+  stroke: rgba(15, 45, 74, 0.45);
+}
+
+.experience-panel.experience-panel-accent .face-legend {
+  color: #0f2d4a;
+}
+
 .experience-panel-split .experience-actions {
   grid-column: 1 / -1;
 }
@@ -619,7 +654,8 @@ h1 {
   gap: 12px;
 }
 
-.ghost-button {
+.ghost-button,
+.button.ghost-button {
   background: transparent;
   border: 1px solid var(--border);
   border-radius: 8px;
@@ -629,11 +665,13 @@ h1 {
   padding: 12px 16px;
 }
 
-.ghost-button:hover:not(:disabled) {
+.ghost-button:hover:not(:disabled),
+.button.ghost-button:hover:not([data-disabled="true"]) {
   background: var(--background);
 }
 
-.ghost-button:disabled {
+.ghost-button:disabled,
+.button.ghost-button[data-disabled="true"] {
   cursor: wait;
   opacity: 0.6;
 }
@@ -641,23 +679,6 @@ h1 {
 .link-button {
   display: inline-block;
   text-decoration: none;
-}
-
-.photo-upload {
-  cursor: pointer;
-  display: inline-block;
-}
-
-.photo-upload input {
-  display: none;
-}
-
-.photo-upload span {
-  background: var(--background);
-  border: 1px dashed var(--border);
-  border-radius: 10px;
-  display: inline-block;
-  padding: 14px 18px;
 }
 
 .photo-preview {
