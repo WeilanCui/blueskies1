@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { Button } from "../../components/Button";
+import { Panel } from "../../components/Panel";
 import { UploadButton } from "../../components/UploadButton";
 import FaceMap from "./FaceMap";
 
@@ -350,7 +351,7 @@ export default function ExperienceFlow() {
       </ol>
 
       {step === "scan" && (
-        <section className="experience-panel experience-panel-split experience-panel-accent">
+        <Panel split>
           <div className="experience-copy">
             <h2>Facial analysis</h2>
             <p className="lede">
@@ -377,11 +378,11 @@ export default function ExperienceFlow() {
               Continue to intake
             </Button>
           </div>
-        </section>
+        </Panel>
       )}
 
       {step === "intake" && (
-        <section className="experience-panel">
+        <Panel>
           <div className="experience-copy">
             <h2>Skincare intake</h2>
             <p className="lede">
@@ -441,11 +442,11 @@ export default function ExperienceFlow() {
               Analyze my skin
             </button>
           </div>
-        </section>
+        </Panel>
       )}
 
       {step === "analysis" && (
-        <section className="experience-panel experience-panel-split">
+        <Panel split>
           <div className="experience-copy">
             <h2>Target areas recognized</h2>
             <p className="lede">
@@ -477,11 +478,11 @@ export default function ExperienceFlow() {
               Add sensitivities
             </button>
           </div>
-        </section>
+        </Panel>
       )}
 
       {step === "sensitivities" && (
-        <section className="experience-panel">
+        <Panel>
           <div className="experience-copy">
             <h2>Sensitivities & avoid list</h2>
             <p className="lede">
@@ -537,11 +538,11 @@ export default function ExperienceFlow() {
               Upload current products
             </button>
           </div>
-        </section>
+        </Panel>
       )}
 
       {step === "products" && (
-        <section className="experience-panel">
+        <Panel>
           <div className="experience-copy">
             <h2>Your current products</h2>
             <p className="lede">
@@ -614,11 +615,11 @@ export default function ExperienceFlow() {
               See recommendations
             </button>
           </div>
-        </section>
+        </Panel>
       )}
 
       {step === "recommendations" && (
-        <section className="experience-panel">
+        <Panel>
           <div className="experience-copy">
             <h2>Recommended routine</h2>
             <p className="lede">
@@ -664,7 +665,7 @@ export default function ExperienceFlow() {
               Review ingredient research
             </Link>
           </div>
-        </section>
+        </Panel>
       )}
     </div>
   );

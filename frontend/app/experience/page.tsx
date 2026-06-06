@@ -19,8 +19,8 @@ export default function ExperiencePage() {
       </nav>
 
       <section className="experience-hero">
-        <p className="experience-eyebrow">Personalized skincare intelligence</p>
-        <h1 className="page-title">From facial scan to routine recommendations</h1>
+        <p className="experience-eyebrow"></p>
+        <h1 className="page-title">Personalized intelligence skincare</h1>
         <p className="lede">
           Blueskies analyzes your face, captures your skin profile and
           sensitivities, researches the ingredients in your current products,

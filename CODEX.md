@@ -53,8 +53,15 @@ Use these standards when adding or changing code in this project. Favor clear, m
 - Do not create page layouts that depend on fragile pixel-perfect positioning.
 - Use consistent spacing scales across related UI.
 - Keep cards, panels, buttons, and form controls visually consistent.
+- Use `var(--panel)` (`#eef6fc`, very light blue) for boxed surfaces: cards, panels, list items, and similar containers.
 - Make contrast strong enough for readability.
 - Avoid decorative UI that competes with core workflows.
+
+## Frontend dev
+
+- **Hot reload (daily work):** from `frontend/`, run `npm run dev`.
+- **Production smoke test:** `npm run build` then `npm start` (uses standalone output from `next.config.ts`).
+- Do not use `npm start` without a fresh build — it serves a frozen `.next` output with no file watching.
 
 ## Review Checklist
 

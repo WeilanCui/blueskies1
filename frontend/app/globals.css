@@ -6,7 +6,7 @@
   --background: #ffffff;
   --foreground: #1c1917;
   --muted: #6b7280;
-  --panel: #ffffff;
+  --panel: #eef6fc;
   --border: #e7e5e4;
   --accent: #96B5D9;
   --accent-strong: #346faa;
@@ -148,27 +148,6 @@ h1 {
 .page-head .lede {
   font-size: 17px;
   margin-top: 12px;
-}
-
-.notice {
-  background: var(--panel);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  color: var(--muted);
-  margin-top: 28px;
-  padding: 20px;
-}
-
-.notice code {
-  background: var(--background);
-  border-radius: 4px;
-  font-size: 13px;
-  padding: 2px 6px;
-}
-
-.notice-error {
-  border-color: var(--warning);
-  color: var(--warning);
 }
 
 .compound-list {
@@ -389,16 +368,6 @@ h1 {
   margin-top: 28px;
 }
 
-.product-form {
-  background: var(--panel);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  display: grid;
-  gap: 18px;
-  max-width: 760px;
-  padding: 24px;
-}
-
 .field {
   display: grid;
   gap: 8px;
@@ -456,16 +425,6 @@ h1 {
 .button.primary-button[data-disabled="true"] {
   cursor: wait;
   opacity: 0.7;
-}
-
-.submit-results {
-  background: var(--panel);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  display: grid;
-  gap: 16px;
-  max-width: 760px;
-  padding: 24px;
 }
 
 .results-header {
@@ -590,52 +549,6 @@ h1 {
   height: 22px;
   justify-content: center;
   width: 22px;
-}
-
-.experience-panel {
-  background: var(--panel);
-  border: 1px solid var(--border);
-  border-radius: 16px;
-  display: grid;
-  gap: 24px;
-  padding: 28px;
-}
-
-.experience-panel-split {
-  grid-template-columns: minmax(0, 1.2fr) minmax(240px, 320px);
-}
-
-.experience-panel.experience-panel-accent {
-  background: linear-gradient(155deg, #c5d9ef 0%, var(--accent) 48%, #7aafd8 100%);
-  border: none;
-  box-shadow: 0 20px 48px rgba(52, 111, 170, 0.22);
-}
-
-.experience-panel.experience-panel-accent .experience-copy h2,
-.experience-panel.experience-panel-accent .experience-copy .lede {
-  color: #0f2d4a;
-}
-
-.experience-panel.experience-panel-accent .field-hint {
-  color: rgba(15, 45, 74, 0.78);
-}
-
-.experience-panel.experience-panel-accent .face-outline {
-  fill: rgba(255, 255, 255, 0.55);
-  stroke: rgba(15, 45, 74, 0.28);
-  stroke-width: 1.5;
-}
-
-.experience-panel.experience-panel-accent .face-feature {
-  stroke: rgba(15, 45, 74, 0.45);
-}
-
-.experience-panel.experience-panel-accent .face-legend {
-  color: #0f2d4a;
-}
-
-.experience-panel-split .experience-actions {
-  grid-column: 1 / -1;
 }
 
 .experience-copy h2 {
@@ -940,14 +853,6 @@ h1 {
   .ingest-main {
     align-items: flex-start;
     flex-direction: column;
-  }
-
-  .experience-panel {
-    padding: 20px;
-  }
-
-  .experience-panel-split {
-    grid-template-columns: 1fr;
   }
 
   .experience-steps {

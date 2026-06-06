@@ -1,0 +1,100 @@
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  box-shadow: 0 8px 24px rgba(52, 111, 170, 0.08);
+}
+
+.panel--default {
+  border-radius: 16px;
+  display: grid;
+  gap: 24px;
+  padding: 28px;
+}
+
+.panel--form {
+  border-radius: 12px;
+  display: grid;
+  gap: 18px;
+  max-width: 760px;
+  padding: 24px;
+}
+
+.panel--results {
+  border-radius: 12px;
+  display: grid;
+  gap: 16px;
+  max-width: 760px;
+  padding: 24px;
+}
+
+.panel--notice {
+  border-radius: 8px;
+  color: rgba(15, 45, 74, 0.78);
+  margin-top: 28px;
+  padding: 20px;
+}
+
+.panel--error {
+  box-shadow:
+    0 8px 24px rgba(52, 111, 170, 0.08),
+    inset 0 0 0 2px var(--warning);
+  color: #9a3412;
+}
+
+.panel--split {
+  grid-template-columns: minmax(0, 1.2fr) minmax(240px, 320px);
+}
+
+.panel--split .experience-actions {
+  grid-column: 1 / -1;
+}
+
+.panel h2,
+.panel .experience-copy h2,
+.panel .experience-copy .lede,
+.panel .results-header h2 {
+  color: #0f2d4a;
+}
+
+.panel .field-hint,
+.panel .analysis-summary,
+.panel .detail-muted,
+.panel .demo-note {
+  color: rgba(15, 45, 74, 0.78);
+}
+
+.panel .choice-group legend,
+.panel .field > span {
+  color: #0f2d4a;
+}
+
+.panel .face-outline {
+  fill: rgba(255, 255, 255, 0.55);
+  stroke: rgba(15, 45, 74, 0.28);
+  stroke-width: 1.5;
+}
+
+.panel .face-feature {
+  stroke: rgba(15, 45, 74, 0.45);
+}
+
+.panel .face-legend {
+  color: #0f2d4a;
+}
+
+.panel--notice code {
+  background: var(--background);
+  border-radius: 4px;
+  font-size: 13px;
+  padding: 2px 6px;
+}
+
+@media (max-width: 900px) {
+  .panel--default {
+    padding: 20px;
+  }
+
+  .panel--split {
+    grid-template-columns: 1fr;
+  }
+}

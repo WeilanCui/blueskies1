@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
 
+import { getServerApiBaseUrl } from "../../../lib/apiBaseUrl";
+
 export async function GET() {
-  const baseUrl = process.env.SERVER_API_BASE_URL ?? "http://backend:8000";
+  const baseUrl = getServerApiBaseUrl();
   const response = await fetch(`${baseUrl}/api/health/`, {
     cache: "no-store",
   });

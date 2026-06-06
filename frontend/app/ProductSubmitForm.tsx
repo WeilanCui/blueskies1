@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { Panel } from "../components/Panel";
 
 type IngredientResult = {
   name: string;
@@ -73,7 +74,7 @@ export default function ProductSubmitForm() {
 
   return (
     <div className="submit-layout">
-      <form className="product-form" onSubmit={handleSubmit}>
+      <Panel as="form" variant="form" onSubmit={handleSubmit}>
         <label className="field">
           <span>Product name</span>
           <input
@@ -114,12 +115,16 @@ export default function ProductSubmitForm() {
         <button className="primary-button" type="submit" disabled={loading}>
           {loading ? "Ingesting ingredients…" : "Submit product"}
         </button>
-      </form>
+      </Panel>
 
-      {error && <div className="notice notice-error">{error}</div>}
+      {error && (
+        <Panel as="div" variant="notice" error>
+          {error}
+        </Panel>
+      )}
 
       {result && (
-        <section className="submit-results">
+        <Panel variant="results">
           <div className="results-header">
             <div>
               <h2>{result.formulation.name}</h2>
@@ -160,7 +165,7 @@ export default function ProductSubmitForm() {
               </li>
             ))}
           </ul>
-        </section>
+        </Panel>
       )}
     </div>
   );
