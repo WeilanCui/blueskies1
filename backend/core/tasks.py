@@ -21,3 +21,30 @@ def ingest_compound_task(name: str, **options) -> dict:
         "related_compounds": result.related_compounds,
         "errors": result.errors,
     }
+
+
+@shared_task
+def ingest_formulation_task(formulation_id: int, **options) -> dict:
+    """Async wrapper around formulation ingredient enrichment."""
+    from core.ingestion import ingest_formulation_ingredients
+
+    result = ingest_formulation_ingredients(formulation_id, **options)
+    return {
+        "formulation_id": result.formulation_id,
+        "product_name": result.product_name,
+        "ingredient_count": result.ingredient_count,
+        "enrichment_status": result.enrichment_status,
+        "ingredients": [
+            {
+                "name": item.name,
+                "position": item.position,
+                "compound_id": item.compound_id,
+                "parse_status": item.parse_status,
+                "inci_properties": item.inci_properties,
+                "pubchem_descriptors": item.pubchem_descriptors,
+                "articles_linked": item.articles_linked,
+                "errors": item.errors,
+            }
+            for item in result.ingredients
+        ],
+    }

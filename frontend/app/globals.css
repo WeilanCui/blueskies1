@@ -1,13 +1,15 @@
 :root {
   color-scheme: light;
-  --background: #f7f7f2;
-  --foreground: #1c1d1a;
-  --muted: #62655c;
+  --background: #f5f5f4;
+  --foreground: #1c1917;
+  --muted: #78716c;
   --panel: #ffffff;
-  --border: #d9dccf;
-  --accent: #1f7a68;
-  --accent-strong: #155748;
-  --warning: #c47628;
+  --border: #e7e5e4;
+  --accent: #7ec5f5;
+  --accent-strong: #4da8e8;
+  --accent-soft: #f0f9ff;
+  --accent-glow: rgba(126, 197, 245, 0.38);
+  --warning: #d97706;
 }
 
 * {
@@ -249,7 +251,7 @@ h1 {
 }
 
 .badge-complete {
-  background: #e2f1ec;
+  background: var(--accent-soft);
   color: var(--accent-strong);
 }
 
@@ -344,6 +346,536 @@ h1 {
   text-transform: uppercase;
 }
 
+/* Product submission */
+
+.topbar-actions {
+  align-items: center;
+  display: flex;
+  gap: 18px;
+}
+
+.topbar-actions a {
+  color: var(--accent-strong);
+  font-size: 14px;
+  text-decoration: none;
+}
+
+.nav-button {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--foreground);
+  display: inline-block;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 8px 12px;
+  text-decoration: none;
+}
+
+.nav-button:hover {
+  background: var(--background);
+  color: var(--accent-strong);
+}
+
+.home-cta {
+  margin-top: 20px;
+}
+
+.submit-layout {
+  display: grid;
+  gap: 28px;
+  margin-top: 28px;
+}
+
+.product-form {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  display: grid;
+  gap: 18px;
+  max-width: 760px;
+  padding: 24px;
+}
+
+.field {
+  display: grid;
+  gap: 8px;
+}
+
+.field span {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.field input,
+.field textarea {
+  background: var(--background);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: inherit;
+  font: inherit;
+  padding: 12px 14px;
+  resize: vertical;
+  width: 100%;
+}
+
+.field input:focus,
+.field textarea:focus {
+  border-color: var(--accent);
+  outline: none;
+}
+
+.field-hint {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.primary-button {
+  background: var(--accent-strong);
+  border: none;
+  border-radius: 8px;
+  color: #fff;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 600;
+  justify-self: start;
+  padding: 12px 18px;
+}
+
+.primary-button:hover:not(:disabled) {
+  background: var(--accent);
+  color: var(--foreground);
+}
+
+.primary-button:disabled {
+  cursor: wait;
+  opacity: 0.7;
+}
+
+.submit-results {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  display: grid;
+  gap: 16px;
+  max-width: 760px;
+  padding: 24px;
+}
+
+.results-header {
+  align-items: flex-start;
+  display: flex;
+  gap: 16px;
+  justify-content: space-between;
+}
+
+.results-header h2 {
+  font-size: 24px;
+  margin: 0;
+}
+
+.ingest-results {
+  display: grid;
+  gap: 12px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.ingest-row {
+  background: var(--background);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  display: grid;
+  gap: 8px;
+  padding: 14px 16px;
+}
+
+.ingest-main {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: space-between;
+}
+
+.ingest-meta {
+  color: var(--muted);
+  display: flex;
+  flex-wrap: wrap;
+  font-size: 13px;
+  gap: 12px;
+}
+
+.ingest-meta a {
+  color: var(--accent-strong);
+  text-decoration: none;
+}
+
+.ingest-errors {
+  color: var(--warning);
+  font-size: 13px;
+  margin: 0;
+}
+
+/* Experience presentation */
+
+.experience-shell {
+  max-width: 1100px;
+}
+
+.experience-hero {
+  padding-top: 36px;
+}
+
+.experience-eyebrow {
+  color: var(--accent-strong);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  margin: 0 0 10px;
+  text-transform: uppercase;
+}
+
+.experience-flow {
+  display: grid;
+  gap: 28px;
+  margin-top: 32px;
+}
+
+.experience-steps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.experience-step {
+  align-items: center;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--muted);
+  display: inline-flex;
+  font-size: 13px;
+  gap: 8px;
+  padding: 8px 12px;
+}
+
+.experience-step-active {
+  border-color: var(--accent);
+  color: var(--foreground);
+}
+
+.experience-step-done {
+  background: var(--accent-soft);
+  border-color: transparent;
+  color: var(--accent-strong);
+}
+
+.experience-step-index {
+  align-items: center;
+  background: var(--background);
+  border-radius: 999px;
+  display: inline-flex;
+  font-weight: 700;
+  height: 22px;
+  justify-content: center;
+  width: 22px;
+}
+
+.experience-panel {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  display: grid;
+  gap: 24px;
+  padding: 28px;
+}
+
+.experience-panel-split {
+  grid-template-columns: minmax(0, 1.2fr) minmax(240px, 320px);
+}
+
+.experience-panel-split .experience-actions {
+  grid-column: 1 / -1;
+}
+
+.experience-copy h2 {
+  font-size: clamp(28px, 4vw, 40px);
+  margin: 0 0 8px;
+}
+
+.experience-copy .lede {
+  margin-top: 0;
+}
+
+.experience-actions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.ghost-button {
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  padding: 12px 16px;
+}
+
+.ghost-button:hover:not(:disabled) {
+  background: var(--background);
+}
+
+.ghost-button:disabled {
+  cursor: wait;
+  opacity: 0.6;
+}
+
+.link-button {
+  display: inline-block;
+  text-decoration: none;
+}
+
+.photo-upload {
+  cursor: pointer;
+  display: inline-block;
+}
+
+.photo-upload input {
+  display: none;
+}
+
+.photo-upload span {
+  background: var(--background);
+  border: 1px dashed var(--border);
+  border-radius: 10px;
+  display: inline-block;
+  padding: 14px 18px;
+}
+
+.photo-preview {
+  border-radius: 12px;
+  display: block;
+  margin-top: 16px;
+  max-height: 280px;
+  max-width: 100%;
+  object-fit: cover;
+}
+
+.face-map {
+  align-items: center;
+  display: grid;
+  gap: 16px;
+  justify-items: center;
+}
+
+.face-map svg {
+  max-width: 320px;
+  width: 100%;
+}
+
+.face-outline {
+  fill: var(--accent-soft);
+  stroke: var(--border);
+  stroke-width: 2;
+}
+
+.face-feature {
+  fill: none;
+  stroke: #a8daf8;
+  stroke-width: 2;
+}
+
+.face-zone {
+  fill: transparent;
+  stroke: transparent;
+  transition: all 0.25s ease;
+}
+
+.face-zone-active {
+  fill: var(--accent-glow);
+  stroke: var(--accent);
+  stroke-width: 2;
+}
+
+.face-zone-label {
+  fill: var(--accent-strong);
+  font-size: 10px;
+  font-weight: 700;
+  pointer-events: none;
+}
+
+.face-legend {
+  color: var(--muted);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 16px;
+  justify-content: center;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.face-scan-line {
+  stroke: var(--accent);
+  stroke-width: 2;
+}
+
+.intake-grid,
+.product-stack,
+.recommendation-grid {
+  display: grid;
+  gap: 18px;
+}
+
+.choice-group {
+  border: none;
+  margin: 0;
+  padding: 0;
+}
+
+.choice-group legend {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+
+.choice-grid {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+
+.choice-card {
+  align-items: center;
+  background: var(--background);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  cursor: pointer;
+  display: flex;
+  gap: 10px;
+  padding: 12px 14px;
+}
+
+.choice-card:has(input:checked) {
+  border-color: var(--accent);
+  box-shadow: inset 0 0 0 1px var(--accent);
+}
+
+.field select {
+  background: var(--background);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: inherit;
+  font: inherit;
+  padding: 12px 14px;
+  width: 100%;
+}
+
+.analysis-summary {
+  color: var(--muted);
+  display: grid;
+  gap: 6px;
+  list-style: none;
+  margin: 16px 0 0;
+  padding: 0;
+}
+
+.sensitivity-add {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.sensitivity-add input {
+  background: var(--background);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  flex: 1;
+  font: inherit;
+  min-width: 220px;
+  padding: 12px 14px;
+}
+
+.chip-button {
+  cursor: pointer;
+}
+
+.product-card {
+  background: var(--background);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+}
+
+.product-card-head {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+}
+
+.recommendation-grid {
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+}
+
+.recommendation-card {
+  background: var(--background);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  display: grid;
+  gap: 12px;
+  padding: 18px;
+}
+
+.recommendation-head {
+  align-items: flex-start;
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+}
+
+.recommendation-brand {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 600;
+  margin: 6px 0 0;
+}
+
+.recommendation-head h3 {
+  margin: 4px 0 0;
+}
+
+.demo-note {
+  color: var(--muted);
+  font-size: 14px;
+  margin: 12px 0 0;
+}
+
+.match-score {
+  background: var(--accent-soft);
+  border-radius: 999px;
+  color: var(--accent-strong);
+  font-size: 13px;
+  font-weight: 700;
+  padding: 6px 10px;
+  white-space: nowrap;
+}
+
+.recommendation-avoid {
+  color: var(--warning);
+  font-size: 13px;
+  margin: 0;
+}
+
 @media (max-width: 820px) {
   .shell {
     padding: 28px;
@@ -372,5 +904,41 @@ h1 {
 
   .kv-row {
     grid-template-columns: 1fr;
+  }
+
+  .topbar-actions {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .results-header {
+    flex-direction: column;
+  }
+
+  .ingest-main {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .experience-panel {
+    padding: 20px;
+  }
+
+  .experience-panel-split {
+    grid-template-columns: 1fr;
+  }
+
+  .experience-steps {
+    gap: 8px;
+  }
+
+  .experience-step span:last-child {
+    display: none;
+  }
+
+  .experience-step-active span:last-child,
+  .experience-step-done span:last-child {
+    display: inline;
   }
 }

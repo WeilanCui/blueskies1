@@ -1,4 +1,5 @@
 import Link from "next/link";
+import ProductSubmitForm from "./ProductSubmitForm";
 
 async function getHealth() {
   try {
@@ -19,52 +20,37 @@ async function getHealth() {
 export default async function Home() {
   const health = await getHealth();
 
-  const services = [
-    ["Django", "API server on port 8000"],
-    ["Postgres", "Primary relational database"],
-    ["Redis", "Cache and Celery broker"],
-    ["Celery", "Background worker process"],
-    ["Next.js", "Frontend on port 3000"],
-  ];
-
   return (
     <main className="shell">
       <nav className="topbar">
         <div className="brand">Blueskies</div>
-        <div className="status" aria-label="Backend status">
-          <span className="status-dot" />
-          <span>{health.status ?? "unknown"}</span>
+        <div className="topbar-actions">
+          <Link className="nav-button" href="/experience">
+            Personalized experience
+          </Link>
+          <Link href="/compounds">Browse compounds</Link>
+          <div className="status" aria-label="Backend status">
+            <span className="status-dot" />
+            <span>{health.status ?? "unknown"}</span>
+          </div>
         </div>
       </nav>
 
-      <section className="hero">
-        <div>
-          <h1>Full-stack app framework</h1>
-          <p className="lede">
-            A clean starting point with Django, PostgreSQL, Redis, Celery, Docker
-            Compose, and a Next.js frontend already wired together.
-          </p>
-          <p className="lede">
-            <Link href="/compounds">Browse compounds &rarr;</Link>
-          </p>
-        </div>
-
-        <div>
-          <div className="stack">
-            {services.map(([name, description]) => (
-              <div className="service" key={name}>
-                <strong>{name}</strong>
-                <span>{description}</span>
-              </div>
-            ))}
-          </div>
-
-          <div className="health">
-            <strong>Backend health</strong>
-            <pre>{JSON.stringify(health, null, 2)}</pre>
-          </div>
+      <section className="page-head">
+        <h1 className="page-title">Submit a product</h1>
+        <p className="lede">
+          Enter a product name and its INCI formulation. Blueskies will parse
+          each ingredient, enrich it from INCI and PubChem/PubMed, and store
+          the compound data for review.
+        </p>
+        <div className="home-cta">
+          <Link className="primary-button link-button" href="/experience">
+            Start personalized experience
+          </Link>
         </div>
       </section>
+
+      <ProductSubmitForm />
     </main>
   );
 }

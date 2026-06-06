@@ -29,7 +29,10 @@ export default async function CompoundsPage() {
         <div className="brand">
           <Link href="/">Blueskies</Link>
         </div>
-        <div className="status">
+        <div className="topbar-actions">
+          <Link className="nav-button" href="/experience">
+            Personalized experience
+          </Link>
           <span>{compounds.length} compounds</span>
         </div>
       </nav>

@@ -5,6 +5,8 @@ from core.models import (
     CompoundAlias,
     CompoundIdentifier,
     CompoundStructure,
+    Formulation,
+    FormulationIngredient,
     PropertyAssertion,
 )
 
@@ -91,3 +93,56 @@ class CompoundSerializer(serializers.ModelSerializer):
 
     def get_literature_count(self, obj: Compound) -> int:
         return len(obj.literature_links.all())
+
+
+class FormulationSubmitSerializer(serializers.Serializer):
+    name = serializers.CharField(max_length=512)
+    brand = serializers.CharField(max_length=256, required=False, allow_blank=True, default="")
+    formulation = serializers.CharField()
+
+
+class FormulationIngredientSerializer(serializers.ModelSerializer):
+    compound_name = serializers.SerializerMethodField()
+    enrichment_status = serializers.SerializerMethodField()
+
+    class Meta:
+        model = FormulationIngredient
+        fields = [
+            "position",
+            "raw_text",
+            "parse_status",
+            "compound",
+            "compound_name",
+            "enrichment_status",
+        ]
+
+    def get_compound_name(self, obj: FormulationIngredient) -> str:
+        if obj.compound is None:
+            return ""
+        return obj.compound.display_name or obj.compound.canonical_inci
+
+    def get_enrichment_status(self, obj: FormulationIngredient) -> str:
+        if obj.compound is None:
+            return ""
+        return obj.compound.enrichment_status
+
+
+class FormulationSerializer(serializers.ModelSerializer):
+    ingredients = FormulationIngredientSerializer(many=True, read_only=True)
+    ingredient_count = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Formulation
+        fields = [
+            "id",
+            "name",
+            "brand",
+            "enrichment_status",
+            "raw_inci_text",
+            "ingredient_count",
+            "ingredients",
+            "created_at",
+        ]
+
+    def get_ingredient_count(self, obj: Formulation) -> int:
+        return obj.ingredients.count()

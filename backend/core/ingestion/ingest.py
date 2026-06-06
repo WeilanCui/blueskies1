@@ -5,6 +5,8 @@ from __future__ import annotations
 import logging
 from dataclasses import dataclass, field
 
+from django.utils import timezone
+
 from core.enrichment.compound_bootstrap import apply_entity_classification
 from core.ingestion import pubchem_client, pubmed_client
 from core.ingestion.pubchem_client import PubChemRecord
@@ -220,6 +222,15 @@ def _safe_search(name: str, max_articles: int, result: IngestResult):
         return []
 
 
+def _reference_url(article: pubmed_client.PubMedArticle) -> str:
+    """Canonical link to the reference: prefer DOI, fall back to PubMed."""
+    if article.doi:
+        return f"https://doi.org/{article.doi}"
+    if article.pmid:
+        return f"https://pubmed.ncbi.nlm.nih.gov/{article.pmid}/"
+    return ""
+
+
 def _upsert_reference(article: pubmed_client.PubMedArticle) -> LiteratureReference:
     reference, _ = LiteratureReference.objects.update_or_create(
         pmid=article.pmid,
@@ -229,6 +240,7 @@ def _upsert_reference(article: pubmed_client.PubMedArticle) -> LiteratureReferen
             "journal": article.journal,
             "year": article.year,
             "doi": article.doi,
+            "url": _reference_url(article),
             "mesh_terms": article.mesh_terms,
             "substances": article.substances,
             "source": "pubmed",
@@ -257,7 +269,12 @@ def _link_literature(
             "relationship_degree": degree,
             "confidence": confidence,
             "evidence_summary": article.title,
+            "source_type": SourceType.LITERATURE,
+            "source_name": "PubMed",
             "source_ref": f"pubmed:{article.pmid}",
+            "source_url": reference.url,
+            "asserted_by": "ingest.pubmed",
+            "retrieved_at": timezone.now(),
         },
     )
 
@@ -274,9 +291,14 @@ def _upsert_relationship(
         relationship_type=RelationshipType.CO_MENTION,
         defaults={
             "degree": 1,
+            "source_type": SourceType.LITERATURE,
+            "source_name": "PubMed",
             "source_ref": f"pubmed:{pmids}" if pmids else "",
+            "source_url": _reference_url(articles[0]) if articles else "",
             "evidence_summary": f"Co-mentioned with {compound.canonical_inci} in PubMed.",
             "confidence": 0.5,
+            "asserted_by": "ingest.pubmed",
+            "retrieved_at": timezone.now(),
         },
     )
 
