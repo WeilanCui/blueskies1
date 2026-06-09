@@ -29,6 +29,13 @@ class RelationshipType(models.TextChoices):
     ANTAGONISM = "antagonism", "Antagonism"
 
 
+class LiteratureEnrichmentStatus(models.TextChoices):
+    PENDING = "pending", "Pending agent enrichment"
+    ENRICHED = "enriched", "Enriched by agent"
+    FAILED = "failed", "Enrichment failed"
+    SKIPPED = "skipped", "Skipped"
+
+
 class LiteratureReference(models.Model):
     """A single bibliographic record (currently PubMed) used as evidence."""
 
@@ -41,7 +48,17 @@ class LiteratureReference(models.Model):
     url = models.URLField(
         max_length=1024,
         blank=True,
-        help_text="Canonical link to the reference (PubMed/DOI landing page).",
+        help_text="Canonical PubMed page for this reference.",
+    )
+    pmc_id = models.CharField(
+        max_length=64,
+        blank=True,
+        help_text="PubMed Central id when open full text is available.",
+    )
+    pmcid_url = models.URLField(
+        max_length=1024,
+        blank=True,
+        help_text="Direct link to the PMC full-text article.",
     )
     mesh_terms = models.JSONField(default=list, blank=True)
     substances = models.JSONField(default=list, blank=True)
@@ -55,6 +72,21 @@ class LiteratureReference(models.Model):
 
     def __str__(self) -> str:
         return f"PMID {self.pmid}"
+
+    @property
+    def doi_url(self) -> str:
+        if not self.doi:
+            return ""
+        return f"https://doi.org/{self.doi}"
+
+    @property
+    def best_read_url(self) -> str:
+        """Preferred link for reading: DOI, then PMC, then PubMed."""
+        if self.doi_url:
+            return self.doi_url
+        if self.pmcid_url:
+            return self.pmcid_url
+        return self.url
 
 
 class CompoundLiterature(SourceMetadata):
@@ -88,6 +120,13 @@ class CompoundLiterature(SourceMetadata):
         help_text="0 = direct query subject, 1/2 = via co-mentioned compounds.",
     )
     confidence = models.FloatField(default=0.5)
+    enrichment_status = models.CharField(
+        max_length=16,
+        choices=LiteratureEnrichmentStatus.choices,
+        default=LiteratureEnrichmentStatus.PENDING,
+    )
+    enriched_by = models.CharField(max_length=128, blank=True)
+    enriched_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

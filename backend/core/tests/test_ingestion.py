@@ -85,6 +85,11 @@ XML_SUGARCANE = """<?xml version="1.0"?>
     <Chemical><NameOfSubstance>Antioxidants</NameOfSubstance></Chemical>
    </ChemicalList>
   </MedlineCitation>
+  <PubmedData>
+   <ArticleIdList>
+    <ArticleId IdType="pmc">PMC11234567</ArticleId>
+   </ArticleIdList>
+  </PubmedData>
  </PubmedArticle>
 </PubmedArticleSet>"""
 
@@ -133,6 +138,7 @@ class PubMedParsingTests(SimpleTestCase):
         self.assertEqual(article.journal, "Molecules")
         self.assertIn("Plant Extracts", article.substances)
         self.assertIn("Preservatives, Pharmaceutical", article.mesh_terms)
+        self.assertEqual(article.pmc_id, "PMC11234567")
 
 
 class RelevanceTests(SimpleTestCase):
@@ -233,6 +239,20 @@ class IngestOrchestratorTests(TestCase):
 
         compound = Compound.objects.get(canonical_inci="1,2-HEXANEDIOL")
         reference = LiteratureReference.objects.get(pmid="39203006")
+        self.assertEqual(
+            reference.url, "https://pubmed.ncbi.nlm.nih.gov/39203006/"
+        )
+        self.assertEqual(reference.pmc_id, "PMC11234567")
+        self.assertEqual(
+            reference.pmcid_url,
+            "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC11234567/",
+        )
+        self.assertEqual(
+            reference.doi_url, "https://doi.org/10.3390/molecules29163928"
+        )
+        self.assertEqual(
+            compound.pubchem_url, "https://pubchem.ncbi.nlm.nih.gov/compound/8104"
+        )
         link = CompoundLiterature.objects.get(compound=compound, literature=reference)
         self.assertEqual(
             link.relevance_category, RelevanceCategory.PRESERVATION_PERFORMANCE

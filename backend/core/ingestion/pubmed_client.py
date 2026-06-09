@@ -26,6 +26,7 @@ class PubMedArticle:
     journal: str = ""
     year: int | None = None
     doi: str = ""
+    pmc_id: str = ""
     mesh_terms: list[str] = field(default_factory=list)
     substances: list[str] = field(default_factory=list)
 
@@ -90,6 +91,7 @@ def _parse_article(node: ET.Element) -> PubMedArticle | None:
     journal = _text(node.find(".//Article/Journal/Title"))
     year = _parse_year(node)
     doi = _parse_doi(node)
+    pmc_id = _parse_pmc_id(node)
     mesh_terms = [
         _text(d)
         for d in node.findall(".//MeshHeadingList/MeshHeading/DescriptorName")
@@ -108,6 +110,7 @@ def _parse_article(node: ET.Element) -> PubMedArticle | None:
         journal=journal,
         year=year,
         doi=doi,
+        pmc_id=pmc_id,
         mesh_terms=mesh_terms,
         substances=substances,
     )
@@ -142,6 +145,13 @@ def _parse_doi(node: ET.Element) -> str:
             return _text(el)
     for el in node.findall(".//PubmedData/ArticleIdList/ArticleId"):
         if el.get("IdType") == "doi" and _text(el):
+            return _text(el)
+    return ""
+
+
+def _parse_pmc_id(node: ET.Element) -> str:
+    for el in node.findall(".//PubmedData/ArticleIdList/ArticleId"):
+        if el.get("IdType") == "pmc" and _text(el):
             return _text(el)
     return ""
 

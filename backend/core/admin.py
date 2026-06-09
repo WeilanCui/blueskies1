@@ -142,7 +142,7 @@ class CompoundLiteratureInline(admin.TabularInline):
 
 @admin.register(LiteratureReference)
 class LiteratureReferenceAdmin(admin.ModelAdmin):
-    list_display = ("pmid", "title", "journal", "year", "source", "url")
+    list_display = ("pmid", "title", "journal", "year", "source", "url", "pmcid_url")
     search_fields = ("pmid", "title", "doi", "url")
     list_filter = ("source", "year")
     inlines = [CompoundLiteratureInline]
@@ -157,12 +157,14 @@ class CompoundLiteratureAdmin(admin.ModelAdmin):
         "role_in_paper",
         "relationship_degree",
         "confidence",
+        "enrichment_status",
         "source_type",
     )
     list_filter = (
         "relevance_category",
         "role_in_paper",
         "relationship_degree",
+        "enrichment_status",
         "source_type",
     )
     search_fields = ("compound__canonical_inci", "literature__pmid", "source_ref")

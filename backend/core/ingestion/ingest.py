@@ -69,6 +69,8 @@ def ingest_compound(
     max_articles: int = 10,
     max_related: int = 5,
     with_pubmed: bool = True,
+    enrich: bool = False,
+    extractor: str | None = None,
     asserted_by: str = "ingest_compound",
 ) -> IngestResult:
     """Resolve a compound from PubChem and pull UX-relevant PubMed literature."""
@@ -91,6 +93,14 @@ def ingest_compound(
             max_articles=max_articles,
             max_related=max_related,
             asserted_by=asserted_by,
+        )
+
+    if enrich and with_pubmed:
+        from core.enrichment import enrich_compound_literature, get_extractor
+
+        enrich_compound_literature(
+            compound,
+            extractor=get_extractor(extractor),
         )
 
     _finalize_status(compound)
@@ -222,13 +232,14 @@ def _safe_search(name: str, max_articles: int, result: IngestResult):
         return []
 
 
-def _reference_url(article: pubmed_client.PubMedArticle) -> str:
-    """Canonical link to the reference: prefer DOI, fall back to PubMed."""
-    if article.doi:
-        return f"https://doi.org/{article.doi}"
-    if article.pmid:
-        return f"https://pubmed.ncbi.nlm.nih.gov/{article.pmid}/"
-    return ""
+def _pubmed_url(pmid: str) -> str:
+    return f"https://pubmed.ncbi.nlm.nih.gov/{pmid}/" if pmid else ""
+
+
+def _pmcid_url(pmc_id: str) -> str:
+    if not pmc_id:
+        return ""
+    return f"https://www.ncbi.nlm.nih.gov/pmc/articles/{pmc_id}/"
 
 
 def _upsert_reference(article: pubmed_client.PubMedArticle) -> LiteratureReference:
@@ -240,7 +251,9 @@ def _upsert_reference(article: pubmed_client.PubMedArticle) -> LiteratureReferen
             "journal": article.journal,
             "year": article.year,
             "doi": article.doi,
-            "url": _reference_url(article),
+            "url": _pubmed_url(article.pmid),
+            "pmc_id": article.pmc_id,
+            "pmcid_url": _pmcid_url(article.pmc_id),
             "mesh_terms": article.mesh_terms,
             "substances": article.substances,
             "source": "pubmed",
@@ -272,7 +285,7 @@ def _link_literature(
             "source_type": SourceType.LITERATURE,
             "source_name": "PubMed",
             "source_ref": f"pubmed:{article.pmid}",
-            "source_url": reference.url,
+            "source_url": reference.best_read_url,
             "asserted_by": "ingest.pubmed",
             "retrieved_at": timezone.now(),
         },
@@ -294,7 +307,9 @@ def _upsert_relationship(
             "source_type": SourceType.LITERATURE,
             "source_name": "PubMed",
             "source_ref": f"pubmed:{pmids}" if pmids else "",
-            "source_url": _reference_url(articles[0]) if articles else "",
+            "source_url": (
+                _pubmed_url(articles[0].pmid) if articles else ""
+            ),
             "evidence_summary": f"Co-mentioned with {compound.canonical_inci} in PubMed.",
             "confidence": 0.5,
             "asserted_by": "ingest.pubmed",

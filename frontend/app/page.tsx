@@ -1,10 +1,13 @@
 import Link from "next/link";
+
+import { getServerApiBaseUrl } from "../lib/apiBaseUrl";
 import ProductSubmitForm from "./ProductSubmitForm";
 
 async function getHealth() {
   try {
-    const response = await fetch("http://localhost:3000/api/health", {
+    const response = await fetch(`${getServerApiBaseUrl()}/api/health/`, {
       cache: "no-store",
+      signal: AbortSignal.timeout(3000),
     });
 
     if (!response.ok) {
@@ -29,6 +32,7 @@ export default async function Home() {
             Personalized experience
           </Link>
           <Link href="/compounds">Browse compounds</Link>
+          <Link href="/skincareApi">Skincare catalog</Link>
           <div className="status" aria-label="Backend status">
             <span className="status-dot" />
             <span>{health.status ?? "unknown"}</span>

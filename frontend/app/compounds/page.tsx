@@ -35,6 +35,9 @@ export default async function CompoundsPage() {
           <Link className="nav-button" href="/experience">
             Personalized experience
           </Link>
+          <Link className="nav-button" href="/skincareApi">
+            Skincare catalog
+          </Link>
           <span>{compounds.length} compounds</span>
         </div>
       </nav>

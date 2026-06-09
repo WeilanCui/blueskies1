@@ -34,6 +34,17 @@ class Command(BaseCommand):
             action="store_true",
             help="Resolve structure from PubChem only; skip PubMed literature.",
         )
+        parser.add_argument(
+            "--enrich",
+            action="store_true",
+            help="Run literature LLM enrichment after ingest (default off).",
+        )
+        parser.add_argument(
+            "--extractor",
+            choices=["auto", "stub", "openai"],
+            default="auto",
+            help="Extractor for --enrich (auto uses OpenAI when OPENAI_API_KEY is set).",
+        )
 
     def handle(self, *args, **options):
         names = options.get("inci") or DEFAULT_SAMPLE
@@ -44,6 +55,8 @@ class Command(BaseCommand):
                 max_articles=options["max_articles"],
                 max_related=options["max_related"],
                 with_pubmed=not options["no_pubmed"],
+                enrich=options["enrich"],
+                extractor=options["extractor"],
             )
             style = self.style.SUCCESS if not result.errors else self.style.WARNING
             self.stdout.write(style(result.summary()))

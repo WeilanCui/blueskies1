@@ -17,6 +17,7 @@ from core.models.interactions import (
 from core.models.literature import (
     CompoundLiterature,
     CompoundRelationship,
+    LiteratureEnrichmentStatus,
     LiteratureReference,
     RelationshipType,
     RelevanceCategory,
@@ -45,6 +46,7 @@ __all__ = [
     "InteractionAssertion",
     "InteractionRule",
     "InteractionType",
+    "LiteratureEnrichmentStatus",
     "LiteratureReference",
     "PropertyAssertion",
     "PropertyDefinition",

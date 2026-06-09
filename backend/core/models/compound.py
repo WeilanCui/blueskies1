@@ -46,6 +46,17 @@ class Compound(models.Model):
     def __str__(self) -> str:
         return self.canonical_inci
 
+    @property
+    def pubchem_url(self) -> str:
+        """Link to the PubChem compound page when a CID identifier is stored."""
+        ident = (
+            self.identifiers.filter(id_type="pubchem_cid", is_primary=True).first()
+            or self.identifiers.filter(id_type="pubchem_cid").first()
+        )
+        if ident is None:
+            return ""
+        return f"https://pubchem.ncbi.nlm.nih.gov/compound/{ident.id_value}"
+
 
 class CompoundAlias(models.Model):
     compound = models.ForeignKey(

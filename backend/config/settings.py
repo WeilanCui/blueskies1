@@ -23,6 +23,7 @@ INSTALLED_APPS = [
     "corsheaders",
     "rest_framework",
     "core",
+    "skincareApi",
 ]
 
 MIDDLEWARE = [
@@ -94,6 +95,15 @@ REST_FRAMEWORK = {
 
 INCI_API_KEY = env("INCI_API_KEY", default="")
 INCI_API_BASE = env("INCI_API_BASE", default="https://inciapi.com/v1")
+
+SKINCARE_API_BASE = env(
+    "SKINCARE_API_BASE",
+    default="https://skincare-api.herokuapp.com",
+)
+
+OPENAI_API_KEY = env("OPENAI_API_KEY", default="")
+OPENAI_MODEL = env("OPENAI_MODEL", default="gpt-4o-mini")
+LITERATURE_EXTRACTOR = env("LITERATURE_EXTRACTOR", default="auto")
 
 CELERY_BROKER_URL = env("CELERY_BROKER_URL", default="redis://redis:6379/0")
 CELERY_RESULT_BACKEND = env("CELERY_RESULT_BACKEND", default="redis://redis:6379/1")
