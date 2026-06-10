@@ -36,6 +36,7 @@ def compound_list(request):
         .prefetch_related(
             "aliases",
             "identifiers",
+            "chemical_class_memberships__chemical_class",
             "property_assertions__property_def",
             "literature_links",
         )

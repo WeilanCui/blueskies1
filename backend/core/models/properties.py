@@ -15,6 +15,7 @@ __all__ = [
 
 class PropertyDomain(models.TextChoices):
     COMPOUND = "compound", "Compound (ingredient)"
+    CHEMICAL_CLASS = "chemical_class", "Chemical class / family"
     FORMULATION = "formulation", "Formulation / product"
     INTERACTION = "interaction", "Ingredient interaction"
     COMPUTED = "computed", "Computed descriptor"
@@ -73,7 +74,7 @@ class PropertyDefinition(models.Model):
 
 
 class PropertyAssertion(SourceMetadata):
-    """A single claimed property value on a compound or formulation.
+    """A single claimed property value on a compound, chemical class, or formulation.
 
     Provenance fields (source_type, source_ref, source_url, confidence,
     evidence_summary, asserted_by, retrieved_at) are inherited from
@@ -87,6 +88,13 @@ class PropertyAssertion(SourceMetadata):
     )
     compound = models.ForeignKey(
         "core.Compound",
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name="property_assertions",
+    )
+    chemical_class = models.ForeignKey(
+        "core.ChemicalClass",
         on_delete=models.CASCADE,
         null=True,
         blank=True,
@@ -119,18 +127,23 @@ class PropertyAssertion(SourceMetadata):
     class Meta:
         indexes = [
             models.Index(fields=["compound", "property_def", "is_active"]),
+            models.Index(fields=["chemical_class", "property_def", "is_active"]),
             models.Index(fields=["formulation", "property_def", "is_active"]),
         ]
 
     def clean(self) -> None:
-        targets = sum(1 for x in (self.compound_id, self.formulation_id) if x)
+        targets = sum(
+            1
+            for x in (self.compound_id, self.chemical_class_id, self.formulation_id)
+            if x
+        )
         if targets != 1:
             raise ValidationError(
-                "Exactly one of compound or formulation must be set."
+                "Exactly one of compound, chemical_class, or formulation must be set."
             )
 
     def __str__(self) -> str:
-        target = self.compound or self.formulation
+        target = self.compound or self.chemical_class or self.formulation
         return f"{self.property_def.key}={self.display_value} on {target}"
 
     def display_value(self) -> str:

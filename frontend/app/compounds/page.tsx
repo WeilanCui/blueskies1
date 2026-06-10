@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { Suspense } from "react";
+
 import { getServerApiBaseUrl } from "../../lib/apiBaseUrl";
 import { Panel } from "../../components/Panel";
 import CompoundList, { type Compound } from "./CompoundList";
@@ -61,7 +63,9 @@ export default async function CompoundsPage() {
           <code>docker compose run --rm backend python manage.py ingest_compound</code>.
         </Panel>
       ) : (
-        <CompoundList compounds={compounds} />
+        <Suspense fallback={<p className="detail-muted">Loading compounds…</p>}>
+          <CompoundList compounds={compounds} />
+        </Suspense>
       )}
     </main>
   );

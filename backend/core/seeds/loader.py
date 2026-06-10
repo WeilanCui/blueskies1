@@ -1,6 +1,8 @@
 from django.db import transaction
 
 from core.models import (
+    ChemicalClass,
+    ChemicalClassMembership,
     Compound,
     CompoundAlias,
     GlossaryTerm,
@@ -9,6 +11,7 @@ from core.models import (
     PropertyDefinition,
     SourceType,
 )
+from core.seeds.chemical_classes import CHEMICAL_CLASSES
 from core.seeds.glossary_terms import GLOSSARY_TERMS
 from core.seeds.interaction_rules import INTERACTION_RULES
 from core.seeds.property_definitions import PROPERTY_DEFINITIONS
@@ -112,6 +115,26 @@ def _write_assertion(compound: Compound, row: dict) -> None:
     )
 
 
+def _write_class_assertion(chemical_class: ChemicalClass, row: dict) -> None:
+    prop = PropertyDefinition.objects.get(key=row["property_key"])
+    PropertyAssertion.objects.update_or_create(
+        chemical_class=chemical_class,
+        property_def=prop,
+        is_active=True,
+        defaults={
+            "value_text": row.get("value_text", ""),
+            "value_numeric": row.get("value_numeric"),
+            "value_bool": row.get("value_bool"),
+            "value_json": row.get("value_json"),
+            "confidence": row.get("confidence", 1.0),
+            "source_type": row.get("source_type", SourceType.SEED),
+            "source_ref": row.get("source_ref", "chemical_classes"),
+            "evidence_summary": row.get("evidence_summary", ""),
+            "asserted_by": "seed_ontology",
+        },
+    )
+
+
 @transaction.atomic
 def upsert_reference_compounds() -> dict[str, int]:
     compounds_created = assertions_written = 0
@@ -151,6 +174,61 @@ def upsert_reference_compounds() -> dict[str, int]:
     }
 
 
+@transaction.atomic
+def upsert_chemical_classes() -> dict[str, int]:
+    classes_created = assertions_written = memberships_written = 0
+    for row in CHEMICAL_CLASSES:
+        parent = None
+        if row.get("parent_slug"):
+            parent = ChemicalClass.objects.get(slug=row["parent_slug"])
+        chemical_class, was_created = ChemicalClass.objects.update_or_create(
+            slug=row["slug"],
+            defaults={
+                "name": row["name"],
+                "description": row.get("description", ""),
+                "parent": parent,
+                "notes": row.get("notes", ""),
+            },
+        )
+        if was_created:
+            classes_created += 1
+
+        for assertion in row.get("assertions", []):
+            _write_class_assertion(chemical_class, assertion)
+            assertions_written += 1
+
+        for member in row.get("members", []):
+            compound, _ = Compound.objects.get_or_create(
+                canonical_inci=member["canonical_inci"],
+                defaults={
+                    "display_name": member.get("display_name", ""),
+                    "entity_type": member.get("entity_type", "small_molecule"),
+                    "structure_resolvable": member.get("structure_resolvable", True),
+                    "enrichment_status": "partial",
+                },
+            )
+            ChemicalClassMembership.objects.update_or_create(
+                compound=compound,
+                chemical_class=chemical_class,
+                defaults={
+                    "is_primary": member.get("is_primary", False),
+                    "is_active": member.get("is_active", True),
+                    "rationale": member.get("rationale", ""),
+                    "confidence": member.get("confidence", 1.0),
+                    "source_type": member.get("source_type", SourceType.SEED),
+                    "source_ref": member.get("source_ref", "chemical_classes"),
+                    "asserted_by": "seed_ontology",
+                },
+            )
+            memberships_written += 1
+
+    return {
+        "classes_created": classes_created,
+        "assertions_written": assertions_written,
+        "memberships_written": memberships_written,
+    }
+
+
 def seed_all(*, include_reference_compounds: bool = True) -> dict:
     results = {
         "property_definitions": upsert_property_definitions(),
@@ -159,4 +237,5 @@ def seed_all(*, include_reference_compounds: bool = True) -> dict:
     }
     if include_reference_compounds:
         results["reference_compounds"] = upsert_reference_compounds()
+        results["chemical_classes"] = upsert_chemical_classes()
     return results

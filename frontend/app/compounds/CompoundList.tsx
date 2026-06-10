@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 
 export type CompoundStructure = {
   smiles: string;
@@ -29,9 +30,26 @@ export type CompoundProperty = {
   key: string;
   label: string;
   value: string;
+  inherited_from: string;
   source_type: string;
   confidence: number;
   evidence_summary: string;
+};
+
+export type ChemicalClassMembership = {
+  chemical_class: {
+    id: number;
+    name: string;
+    slug: string;
+    description: string;
+    parent: number | null;
+  };
+  is_primary: boolean;
+  is_active: boolean;
+  confidence: number;
+  source_type: string;
+  source_ref: string;
+  rationale: string;
 };
 
 export type Compound = {
@@ -46,7 +64,10 @@ export type Compound = {
   structure: CompoundStructure | null;
   aliases: CompoundAlias[];
   identifiers: CompoundIdentifier[];
+  chemical_classes: ChemicalClassMembership[];
   properties: CompoundProperty[];
+  inherited_properties: CompoundProperty[];
+  effective_properties: CompoundProperty[];
   literature_count: number;
 };
 
@@ -58,8 +79,26 @@ function formatLabel(value: string): string {
     .join(" ");
 }
 
+function normalizeCompound(compound: Compound): Compound {
+  return {
+    ...compound,
+    aliases: compound.aliases ?? [],
+    identifiers: compound.identifiers ?? [],
+    chemical_classes: compound.chemical_classes ?? [],
+    properties: compound.properties ?? [],
+    inherited_properties: compound.inherited_properties ?? [],
+    effective_properties: compound.effective_properties ?? [],
+    literature_count: compound.literature_count ?? 0,
+  };
+}
+
 function CompoundDetail({ compound }: { compound: Compound }) {
-  const { structure, identifiers, aliases, properties } = compound;
+  const normalized = normalizeCompound(compound);
+  const { structure, identifiers, aliases, chemical_classes } = normalized;
+  const properties =
+    normalized.effective_properties.length > 0
+      ? normalized.effective_properties
+      : normalized.properties;
   const hasStructure =
     structure &&
     (structure.molecular_formula ||
@@ -69,7 +108,7 @@ function CompoundDetail({ compound }: { compound: Compound }) {
 
   return (
     <div className="compound-detail">
-      {compound.notes && <p className="detail-notes">{compound.notes}</p>}
+      {normalized.notes && <p className="detail-notes">{normalized.notes}</p>}
 
       {identifiers.length > 0 && (
         <section className="detail-section">
@@ -135,6 +174,26 @@ function CompoundDetail({ compound }: { compound: Compound }) {
         </section>
       )}
 
+      {chemical_classes.length > 0 && (
+        <section className="detail-section">
+          <h3>Chemical Classes</h3>
+          <div className="chip-row">
+            {chemical_classes.map((membership) => (
+              <span
+                className="chip"
+                key={
+                  membership.chemical_class?.slug ??
+                  `${membership.chemical_class?.name ?? "class"}-${membership.is_primary}`
+                }
+              >
+                {membership.chemical_class?.name ?? "Unknown class"}
+                {membership.is_primary && <span className="chip-meta">primary</span>}
+              </span>
+            ))}
+          </div>
+        </section>
+      )}
+
       {properties.length > 0 && (
         <section className="detail-section">
           <h3>Properties</h3>
@@ -144,7 +203,11 @@ function CompoundDetail({ compound }: { compound: Compound }) {
                 <dt>{prop.label || formatLabel(prop.key)}</dt>
                 <dd>
                   {prop.value}
-                  <span className="kv-source">{prop.source_type}</span>
+                  <span className="kv-source">
+                    {prop.inherited_from
+                      ? `inherited from ${prop.inherited_from}`
+                      : prop.source_type}
+                  </span>
                 </dd>
               </div>
             ))}
@@ -155,8 +218,8 @@ function CompoundDetail({ compound }: { compound: Compound }) {
       <section className="detail-section">
         <h3>Literature</h3>
         <p className="detail-muted">
-          {compound.literature_count} linked reference
-          {compound.literature_count === 1 ? "" : "s"}
+          {normalized.literature_count} linked reference
+          {normalized.literature_count === 1 ? "" : "s"}
         </p>
       </section>
     </div>
@@ -164,21 +227,41 @@ function CompoundDetail({ compound }: { compound: Compound }) {
 }
 
 export default function CompoundList({ compounds }: { compounds: Compound[] }) {
+  const searchParams = useSearchParams();
+  const normalizedCompounds = useMemo(
+    () => compounds.map(normalizeCompound),
+    [compounds],
+  );
   const [expandedId, setExpandedId] = useState<number | null>(null);
+
+  useEffect(() => {
+    const requestedId = Number(searchParams.get("compound"));
+    if (!Number.isFinite(requestedId)) return;
+
+    const match = normalizedCompounds.find((compound) => compound.id === requestedId);
+    if (match) {
+      setExpandedId(match.id);
+      document
+        .getElementById(`compound-${match.id}`)
+        ?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }, [normalizedCompounds, searchParams]);
 
   return (
     <ul className="compound-list">
-      {compounds.map((compound) => {
+      {normalizedCompounds.map((compound) => {
         const isExpanded = expandedId === compound.id;
         const title = compound.display_name || compound.canonical_inci;
 
         return (
-          <li className="compound-item" key={compound.id}>
+          <li className="compound-item" id={`compound-${compound.id}`} key={compound.id}>
             <button
               type="button"
               className="compound-row"
               aria-expanded={isExpanded}
-              onClick={() => setExpandedId(isExpanded ? null : compound.id)}
+              onClick={() =>
+                setExpandedId((current) => (current === compound.id ? null : compound.id))
+              }
             >
               <span className={`chevron ${isExpanded ? "open" : ""}`} aria-hidden>
                 ▶

@@ -156,7 +156,9 @@ export default function ProductSubmitForm() {
                   <span>{ingredient.pubchem_descriptors} PubChem descriptors</span>
                   <span>{ingredient.articles_linked} articles</span>
                   {ingredient.compound_id && (
-                    <Link href="/compounds">Compound #{ingredient.compound_id}</Link>
+                    <Link href={`/compounds?compound=${ingredient.compound_id}`}>
+                      Compound #{ingredient.compound_id}
+                    </Link>
                   )}
                 </div>
                 {ingredient.errors.length > 0 && (

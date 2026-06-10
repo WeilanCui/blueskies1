@@ -1,6 +1,8 @@
 from django.contrib import admin
 
 from core.models import (
+    ChemicalClass,
+    ChemicalClassMembership,
     Compound,
     CompoundAlias,
     CompoundIdentifier,
@@ -28,6 +30,19 @@ class CompoundIdentifierInline(admin.TabularInline):
     extra = 0
 
 
+class ChemicalClassMembershipInline(admin.TabularInline):
+    model = ChemicalClassMembership
+    extra = 0
+    fields = (
+        "chemical_class",
+        "is_primary",
+        "is_active",
+        "confidence",
+        "source_type",
+        "rationale",
+    )
+
+
 class PropertyAssertionInline(admin.TabularInline):
     model = PropertyAssertion
     fk_name = "compound"
@@ -53,7 +68,51 @@ class CompoundAdmin(admin.ModelAdmin):
     )
     search_fields = ("canonical_inci", "display_name", "primary_cas")
     list_filter = ("entity_type", "enrichment_status")
-    inlines = [CompoundAliasInline, CompoundIdentifierInline, PropertyAssertionInline]
+    inlines = [
+        CompoundAliasInline,
+        CompoundIdentifierInline,
+        ChemicalClassMembershipInline,
+        PropertyAssertionInline,
+    ]
+
+
+class ChemicalClassPropertyAssertionInline(admin.TabularInline):
+    model = PropertyAssertion
+    fk_name = "chemical_class"
+    extra = 0
+    fields = (
+        "property_def",
+        "value_text",
+        "value_numeric",
+        "value_bool",
+        "value_json",
+        "confidence",
+        "source_type",
+        "is_active",
+    )
+
+
+@admin.register(ChemicalClass)
+class ChemicalClassAdmin(admin.ModelAdmin):
+    list_display = ("name", "slug", "parent", "updated_at")
+    search_fields = ("name", "slug", "description")
+    list_filter = ("parent",)
+    prepopulated_fields = {"slug": ("name",)}
+    inlines = [ChemicalClassPropertyAssertionInline]
+
+
+@admin.register(ChemicalClassMembership)
+class ChemicalClassMembershipAdmin(admin.ModelAdmin):
+    list_display = (
+        "compound",
+        "chemical_class",
+        "is_primary",
+        "is_active",
+        "confidence",
+        "source_type",
+    )
+    list_filter = ("chemical_class", "is_primary", "is_active", "source_type")
+    search_fields = ("compound__canonical_inci", "chemical_class__name", "rationale")
 
 
 @admin.register(PropertyDefinition)
@@ -76,6 +135,7 @@ class PropertyAssertionAdmin(admin.ModelAdmin):
     list_display = (
         "property_def",
         "compound",
+        "chemical_class",
         "formulation",
         "display_value",
         "confidence",
@@ -83,7 +143,11 @@ class PropertyAssertionAdmin(admin.ModelAdmin):
         "is_active",
     )
     list_filter = ("source_type", "is_active", "property_def__domain")
-    search_fields = ("compound__canonical_inci", "formulation__name")
+    search_fields = (
+        "compound__canonical_inci",
+        "chemical_class__name",
+        "formulation__name",
+    )
 
 
 @admin.register(GlossaryTerm)

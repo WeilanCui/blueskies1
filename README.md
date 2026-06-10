@@ -16,7 +16,9 @@ docker compose up --build
 ```
 
 Open:
-
+```bash
+npm run dev
+```
 - Frontend: http://localhost:3000
 - Backend health check: http://localhost:8000/api/health/
 

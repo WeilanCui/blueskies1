@@ -200,7 +200,6 @@ function buildRecommendations(
 }
 
 export default function ExperienceFlow() {
-  const [step, setStep] = useState<Step>("scan");
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [skinType, setSkinType] = useState("combination");
   const [concerns, setConcerns] = useState<string[]>([]);
@@ -227,17 +226,7 @@ export default function ExperienceFlow() {
     [concerns, sensitivities],
   );
 
-  const stepIndex = STEPS.findIndex((item) => item.id === step);
 
-  function goNext() {
-    const next = STEPS[stepIndex + 1];
-    if (next) setStep(next.id);
-  }
-
-  function goBack() {
-    const prev = STEPS[stepIndex - 1];
-    if (prev) setStep(prev.id);
-  }
 
   function toggleConcern(id: string) {
     setConcerns((current) =>
@@ -327,7 +316,6 @@ export default function ExperienceFlow() {
     setAnalyzing(true);
     await new Promise((resolve) => setTimeout(resolve, 1400));
     setAnalyzing(false);
-    setStep("analysis");
   }
 
   return (
@@ -336,13 +324,6 @@ export default function ExperienceFlow() {
         {STEPS.map((item, index) => (
           <li
             key={item.id}
-            className={
-              index === stepIndex
-                ? "experience-step experience-step-active"
-                : index < stepIndex
-                  ? "experience-step experience-step-done"
-                  : "experience-step"
-            }
           >
             <span className="experience-step-index">{index + 1}</span>
             <span>{item.label}</span>
@@ -350,323 +331,287 @@ export default function ExperienceFlow() {
         ))}
       </ol>
 
-      {step === "scan" && (
-        <Panel split>
-          <div className="experience-copy">
-            <h2>Facial analysis</h2>
-            <p className="lede">
-              Upload a clear, front-facing photo. Blueskies maps texture, tone,
-              and congestion patterns to guide your routine.
+      <Panel split>
+        <div className="experience-copy">
+          <h2>Facial analysis</h2>
+          <p className="lede">
+            Upload a clear, front-facing photo. Blueskies maps texture, tone,
+            and congestion patterns to guide your routine.
+          </p>
+          <UploadButton
+            onFileSelect={(file) => setPhotoPreview(URL.createObjectURL(file))}
+          >
+            {photoPreview ? "Replace photo" : "Upload facial photo"}
+          </UploadButton>
+          {photoPreview ? (
+            <img src={photoPreview} alt="Uploaded facial preview" className="photo-preview" />
+          ) : (
+            <p className="field-hint">
+              Photo is optional in this demo — you can continue and map target
+              areas from your intake answers.
             </p>
-            <UploadButton
-              onFileSelect={(file) => setPhotoPreview(URL.createObjectURL(file))}
-            >
-              {photoPreview ? "Replace photo" : "Upload facial photo"}
-            </UploadButton>
-            {photoPreview ? (
-              <img src={photoPreview} alt="Uploaded facial preview" className="photo-preview" />
-            ) : (
-              <p className="field-hint">
-                Photo is optional in this demo — you can continue and map target
-                areas from your intake answers.
-              </p>
-            )}
-          </div>
-          <FaceMap activeZones={activeZones} analyzing={analyzing} />
-          <div className="experience-actions">
-            <Button type="button" onPress={goNext}>
-              Continue to intake
-            </Button>
-          </div>
-        </Panel>
-      )}
+          )}
+        </div>
+        <FaceMap activeZones={activeZones} analyzing={analyzing} />
 
-      {step === "intake" && (
-        <Panel>
-          <div className="experience-copy">
-            <h2>Skincare intake</h2>
-            <p className="lede">
-              Tell us about your skin so we can prioritize the right target areas.
-            </p>
-          </div>
+      </Panel>
 
-          <div className="intake-grid">
-            <label className="field">
-              <span>Skin type</span>
-              <select value={skinType} onChange={(event) => setSkinType(event.target.value)}>
-                <option value="dry">Dry</option>
-                <option value="oily">Oily</option>
-                <option value="combination">Combination</option>
-                <option value="normal">Normal</option>
-                <option value="sensitive">Sensitive</option>
-              </select>
-            </label>
+      <Panel>
+        <div className="experience-copy">
+          <h2>Skincare intake</h2>
+          <p className="lede">
+            Tell us about your skin so we can prioritize the right target areas.
+          </p>
+        </div>
 
-            <fieldset className="choice-group">
-              <legend>Primary concerns</legend>
-              <div className="choice-grid">
-                {CONCERNS.map((concern) => (
-                  <label className="choice-card" key={concern.id}>
-                    <input
-                      type="checkbox"
-                      checked={concerns.includes(concern.id)}
-                      onChange={() => toggleConcern(concern.id)}
-                    />
-                    <span>{concern.label}</span>
-                  </label>
-                ))}
-              </div>
-            </fieldset>
+        <div className="intake-grid">
+          <label className="field">
+            <span>Skin type</span>
+            <select value={skinType} onChange={(event) => setSkinType(event.target.value)}>
+              <option value="dry">Dry</option>
+              <option value="oily">Oily</option>
+              <option value="combination">Combination</option>
+              <option value="normal">Normal</option>
+              <option value="sensitive">Sensitive</option>
+            </select>
+          </label>
 
-            <label className="field">
-              <span>Goals in your own words</span>
-              <textarea
-                rows={4}
-                value={goals}
-                onChange={(event) => setGoals(event.target.value)}
-                placeholder="Even tone, fewer breakouts, stronger barrier…"
-              />
-            </label>
-          </div>
-
-          <div className="experience-actions">
-            <button className="ghost-button" type="button" onClick={goBack}>
-              Back
-            </button>
-            <button
-              className="primary-button"
-              type="button"
-              disabled={concerns.length === 0}
-              onClick={runAnalysis}
-            >
-              Analyze my skin
-            </button>
-          </div>
-        </Panel>
-      )}
-
-      {step === "analysis" && (
-        <Panel split>
-          <div className="experience-copy">
-            <h2>Target areas recognized</h2>
-            <p className="lede">
-              Based on your scan and intake, these facial zones need the most
-              attention in your routine.
-            </p>
-            <ul className="analysis-summary">
-              <li>
-                <strong>Skin type:</strong> {skinType}
-              </li>
-              <li>
-                <strong>Priority zones:</strong> {activeZones.length} mapped
-              </li>
-              <li>
-                <strong>Concerns:</strong>{" "}
-                {concerns
-                  .map((id) => CONCERNS.find((item) => item.id === id)?.label)
-                  .filter(Boolean)
-                  .join(", ")}
-              </li>
-            </ul>
-          </div>
-          <FaceMap activeZones={activeZones} />
-          <div className="experience-actions">
-            <button className="ghost-button" type="button" onClick={goBack}>
-              Back
-            </button>
-            <button className="primary-button" type="button" onClick={goNext}>
-              Add sensitivities
-            </button>
-          </div>
-        </Panel>
-      )}
-
-      {step === "sensitivities" && (
-        <Panel>
-          <div className="experience-copy">
-            <h2>Sensitivities & avoid list</h2>
-            <p className="lede">
-              Flag ingredients or categories you want excluded from recommendations.
-            </p>
-          </div>
-
-          <div className="choice-grid">
-            {SENSITIVITY_PRESETS.map((item) => (
-              <label className="choice-card" key={item}>
-                <input
-                  type="checkbox"
-                  checked={sensitivities.includes(item)}
-                  onChange={() => toggleSensitivity(item)}
-                />
-                <span>{item}</span>
-              </label>
-            ))}
-          </div>
-
-          <div className="sensitivity-add">
-            <input
-              type="text"
-              value={customSensitivity}
-              onChange={(event) => setCustomSensitivity(event.target.value)}
-              placeholder="Add a custom sensitivity"
-            />
-            <button className="ghost-button" type="button" onClick={addCustomSensitivity}>
-              Add
-            </button>
-          </div>
-
-          {sensitivities.length > 0 && (
-            <div className="chip-row">
-              {sensitivities.map((item) => (
-                <button
-                  key={item}
-                  type="button"
-                  className="chip chip-button"
-                  onClick={() => toggleSensitivity(item)}
-                >
-                  {item} ×
-                </button>
+          <fieldset className="choice-group">
+            <legend>Primary concerns</legend>
+            <div className="choice-grid">
+              {CONCERNS.map((concern) => (
+                <label className="choice-card" key={concern.id}>
+                  <input
+                    type="checkbox"
+                    checked={concerns.includes(concern.id)}
+                    onChange={() => toggleConcern(concern.id)}
+                  />
+                  <span>{concern.label}</span>
+                </label>
               ))}
             </div>
-          )}
+          </fieldset>
 
-          <div className="experience-actions">
-            <button className="ghost-button" type="button" onClick={goBack}>
-              Back
-            </button>
-            <button className="primary-button" type="button" onClick={goNext}>
-              Upload current products
-            </button>
-          </div>
-        </Panel>
-      )}
+          <label className="field">
+            <span>Goals in your own words</span>
+            <textarea
+              rows={4}
+              value={goals}
+              onChange={(event) => setGoals(event.target.value)}
+              placeholder="Even tone, fewer breakouts, stronger barrier…"
+            />
+          </label>
+        </div>
 
-      {step === "products" && (
-        <Panel>
-          <div className="experience-copy">
-            <h2>Your current products</h2>
-            <p className="lede">
-              Sample products are pre-filled for this demo. Edit them or add your
-              own INCI lists — ingredient research is optional while the backend
-              integration is in progress.
-            </p>
-          </div>
+        <div className="experience-actions">
 
-          <div className="product-stack">
-            {products.map((product) => (
-              <article className="product-card" key={product.id}>
-                <div className="product-card-head">
-                  <strong>Product</strong>
-                  {products.length > 1 && (
-                    <button
-                      type="button"
-                      className="ghost-button"
-                      onClick={() => removeProduct(product.id)}
-                    >
-                      Remove
-                    </button>
-                  )}
-                </div>
-                <label className="field">
-                  <span>Product name</span>
-                  <input
-                    type="text"
-                    value={product.name}
-                    onChange={(event) =>
-                      updateProduct(product.id, "name", event.target.value)
-                    }
-                    placeholder="Hydrating Cleanser"
-                  />
-                </label>
-                <label className="field">
-                  <span>INCI ingredient list</span>
-                  <textarea
-                    rows={5}
-                    value={product.ingredients}
-                    onChange={(event) =>
-                      updateProduct(product.id, "ingredients", event.target.value)
-                    }
-                    placeholder="Water, Glycerin, Niacinamide, Phenoxyethanol"
-                  />
-                </label>
-              </article>
-            ))}
-          </div>
-
-          <button className="ghost-button" type="button" onClick={addProduct}>
-            + Add another product
+          <button
+            className="primary-button"
+            type="button"
+            disabled={concerns.length === 0}
+            onClick={runAnalysis}
+          >
+            Analyze my skin
           </button>
+        </div>
+      </Panel>
 
-          {researchStatus && <p className="detail-muted">{researchStatus}</p>}
+      <Panel split>
+        <div className="experience-copy">
+          <h2>Target areas recognized</h2>
+          <p className="lede">
+            Based on your scan and intake, these facial zones need the most
+            attention in your routine.
+          </p>
+          <ul className="analysis-summary">
+            <li>
+              <strong>Skin type:</strong> {skinType}
+            </li>
+            <li>
+              <strong>Priority zones:</strong> {activeZones.length} mapped
+            </li>
+            <li>
+              <strong>Concerns:</strong>{" "}
+              {concerns
+                .map((id) => CONCERNS.find((item) => item.id === id)?.label)
+                .filter(Boolean)
+                .join(", ")}
+            </li>
+          </ul>
+        </div>
+        <FaceMap activeZones={activeZones} />
+        <div className="experience-actions">
+        </div>
+      </Panel>
 
-          <div className="experience-actions">
-            <button className="ghost-button" type="button" onClick={goBack}>
-              Back
-            </button>
-            <button
-              className="ghost-button"
-              type="button"
-              disabled={researching}
-              onClick={runIngredientResearch}
-            >
-              {researching ? "Researching…" : "Research ingredients"}
-            </button>
-            <button className="primary-button" type="button" onClick={goNext}>
-              See recommendations
-            </button>
-          </div>
-        </Panel>
-      )}
+      <Panel>
+        <div className="experience-copy">
+          <h2>Sensitivities & avoid list</h2>
+          <p className="lede">
+            Flag ingredients or categories you want excluded from recommendations.
+          </p>
+        </div>
 
-      {step === "recommendations" && (
-        <Panel>
-          <div className="experience-copy">
-            <h2>Recommended routine</h2>
-            <p className="lede">
-              Sample recommendations ranked for your concerns and sensitivities.
-              Live product matching will replace these once the catalog is connected.
-            </p>
-            <p className="demo-note">Demo data — not a live purchase or medical recommendation.</p>
-          </div>
+        <div className="choice-grid">
+          {SENSITIVITY_PRESETS.map((item) => (
+            <label className="choice-card" key={item}>
+              <input
+                type="checkbox"
+                checked={sensitivities.includes(item)}
+                onChange={() => toggleSensitivity(item)}
+              />
+              <span>{item}</span>
+            </label>
+          ))}
+        </div>
 
-          <div className="recommendation-grid">
-            {recommendations.map((item) => (
-              <article className="recommendation-card" key={`${item.brand}-${item.name}`}>
-                <div className="recommendation-head">
-                  <div>
-                    <span className="tag">{item.category}</span>
-                    <p className="recommendation-brand">{item.brand}</p>
-                    <h3>{item.name}</h3>
-                  </div>
-                  <span className="match-score">{item.match}% match</span>
-                </div>
-                <p>{item.rationale}</p>
-                <div className="chip-row">
-                  {item.actives.map((active) => (
-                    <span className="chip" key={active}>
-                      {active}
-                    </span>
-                  ))}
-                </div>
-                {item.avoids.length > 0 && (
-                  <p className="recommendation-avoid">
-                    Avoids your flags: {item.avoids.join(", ")}
-                  </p>
-                )}
-              </article>
+        <div className="sensitivity-add">
+          <input
+            type="text"
+            value={customSensitivity}
+            onChange={(event) => setCustomSensitivity(event.target.value)}
+            placeholder="Add a custom sensitivity"
+          />
+          <button className="ghost-button" type="button" onClick={addCustomSensitivity}>
+            Add
+          </button>
+        </div>
+
+        {sensitivities.length > 0 && (
+          <div className="chip-row">
+            {sensitivities.map((item) => (
+              <button
+                key={item}
+                type="button"
+                className="chip chip-button"
+                onClick={() => toggleSensitivity(item)}
+              >
+                {item} ×
+              </button>
             ))}
           </div>
+        )}
+      </Panel>
 
-          <div className="experience-actions">
-            <button className="ghost-button" type="button" onClick={goBack}>
-              Back
-            </button>
-            <Link className="primary-button link-button" href="/compounds">
-              Review ingredient research
-            </Link>
-          </div>
-        </Panel>
-      )}
-    </div>
+      <Panel>
+        <div className="experience-copy">
+          <h2>Your current products</h2>
+          <p className="lede">
+            Sample products are pre-filled for this demo. Edit them or add your
+            own INCI lists — ingredient research is optional while the backend
+            integration is in progress.
+          </p>
+        </div>
+
+        <div className="product-stack">
+          {products.map((product) => (
+            <article className="product-card" key={product.id}>
+              <div className="product-card-head">
+                <strong>Product</strong>
+                {products.length > 1 && (
+                  <button
+                    type="button"
+                    className="ghost-button"
+                    onClick={() => removeProduct(product.id)}
+                  >
+                    Remove
+                  </button>
+                )}
+              </div>
+              <label className="field">
+                <span>Product name</span>
+                <input
+                  type="text"
+                  value={product.name}
+                  onChange={(event) =>
+                    updateProduct(product.id, "name", event.target.value)
+                  }
+                  placeholder="Hydrating Cleanser"
+                />
+              </label>
+              <label className="field">
+                <span>INCI ingredient list</span>
+                <textarea
+                  rows={5}
+                  value={product.ingredients}
+                  onChange={(event) =>
+                    updateProduct(product.id, "ingredients", event.target.value)
+                  }
+                  placeholder="Water, Glycerin, Niacinamide, Phenoxyethanol"
+                />
+              </label>
+            </article>
+          ))}
+        </div>
+
+        <button className="ghost-button" type="button" onClick={addProduct}>
+          + Add another product
+        </button>
+
+        {researchStatus && <p className="detail-muted">{researchStatus}</p>}
+
+        <div className="experience-actions">
+
+          <button
+            className="ghost-button"
+            type="button"
+            disabled={researching}
+            onClick={runIngredientResearch}
+          >
+            {researching ? "Researching…" : "Research ingredients"}
+          </button>
+          <button className="primary-button" type="button" onClick={() => { }}>
+            See recommendations
+          </button>
+        </div>
+      </Panel>
+
+      <Panel>
+        <div className="experience-copy">
+          <h2>Recommended routine</h2>
+          <p className="lede">
+            Sample recommendations ranked for your concerns and sensitivities.
+            Live product matching will replace these once the catalog is connected.
+          </p>
+          <p className="demo-note">Demo data — not a live purchase or medical recommendation.</p>
+        </div>
+
+        <div className="recommendation-grid">
+          {recommendations.map((item) => (
+            <article className="recommendation-card" key={`${item.brand}-${item.name}`}>
+              <div className="recommendation-head">
+                <div>
+                  <span className="tag">{item.category}</span>
+                  <p className="recommendation-brand">{item.brand}</p>
+                  <h3>{item.name}</h3>
+                </div>
+                <span className="match-score">{item.match}% match</span>
+              </div>
+              <p>{item.rationale}</p>
+              <div className="chip-row">
+                {item.actives.map((active) => (
+                  <span className="chip" key={active}>
+                    {active}
+                  </span>
+                ))}
+              </div>
+              {item.avoids.length > 0 && (
+                <p className="recommendation-avoid">
+                  Avoids your flags: {item.avoids.join(", ")}
+                </p>
+              )}
+            </article>
+          ))}
+        </div>
+
+        <div className="experience-actions">
+
+          <Link className="primary-button link-button" href="/compounds">
+            Review ingredient research
+          </Link>
+        </div>
+      </Panel>
+
+    </div >
   );
 }

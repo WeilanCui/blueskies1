@@ -1,4 +1,6 @@
 from core.models.compound import (
+    ChemicalClass,
+    ChemicalClassMembership,
     Compound,
     CompoundAlias,
     CompoundIdentifier,
@@ -34,6 +36,8 @@ from core.models.properties import (
 __all__ = [
     "Compound",
     "CompoundAlias",
+    "ChemicalClass",
+    "ChemicalClassMembership",
     "CompoundIdentifier",
     "CompoundLiterature",
     "CompoundRelationship",

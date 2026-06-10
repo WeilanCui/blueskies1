@@ -1,5 +1,31 @@
 from django.db import models
 
+from core.models.metadata import SourceMetadata
+
+
+class ChemicalClass(models.Model):
+    """A reusable chemical family whose properties can be inherited by compounds."""
+
+    name = models.CharField(max_length=128, unique=True)
+    slug = models.SlugField(max_length=128, unique=True)
+    description = models.TextField(blank=True)
+    parent = models.ForeignKey(
+        "self",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="children",
+    )
+    notes = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["name"]
+
+    def __str__(self) -> str:
+        return self.name
+
 
 class EntityType(models.TextChoices):
     SMALL_MOLECULE = "small_molecule", "Small molecule"
@@ -56,6 +82,63 @@ class Compound(models.Model):
         if ident is None:
             return ""
         return f"https://pubchem.ncbi.nlm.nih.gov/compound/{ident.id_value}"
+
+    def inherited_property_assertions(self):
+        """Active class properties that apply when no direct compound claim exists."""
+        from core.models.properties import PropertyAssertion
+
+        direct_property_ids = self.property_assertions.filter(
+            is_active=True,
+        ).values_list("property_def_id", flat=True)
+        return (
+            PropertyAssertion.objects.filter(
+                chemical_class__memberships__compound=self,
+                chemical_class__memberships__is_active=True,
+                is_active=True,
+            )
+            .exclude(property_def_id__in=direct_property_ids)
+            .select_related("property_def", "chemical_class")
+            .distinct()
+        )
+
+    def effective_property_assertions(self):
+        """Direct active compound properties plus inherited class properties."""
+        direct = self.property_assertions.filter(
+            is_active=True,
+        ).select_related("property_def")
+        return list(direct) + list(self.inherited_property_assertions())
+
+
+class ChemicalClassMembership(SourceMetadata):
+    """Links a compound to a chemical family such as Retinoids."""
+
+    compound = models.ForeignKey(
+        Compound,
+        on_delete=models.CASCADE,
+        related_name="chemical_class_memberships",
+    )
+    chemical_class = models.ForeignKey(
+        ChemicalClass,
+        on_delete=models.CASCADE,
+        related_name="memberships",
+    )
+    is_primary = models.BooleanField(default=False)
+    is_active = models.BooleanField(default=True)
+    rationale = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["chemical_class__name", "compound__canonical_inci"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["compound", "chemical_class"],
+                name="unique_compound_chemical_class",
+            )
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.compound} belongs to {self.chemical_class}"
 
 
 class CompoundAlias(models.Model):
