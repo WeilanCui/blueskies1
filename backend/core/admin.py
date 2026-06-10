@@ -15,8 +15,11 @@ from core.models import (
     InteractionAssertion,
     InteractionRule,
     LiteratureReference,
+    Profile,
+    ProfileConstraint,
     PropertyAssertion,
     PropertyDefinition,
+    SkinProfile,
 )
 
 
@@ -249,3 +252,77 @@ class CompoundRelationshipAdmin(admin.ModelAdmin):
 
 
 admin.site.register(CompoundStructure)
+
+
+class SkinProfileInline(admin.TabularInline):
+    model = SkinProfile
+    extra = 0
+    fields = (
+        "label",
+        "is_current",
+        "captured_at",
+        "skin_type",
+        "fitzpatrick_skin_type",
+        "baseline_sensitivity",
+    )
+
+
+class ProfileConstraintInline(admin.TabularInline):
+    model = ProfileConstraint
+    extra = 0
+    fields = (
+        "kind",
+        "enforcement",
+        "severity",
+        "compound",
+        "chemical_class",
+        "formulation",
+        "property_def",
+        "raw_label",
+        "is_active",
+    )
+
+
+@admin.register(Profile)
+class ProfileAdmin(admin.ModelAdmin):
+    list_display = ("user", "handle", "display_name", "visibility", "updated_at")
+    list_filter = ("visibility",)
+    search_fields = ("user__username", "user__email", "handle", "display_name")
+    inlines = [SkinProfileInline, ProfileConstraintInline]
+
+
+@admin.register(SkinProfile)
+class SkinProfileAdmin(admin.ModelAdmin):
+    list_display = (
+        "profile",
+        "label",
+        "is_current",
+        "skin_type",
+        "fitzpatrick_skin_type",
+        "captured_at",
+    )
+    list_filter = ("is_current", "skin_type", "fitzpatrick_skin_type")
+    search_fields = ("profile__user__username", "profile__handle", "label")
+
+
+@admin.register(ProfileConstraint)
+class ProfileConstraintAdmin(admin.ModelAdmin):
+    list_display = (
+        "profile",
+        "kind",
+        "enforcement",
+        "severity",
+        "display_target",
+        "confidence",
+        "is_active",
+    )
+    list_filter = ("kind", "enforcement", "severity", "is_active")
+    search_fields = (
+        "profile__user__username",
+        "profile__handle",
+        "raw_label",
+        "compound__canonical_inci",
+        "chemical_class__name",
+        "formulation__name",
+        "property_def__key",
+    )
