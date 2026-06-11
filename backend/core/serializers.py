@@ -403,26 +403,42 @@ class IntakeSerializer(serializers.Serializer):
         if goals_text:
             goals = [*goals, goals_text]
 
-        profile.skin_profiles.filter(is_current=True).update(is_current=False)
-        skin_profile = SkinProfile.objects.create(
-            profile=profile,
-            label="Initial intake",
-            is_current=True,
-            skin_type=data["skin_type"],
-            fitzpatrick_skin_type=data.get(
+        current_profiles = profile.skin_profiles.filter(is_current=True).order_by(
+            "-captured_at",
+            "-id",
+        )
+        skin_profile = current_profiles.first()
+        profile.skin_profiles.filter(is_current=True).exclude(
+            pk=getattr(skin_profile, "pk", None),
+        ).update(is_current=False)
+
+        skin_profile_values = {
+            "label": "Initial intake",
+            "is_current": True,
+            "skin_type": data["skin_type"],
+            "fitzpatrick_skin_type": data.get(
                 "fitzpatrick_skin_type",
                 FitzpatrickSkinType.NOT_PROVIDED,
             ),
-            primary_concerns=data.get("primary_concerns", []),
-            goals=goals,
-            pregnancy_status=data.get(
+            "primary_concerns": data.get("primary_concerns", []),
+            "goals": goals,
+            "pregnancy_status": data.get(
                 "pregnancy_status",
                 PregnancyStatus.NOT_PROVIDED,
             ),
-            baseline_sensitivity=data.get("baseline_sensitivity"),
-            climate=data.get("climate", "").strip(),
-            routine_notes=data.get("routine_notes", "").strip(),
-        )
+            "baseline_sensitivity": data.get("baseline_sensitivity"),
+            "climate": data.get("climate", "").strip(),
+            "routine_notes": data.get("routine_notes", "").strip(),
+        }
+        if skin_profile is None:
+            skin_profile = SkinProfile.objects.create(
+                profile=profile,
+                **skin_profile_values,
+            )
+        else:
+            for field, value in skin_profile_values.items():
+                setattr(skin_profile, field, value)
+            skin_profile.save(update_fields=[*skin_profile_values.keys()])
 
         profile.constraints.filter(source="intake").delete()
         for sensitivity in data.get("sensitivities", []):

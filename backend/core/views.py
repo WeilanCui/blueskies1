@@ -206,7 +206,7 @@ class IntakeViewSet(viewsets.ModelViewSet):
 
     serializer_class = IntakeSerializer
     permission_classes = [IsAuthenticated]
-    http_method_names = ["get", "post", "head", "options"]
+    http_method_names = ["get", "post", "put", "head", "options"]
 
     def get_queryset(self):
         return Profile.objects.filter(user=self.request.user)
@@ -216,7 +216,19 @@ class IntakeViewSet(viewsets.ModelViewSet):
         return Response(intake_payload(profile))
 
     def create(self, request, *args, **kwargs):
+        profile, _ = Profile.objects.get_or_create(user=request.user)
+        status_code = (
+            status.HTTP_200_OK
+            if profile.skin_profiles.filter(is_current=True).exists()
+            else status.HTTP_201_CREATED
+        )
+        return self._save_intake(request, status_code=status_code)
+
+    def update(self, request, *args, **kwargs):
         Profile.objects.get_or_create(user=request.user)
+        return self._save_intake(request, status_code=status.HTTP_200_OK)
+
+    def _save_intake(self, request, *, status_code):
         serializer = self.get_serializer(
             data=request.data,
             context={"request": request},
@@ -224,7 +236,7 @@ class IntakeViewSet(viewsets.ModelViewSet):
         serializer.is_valid(raise_exception=True)
         serializer.save()
         profile = Profile.objects.get(user=request.user)
-        return Response(intake_payload(profile), status=status.HTTP_201_CREATED)
+        return Response(intake_payload(profile), status=status_code)
 
 
 class ContactSubmissionViewSet(CreateOnlyModelViewSet):

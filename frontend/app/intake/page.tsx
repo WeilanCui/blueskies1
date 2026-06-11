@@ -192,7 +192,6 @@ export default function IntakePage() {
     mutationFn: saveIntake,
     onSuccess: (data) => {
       queryClient.setQueryData(["intake"], data);
-      queryClient.invalidateQueries({ queryKey: ["me"] });
       setMessage("Your skin profile is saved.");
       setError(null);
     },

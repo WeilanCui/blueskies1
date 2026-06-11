@@ -21,7 +21,7 @@ urlpatterns = [
     path("health/", HealthCheckView.as_view(), name="health-check"),
     path(
         "intake/",
-        IntakeViewSet.as_view({"get": "list", "post": "create"}),
+        IntakeViewSet.as_view({"get": "list", "post": "create", "put": "update"}),
         name="intake",
     ),
     path(

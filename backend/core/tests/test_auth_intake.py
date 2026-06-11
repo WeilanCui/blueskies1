@@ -125,10 +125,10 @@ class IntakeApiTests(TestCase):
 
         self.assertEqual(response.status_code, 403)
 
-    def test_intake_saves_current_skin_profile_and_constraints(self):
+    def test_intake_updates_current_skin_profile_and_constraints(self):
         self.client.force_authenticate(user=self.user)
         profile = Profile.objects.create(user=self.user)
-        old_skin_profile = SkinProfile.objects.create(
+        skin_profile = SkinProfile.objects.create(
             profile=profile,
             skin_type="dry",
             is_current=True,
@@ -151,11 +151,11 @@ class IntakeApiTests(TestCase):
             format="json",
         )
 
-        self.assertEqual(response.status_code, 201)
-        old_skin_profile.refresh_from_db()
-        self.assertFalse(old_skin_profile.is_current)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(profile.skin_profiles.count(), 1)
 
         current = profile.skin_profiles.get(is_current=True)
+        self.assertEqual(current.id, skin_profile.id)
         self.assertEqual(current.skin_type, "combination")
         self.assertEqual(current.fitzpatrick_skin_type, "type_iii")
         self.assertEqual(current.baseline_sensitivity, 6)
@@ -171,6 +171,52 @@ class IntakeApiTests(TestCase):
         )
         self.assertEqual(response.data["skin_profile"]["id"], current.id)
         self.assertEqual(response.data["sensitivities"], ["Fragrance", "Retinoids"])
+
+    def test_intake_post_creates_skin_profile_when_none_exists(self):
+        self.client.force_authenticate(user=self.user)
+        profile = Profile.objects.create(user=self.user)
+
+        response = self.client.post(
+            reverse("intake"),
+            {"skin_type": "combination"},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(profile.skin_profiles.count(), 1)
+        self.assertEqual(
+            profile.skin_profiles.get(is_current=True).skin_type,
+            "combination",
+        )
+
+    def test_intake_put_updates_current_skin_profile(self):
+        self.client.force_authenticate(user=self.user)
+        profile = Profile.objects.create(user=self.user)
+        skin_profile = SkinProfile.objects.create(
+            profile=profile,
+            skin_type="dry",
+            primary_concerns=["flaking"],
+            is_current=True,
+        )
+
+        response = self.client.put(
+            reverse("intake"),
+            {
+                "skin_type": "oily",
+                "primary_concerns": ["shine", "pores"],
+                "sensitivities": ["Fragrance"],
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(profile.skin_profiles.count(), 1)
+        skin_profile.refresh_from_db()
+        self.assertTrue(skin_profile.is_current)
+        self.assertEqual(skin_profile.skin_type, "oily")
+        self.assertEqual(skin_profile.primary_concerns, ["shine", "pores"])
+        self.assertEqual(response.data["skin_profile"]["id"], skin_profile.id)
+        self.assertEqual(response.data["sensitivities"], ["Fragrance"])
 
     def test_intake_get_returns_existing_profile_state(self):
         self.client.force_authenticate(user=self.user)

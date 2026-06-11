@@ -294,9 +294,40 @@ class ProfileConstraintInline(admin.TabularInline):
 
 @admin.register(Profile)
 class ProfileAdmin(admin.ModelAdmin):
-    list_display = ("user", "handle", "display_name", "visibility", "updated_at")
-    list_filter = ("visibility",)
+    fields = (
+        "id",
+        "user",
+        "handle",
+        "display_name",
+        "bio",
+        "pronouns",
+        "avatar_url",
+        "timezone",
+        "locale",
+        "visibility",
+        "notes",
+        "created_at",
+        "updated_at",
+    )
+    readonly_fields = ("id", "created_at", "updated_at")
+    list_display = (
+        "id",
+        "user",
+        "handle",
+        "display_name",
+        "bio",
+        "pronouns",
+        "avatar_url",
+        "timezone",
+        "locale",
+        "visibility",
+        "notes",
+        "created_at",
+        "updated_at",
+    )
+    list_filter = ("visibility", "timezone", "locale", "created_at", "updated_at")
     search_fields = ("user__username", "user__email", "handle", "display_name")
+    date_hierarchy = "created_at"
     inlines = [SkinProfileInline, ProfileConstraintInline]
 
 
