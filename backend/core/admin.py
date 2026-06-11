@@ -9,6 +9,7 @@ from core.models import (
     CompoundLiterature,
     CompoundRelationship,
     CompoundStructure,
+    ContactSubmission,
     Formulation,
     FormulationIngredient,
     GlossaryTerm,
@@ -179,6 +180,14 @@ class FormulationAdmin(admin.ModelAdmin):
     search_fields = ("name", "brand", "barcode")
     list_filter = ("enrichment_status",)
     inlines = [FormulationIngredientInline]
+
+
+@admin.register(ContactSubmission)
+class ContactSubmissionAdmin(admin.ModelAdmin):
+    list_display = ("name", "email", "user", "status", "source", "created_at")
+    list_filter = ("status", "source", "user", "created_at")
+    readonly_fields = ("created_at", "updated_at")
+    search_fields = ("name", "email", "feedback", "user__username", "user__email")
 
 
 @admin.register(InteractionAssertion)

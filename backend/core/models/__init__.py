@@ -8,6 +8,7 @@ from core.models.compound import (
     EntityType,
     EnrichmentStatus,
 )
+from core.models.contact import ContactSubmission, ContactSubmissionStatus
 from core.models.formulation import Formulation, FormulationIngredient
 from core.models.metadata import SourceMetadata, SourceType
 from core.models.interactions import (
@@ -58,6 +59,8 @@ __all__ = [
     "CompoundLiterature",
     "CompoundRelationship",
     "CompoundStructure",
+    "ContactSubmission",
+    "ContactSubmissionStatus",
     "ConstraintEnforcement",
     "ConstraintSeverity",
     "DailyCheckIn",

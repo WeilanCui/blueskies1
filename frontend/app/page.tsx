@@ -1,5 +1,7 @@
 import Link from "next/link";
 
+import ContactForm from "./ContactForm";
+
 const workflowSteps = [
   {
     title: "Analyze your skin",
@@ -54,9 +56,7 @@ export default function Home() {
           <a href="#how-it-works">How it works</a>
           <a href="#science">Science + you</a>
           <Link href="/experience">Prototype</Link>
-          <a className="nav-button" href="#waitlist">
-            Join waitlist
-          </a>
+          <a href="#contact">Contact us</a>
         </div>
       </nav>
 
@@ -70,8 +70,8 @@ export default function Home() {
             to ingredients, hormones, weather, location, and product history.
           </p>
           <div className="landing-actions">
-            <a className="primary-button link-button" href="#waitlist">
-              Join waitlist
+            <a className="primary-button link-button" href="#contact">
+              Contact us
             </a>
             <a className="secondary-button" href="#how-it-works">
               See how it works
@@ -218,20 +218,17 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="waitlist-section" id="waitlist">
+      <section className="contact-section" id="contact">
         <div>
-          <p className="landing-eyebrow">Early access preview</p>
-          <h2>Join the waitlist for the first Blueskies walkthrough.</h2>
+          <p className="landing-eyebrow">Contact us</p>
+          <h2>Tell us what you want Blueskies to help with.</h2>
           <p>
-            We are shaping the first consumer experience around skin tracking,
+            Send your name, email, and feedback. We will reach out shortly as
+            we shape the first consumer experience around skin tracking,
             regimen capture, product scans, and science-backed personalization.
           </p>
         </div>
-        <div className="waitlist-form" role="group" aria-label="Waitlist preview">
-          <input type="email" placeholder="Email address" aria-label="Email address" />
-          <button type="button">Join waitlist</button>
-          <span>No account is created yet. This is a static preview.</span>
-        </div>
+        <ContactForm />
       </section>
 
       <footer className="landing-footer">

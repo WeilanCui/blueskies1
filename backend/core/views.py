@@ -8,6 +8,7 @@ from core.ingestion import ingest_formulation, parse_inci_list
 from core.models import Compound, Formulation
 from core.serializers import (
     CompoundSerializer,
+    ContactSubmissionSerializer,
     FormulationSerializer,
     FormulationSubmitSerializer,
 )
@@ -97,3 +98,20 @@ def formulation_detail(request, formulation_id: int):
         pk=formulation_id,
     )
     return Response(FormulationSerializer(formulation).data)
+
+
+@api_view(["POST"])
+def contact_submit(request):
+    serializer = ContactSubmissionSerializer(data=request.data)
+    serializer.is_valid(raise_exception=True)
+    contact = serializer.save(
+        user=request.user if request.user.is_authenticated else None,
+        user_agent=request.META.get("HTTP_USER_AGENT", "")[:2048],
+    )
+    return Response(
+        {
+            "id": contact.id,
+            "detail": "Thanks for reaching out. We will reach out shortly.",
+        },
+        status=status.HTTP_201_CREATED,
+    )
