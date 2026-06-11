@@ -1,31 +1,43 @@
-from django.urls import path
+from django.urls import include, path
+from rest_framework.routers import DefaultRouter
 
 from .views import (
-    auth_login,
-    auth_logout,
-    auth_me,
-    auth_signup,
-    compound_list,
-    contact_submit,
-    formulation_detail,
-    formulation_submit,
-    health_check,
-    intake,
+    CompoundViewSet,
+    ContactSubmissionViewSet,
+    FormulationViewSet,
+    HealthCheckView,
+    IntakeViewSet,
+    SessionAuthViewSet,
 )
 
+router = DefaultRouter()
+router.register("auth", SessionAuthViewSet, basename="auth")
+router.register("compounds", CompoundViewSet, basename="compound")
+router.register("formulations", FormulationViewSet, basename="formulation")
+router.register("contact", ContactSubmissionViewSet, basename="contact-submission")
+router.register("intake", IntakeViewSet, basename="intake")
+
 urlpatterns = [
-    path("health/", health_check, name="health-check"),
-    path("auth/me/", auth_me, name="auth-me"),
-    path("auth/signup/", auth_signup, name="auth-signup"),
-    path("auth/login/", auth_login, name="auth-login"),
-    path("auth/logout/", auth_logout, name="auth-logout"),
-    path("intake/", intake, name="intake"),
-    path("contact/", contact_submit, name="contact-submit"),
-    path("compounds/", compound_list, name="compound-list"),
-    path("formulations/submit/", formulation_submit, name="formulation-submit"),
+    path("health/", HealthCheckView.as_view(), name="health-check"),
     path(
-        "formulations/<int:formulation_id>/",
-        formulation_detail,
+        "intake/",
+        IntakeViewSet.as_view({"get": "list", "post": "create"}),
+        name="intake",
+    ),
+    path(
+        "contact/",
+        ContactSubmissionViewSet.as_view({"post": "create"}),
+        name="contact-submit",
+    ),
+    path(
+        "formulations/submit/",
+        FormulationViewSet.as_view({"post": "create"}),
+        name="formulation-submit",
+    ),
+    path(
+        "formulations/<int:pk>/",
+        FormulationViewSet.as_view({"get": "retrieve"}),
         name="formulation-detail",
     ),
+    path("", include(router.urls)),
 ]
