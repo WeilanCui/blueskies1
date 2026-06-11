@@ -1,0 +1,146 @@
+.pageHead {
+  padding-top: 40px;
+}
+
+.pageTitle {
+  font-size: clamp(32px, 5vw, 56px);
+  line-height: 1;
+  margin: 0 0 8px;
+}
+
+.pageHead :global(.lede) {
+  font-size: 17px;
+  margin-top: 12px;
+}
+
+.compoundList {
+  display: grid;
+  gap: 10px;
+  list-style: none;
+  margin: 28px 0 0;
+  padding: 0;
+}
+
+.compoundItem {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.compoundRow {
+  align-items: center;
+  background: none;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  display: flex;
+  font: inherit;
+  gap: 14px;
+  padding: 16px 18px;
+  text-align: left;
+  width: 100%;
+}
+
+.compoundRow:hover {
+  background: var(--background);
+}
+
+.chevron {
+  color: var(--muted);
+  flex-shrink: 0;
+  font-size: 11px;
+  transition: transform 0.15s ease;
+}
+
+.chevronOpen {
+  transform: rotate(90deg);
+}
+
+.compoundName {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.compoundSub {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.compoundTags {
+  align-items: center;
+  display: flex;
+  flex-shrink: 0;
+  gap: 8px;
+}
+
+.compoundDetail {
+  border-top: 1px solid var(--border);
+  display: grid;
+  gap: 22px;
+  padding: 20px 18px;
+}
+
+.detailNotes {
+  color: var(--muted);
+  margin: 0;
+}
+
+.detailSection h3 {
+  font-size: 13px;
+  letter-spacing: 0.04em;
+  margin: 0 0 12px;
+  text-transform: uppercase;
+}
+
+.kvGrid {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+}
+
+.kvRow {
+  display: grid;
+  gap: 4px 16px;
+  grid-template-columns: minmax(120px, 200px) 1fr;
+}
+
+.kvRow dt {
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.kvRow dd {
+  margin: 0;
+  word-break: break-word;
+}
+
+.kvSource {
+  color: var(--muted);
+  font-size: 12px;
+  margin-left: 8px;
+}
+
+.mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 13px;
+}
+
+@media (max-width: 820px) {
+  .compoundRow {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .compoundTags {
+    padding-left: 25px;
+  }
+
+  .kvRow {
+    grid-template-columns: 1fr;
+  }
+}

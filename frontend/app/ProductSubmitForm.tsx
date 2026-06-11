@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { Panel } from "../components/Panel";
+import styles from "./ProductSubmitForm.module.css";
 
 type IngredientResult = {
   name: string;
@@ -73,7 +74,7 @@ export default function ProductSubmitForm() {
   }
 
   return (
-    <div className="submit-layout">
+    <div className={styles.submitLayout}>
       <Panel as="form" variant="form" onSubmit={handleSubmit}>
         <label className="field">
           <span>Product name</span>
@@ -125,7 +126,7 @@ export default function ProductSubmitForm() {
 
       {result && (
         <Panel variant="results">
-          <div className="results-header">
+          <div className={styles.resultsHeader}>
             <div>
               <h2>{result.formulation.name}</h2>
               {result.formulation.brand && (
@@ -142,16 +143,16 @@ export default function ProductSubmitForm() {
             <Link href="/compounds">Browse all compounds &rarr;</Link>
           </p>
 
-          <ul className="ingest-results">
+          <ul className={styles.ingestResults}>
             {result.ingestion.ingredients.map((ingredient) => (
-              <li className="ingest-row" key={`${ingredient.position}-${ingredient.name}`}>
-                <div className="ingest-main">
+              <li className={styles.ingestRow} key={`${ingredient.position}-${ingredient.name}`}>
+                <div className={styles.ingestMain}>
                   <strong>
                     {ingredient.position}. {ingredient.name}
                   </strong>
                   <span className="tag">{formatLabel(ingredient.parse_status)}</span>
                 </div>
-                <div className="ingest-meta">
+                <div className={styles.ingestMeta}>
                   <span>{ingredient.inci_properties} INCI properties</span>
                   <span>{ingredient.pubchem_descriptors} PubChem descriptors</span>
                   <span>{ingredient.articles_linked} articles</span>
@@ -162,7 +163,7 @@ export default function ProductSubmitForm() {
                   )}
                 </div>
                 {ingredient.errors.length > 0 && (
-                  <p className="ingest-errors">{ingredient.errors.join(" · ")}</p>
+                  <p className={styles.ingestErrors}>{ingredient.errors.join(" · ")}</p>
                 )}
               </li>
             ))}

@@ -5,6 +5,7 @@ import { useMutation } from "@tanstack/react-query";
 import { FieldError, Input, Label, TextArea, TextField } from "@heroui/react";
 
 import { Button } from "../components/Button";
+import styles from "./ContactForm.module.css";
 
 type ContactResponse = {
   detail?: string;
@@ -120,7 +121,7 @@ export default function ContactForm() {
   }
 
   return (
-    <form className="contact-form" onSubmit={handleSubmit}>
+    <form className={styles.contactForm} onSubmit={handleSubmit}>
       <TextField
         className="contact-field"
         isDisabled={isLocked}

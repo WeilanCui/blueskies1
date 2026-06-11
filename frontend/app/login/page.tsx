@@ -8,6 +8,7 @@ import { useState } from "react";
 
 import { Button } from "../../components/Button";
 import { login, signup, type AuthResponse } from "../../lib/appApi";
+import styles from "./login.module.css";
 
 type AuthMode = "login" | "signup";
 
@@ -64,13 +65,13 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="auth-shell">
-      <section className="auth-layout">
-        <aside className="auth-showcase" aria-label="Blueskies preview">
-          <Link className="auth-brand" href="/">
+    <main className={styles.authShell}>
+      <section className={styles.authLayout}>
+        <aside className={styles.authShowcase} aria-label="Blueskies preview">
+          <Link className={styles.authBrand} href="/">
             Blueskies
           </Link>
-          <div className="auth-showcase-copy">
+          <div className={styles.authShowcaseCopy}>
             <p className="landing-eyebrow">Skin intelligence</p>
             <h1>Track what changes your skin.</h1>
             <p>
@@ -78,17 +79,17 @@ export default function LoginPage() {
               sensitivities, and daily context.
             </p>
           </div>
-          <div className="auth-preview-stack" aria-hidden="true">
-            <div className="auth-preview-card auth-preview-card-main">
+          <div className={styles.authPreviewStack} aria-hidden="true">
+            <div className={styles.authPreviewCard}>
               <div>
                 <span>Current focus</span>
                 <strong>Barrier repair</strong>
               </div>
-              <div className="auth-preview-meter">
+              <div className={styles.authPreviewMeter}>
                 <span />
               </div>
             </div>
-            <div className="auth-preview-grid">
+            <div className={styles.authPreviewGrid}>
               <div>
                 <span>AM scan</span>
                 <strong>3 products</strong>
@@ -98,20 +99,20 @@ export default function LoginPage() {
                 <strong>86%</strong>
               </div>
             </div>
-            <div className="auth-preview-note">
+            <div className={styles.authPreviewNote}>
               <span />
               <p>Fragrance sensitivity will be flagged during product scans.</p>
             </div>
           </div>
         </aside>
 
-        <section className="auth-panel" aria-label="Account access">
-          <div className="auth-mobile-brand">
-            <Link className="auth-brand" href="/">
+        <section className={styles.authPanel} aria-label="Account access">
+          <div className={styles.authMobileBrand}>
+            <Link className={styles.authBrand} href="/">
               Blueskies
             </Link>
           </div>
-          <div className="auth-copy">
+          <div className={styles.authCopy}>
             <p className="landing-eyebrow">Your skin profile</p>
             <h2>{mode === "signup" ? "Create your account." : "Welcome back."}</h2>
             <p>
@@ -121,10 +122,14 @@ export default function LoginPage() {
             </p>
           </div>
 
-          <div className="auth-tabs" aria-label="Choose login or signup">
+          <div className={styles.authTabs} aria-label="Choose login or signup">
             <button
               type="button"
-              className={mode === "login" ? "auth-tab auth-tab-active" : "auth-tab"}
+              className={
+                mode === "login"
+                  ? [styles.authTab, styles.authTabActive].join(" ")
+                  : styles.authTab
+              }
               onClick={() => {
                 setMode("login");
                 setError(null);
@@ -134,7 +139,11 @@ export default function LoginPage() {
             </button>
             <button
               type="button"
-              className={mode === "signup" ? "auth-tab auth-tab-active" : "auth-tab"}
+              className={
+                mode === "signup"
+                  ? [styles.authTab, styles.authTabActive].join(" ")
+                  : styles.authTab
+              }
               onClick={() => {
                 setMode("signup");
                 setError(null);
@@ -144,7 +153,7 @@ export default function LoginPage() {
             </button>
           </div>
 
-          <form className="auth-form" onSubmit={submit}>
+          <form className={styles.authForm} onSubmit={submit}>
             {mode === "signup" && (
               <TextField
                 className="contact-field"
@@ -216,7 +225,7 @@ export default function LoginPage() {
             {error && <p className="contact-error">{error}</p>}
           </form>
 
-          <div className="auth-footer-actions">
+          <div className={styles.authFooterActions}>
             <Link href="/">Back to home</Link>
           </div>
         </section>

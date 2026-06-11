@@ -3,6 +3,7 @@ import Link from "next/link";
 import { getServerApiBaseUrl } from "../../lib/apiBaseUrl";
 import { Panel } from "../../components/Panel";
 import SkincareCatalog from "./SkincareCatalog";
+import styles from "./skincareApi.module.css";
 import type { SkincareProduct } from "./types";
 
 async function getInitialProducts(): Promise<{
@@ -47,8 +48,8 @@ export default async function SkincareApiPage() {
         </div>
       </nav>
 
-      <section className="page-head">
-        <h1 className="page-title">Skincare catalog</h1>
+      <section className={styles.pageHead}>
+        <h1 className={styles.pageTitle}>Skincare catalog</h1>
         <p className="lede">
           Browse and search 2,000+ skincare products via the{" "}
           <a

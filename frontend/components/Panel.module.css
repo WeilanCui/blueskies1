@@ -4,14 +4,14 @@
   box-shadow: 0 8px 24px rgba(52, 111, 170, 0.08);
 }
 
-.panel--default {
+.default {
   border-radius: 6px;
   display: grid;
   gap: 24px;
   padding: 28px;
 }
 
-.panel--form {
+.form {
   border-radius: 12px;
   display: grid;
   gap: 18px;
@@ -19,7 +19,7 @@
   padding: 24px;
 }
 
-.panel--results {
+.results {
   border-radius: 12px;
   display: grid;
   gap: 16px;
@@ -27,62 +27,62 @@
   padding: 24px;
 }
 
-.panel--notice {
+.notice {
   border-radius: 8px;
   color: rgba(15, 45, 74, 0.78);
   margin-top: 28px;
   padding: 20px;
 }
 
-.panel--error {
+.error {
   box-shadow:
     0 8px 24px rgba(52, 111, 170, 0.08),
     inset 0 0 0 2px var(--warning);
   color: #9a3412;
 }
 
-.panel--split {
+.split {
   grid-template-columns: minmax(0, 1.2fr) minmax(240px, 320px);
 }
 
-.panel--split .experience-actions {
+.split :global(.experience-actions) {
   grid-column: 1 / -1;
 }
 
 .panel h2,
-.panel .experience-copy h2,
-.panel .experience-copy .lede,
-.panel .results-header h2 {
+.panel :global(.experience-copy) h2,
+.panel :global(.experience-copy) :global(.lede),
+.panel :global(.results-header) h2 {
   color: #0f2d4a;
 }
 
-.panel .field-hint,
-.panel .analysis-summary,
-.panel .detail-muted,
-.panel .demo-note {
+.panel :global(.field-hint),
+.panel :global(.analysis-summary),
+.panel :global(.detail-muted),
+.panel :global(.demo-note) {
   color: rgba(15, 45, 74, 0.78);
 }
 
-.panel .choice-group legend,
-.panel .field > span {
+.panel :global(.choice-group) legend,
+.panel :global(.field) > span {
   color: #0f2d4a;
 }
 
-.panel .face-outline {
+.panel :global(.face-outline) {
   fill: rgba(255, 255, 255, 0.55);
   stroke: rgba(15, 45, 74, 0.28);
   stroke-width: 1.5;
 }
 
-.panel .face-feature {
+.panel :global(.face-feature) {
   stroke: rgba(15, 45, 74, 0.45);
 }
 
-.panel .face-legend {
+.panel :global(.face-legend) {
   color: #0f2d4a;
 }
 
-.panel--notice code {
+.notice code {
   background: var(--background);
   border-radius: 4px;
   font-size: 13px;
@@ -90,11 +90,11 @@
 }
 
 @media (max-width: 900px) {
-  .panel--default {
+  .default {
     padding: 20px;
   }
 
-  .panel--split {
+  .split {
     grid-template-columns: 1fr;
   }
 }

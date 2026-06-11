@@ -1,3 +1,5 @@
+import styles from "./FaceMap.module.css";
+
 type FaceZone = {
   id: string;
   label: string;
@@ -23,14 +25,14 @@ export default function FaceMap({
   analyzing?: boolean;
 }) {
   return (
-    <div className={`face-map ${analyzing ? "face-map-analyzing" : ""}`}>
+    <div className={styles.faceMap}>
       <svg viewBox="0 0 300 300" aria-label="Facial analysis map">
-        <ellipse cx="150" cy="155" rx="95" ry="118" className="face-outline" />
-        <ellipse cx="118" cy="118" rx="14" ry="10" className="face-feature" />
-        <ellipse cx="182" cy="118" rx="14" ry="10" className="face-feature" />
+        <ellipse cx="150" cy="155" rx="95" ry="118" className={styles.faceOutline} />
+        <ellipse cx="118" cy="118" rx="14" ry="10" className={styles.faceFeature} />
+        <ellipse cx="182" cy="118" rx="14" ry="10" className={styles.faceFeature} />
         <path
           d="M 128 198 Q 150 210 172 198"
-          className="face-feature"
+          className={styles.faceFeature}
           fill="none"
           strokeWidth="2"
         />
@@ -43,14 +45,18 @@ export default function FaceMap({
                 cx={zone.cx}
                 cy={zone.cy}
                 r={zone.r}
-                className={active ? "face-zone face-zone-active" : "face-zone"}
+                className={
+                  active
+                    ? [styles.faceZone, styles.faceZoneActive].join(" ")
+                    : styles.faceZone
+                }
               />
               {active && (
                 <text
                   x={zone.cx}
                   y={zone.cy + 4}
                   textAnchor="middle"
-                  className="face-zone-label"
+                  className={styles.faceZoneLabel}
                 >
                   {zone.label}
                 </text>
@@ -60,7 +66,7 @@ export default function FaceMap({
         })}
 
         {analyzing && (
-          <line x1="20" y1="40" x2="280" y2="40" className="face-scan-line">
+          <line x1="20" y1="40" x2="280" y2="40" className={styles.faceScanLine}>
             <animate
               attributeName="y1"
               dur="1.4s"
@@ -77,9 +83,9 @@ export default function FaceMap({
         )}
       </svg>
 
-      <ul className="face-legend">
+      <ul className={styles.faceLegend}>
         {activeZones.length === 0 ? (
-          <li className="detail-muted">Upload a photo and complete intake to see target areas.</li>
+          <li className={styles.emptyLegend}>Upload a photo and complete intake to see target areas.</li>
         ) : (
           activeZones.map((zoneId) => {
             const zone = ZONES.find((item) => item.id === zoneId);

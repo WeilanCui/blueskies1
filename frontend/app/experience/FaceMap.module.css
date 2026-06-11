@@ -1,0 +1,68 @@
+.faceMap {
+  align-items: center;
+  display: grid;
+  gap: 16px;
+  justify-items: center;
+}
+
+.faceMap svg {
+  max-width: 320px;
+  width: 100%;
+}
+
+.faceOutline {
+  fill: var(--accent-soft);
+  stroke: var(--border);
+  stroke-width: 2;
+}
+
+.faceFeature {
+  fill: none;
+  stroke: #a8daf8;
+  stroke-width: 2;
+}
+
+.faceZone {
+  fill: transparent;
+  stroke: transparent;
+  transition: all 0.25s ease;
+}
+
+.faceZoneActive {
+  fill: var(--accent-glow);
+  stroke: var(--accent);
+  stroke-width: 2;
+}
+
+.faceZoneLabel {
+  fill: var(--accent-strong);
+  font-size: 10px;
+  font-weight: 700;
+  pointer-events: none;
+}
+
+.faceLegend {
+  color: var(--muted);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 16px;
+  justify-content: center;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.faceScanLine {
+  stroke: var(--accent);
+  stroke-width: 2;
+}
+
+.emptyLegend {
+  color: var(--muted);
+}
+
+@media (max-width: 480px) {
+  .faceMap svg {
+    max-width: 240px;
+  }
+}

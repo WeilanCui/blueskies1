@@ -15,6 +15,7 @@ import {
   saveIntake,
   type IntakePayload,
 } from "../../lib/appApi";
+import styles from "./intake.module.css";
 
 const skinTypes = [
   ["dry", "Dry"],
@@ -268,15 +269,15 @@ export default function IntakePage() {
 
   if (meQuery.isLoading || meQuery.isError) {
     return (
-      <main className="app-shell">
+      <main className={styles.appShell}>
         <p className="detail-muted">Loading your session...</p>
       </main>
     );
   }
 
   return (
-    <main className="app-shell">
-      <nav className="topbar app-topbar">
+    <main className={styles.appShell}>
+      <nav className={["topbar", styles.appTopbar].join(" ")}>
         <Link className="brand" href="/">
           Blueskies
         </Link>
@@ -290,7 +291,7 @@ export default function IntakePage() {
         </Button>
       </nav>
 
-      <section className="app-hero">
+      <section className={styles.appHero}>
         <p className="landing-eyebrow">Skin intake</p>
         <h1>Build your first skin profile.</h1>
         <p>
@@ -299,31 +300,38 @@ export default function IntakePage() {
         </p>
       </section>
 
-      <form className="intake-form" onSubmit={submit}>
-        <section className="intake-card facial-placeholder">
+      <form className={styles.intakeForm} onSubmit={submit}>
+        <section className={[styles.intakeCard, styles.facialPlaceholder].join(" ")}>
           <div>
             <p className="landing-eyebrow">Coming soon</p>
             <h2>Facial analysis plugin</h2>
             <p>
-              Photo-based analysis will help map tone, texture, breakouts, and
-              barrier signals. For now, your answers below light up the face map.
+              Photo-based analysis will map tone, texture, breakouts, and
+              barrier signals. This will feed into the intake form instead of manual entry. For now, your answers below light up the face map.
             </p>
           </div>
           <FaceMap activeZones={activeZones} />
         </section>
 
-        <section className="intake-card">
+        <section className={styles.intakeCard}>
           <h2>Skin basics</h2>
-          <label className="field">
-            <span>Skin type</span>
-            <select value={skinType} onChange={(event) => setSkinType(event.target.value)}>
+          <fieldset className="choice-group">
+            <legend>Skin type</legend>
+            <div className={styles.skinTypeGrid}>
               {skinTypes.map(([value, label]) => (
-                <option value={value} key={value}>
-                  {label}
-                </option>
+                <label className={["choice-card", styles.skinTypeTile].join(" ")} key={value}>
+                  <input
+                    type="radio"
+                    name="skin_type"
+                    value={value}
+                    checked={skinType === value}
+                    onChange={() => setSkinType(value)}
+                  />
+                  <span>{label}</span>
+                </label>
               ))}
-            </select>
-          </label>
+            </div>
+          </fieldset>
           <label className="field">
             <span>Fitzpatrick skin type</span>
             <select
@@ -349,11 +357,11 @@ export default function IntakePage() {
           </label>
         </section>
 
-        <section className="intake-card">
+        <section className={styles.intakeCard}>
           <h2>Skin concerns</h2>
-          <div className="concern-section-stack">
+          <div className={styles.concernSectionStack}>
             {concernSections.map((section) => (
-              <fieldset className="concern-section" key={section.title}>
+              <fieldset className={styles.concernSection} key={section.title}>
                 <legend>{section.title}</legend>
                 <div className="choice-grid">
                   {section.items.map(([value, label]) => (
@@ -374,7 +382,7 @@ export default function IntakePage() {
           </div>
         </section>
 
-        <section className="intake-card">
+        <section className={styles.intakeCard}>
           <h2>Goals and context</h2>
           <TextField className="contact-field" onChange={setGoalsText} value={goalsText}>
             <Label>Goals in your own words</Label>
@@ -411,7 +419,7 @@ export default function IntakePage() {
           </TextField>
         </section>
 
-        <section className="intake-card">
+        <section className={styles.intakeCard}>
           <h2>Sensitivities and avoid list</h2>
           <div className="choice-grid">
             {sensitivityOptions.map((item) => (
@@ -427,7 +435,7 @@ export default function IntakePage() {
               </label>
             ))}
           </div>
-          <div className="sensitivity-add">
+          <div className={styles.sensitivityAdd}>
             <input
               type="text"
               value={customSensitivity}
@@ -440,7 +448,7 @@ export default function IntakePage() {
           </div>
         </section>
 
-        <div className="intake-submit">
+        <div className={styles.intakeSubmit}>
           <Button type="submit" isDisabled={saveMutation.isPending}>
             {saveMutation.isPending ? "Saving..." : "Save skin profile"}
           </Button>

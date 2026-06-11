@@ -1,5 +1,5 @@
 import type { ComponentPropsWithoutRef, ElementType, ReactNode } from "react";
-import "./Panel.css";
+import styles from "./Panel.module.css";
 
 export type PanelVariant = "default" | "form" | "results" | "notice";
 
@@ -22,10 +22,10 @@ function panelClassName({
   className,
 }: Pick<PanelOwnProps, "variant" | "split" | "error" | "className">) {
   return [
-    "panel",
-    `panel--${variant}`,
-    split && "panel--split",
-    error && "panel--error",
+    styles.panel,
+    styles[variant],
+    split && styles.split,
+    error && styles.error,
     className,
   ]
     .filter(Boolean)

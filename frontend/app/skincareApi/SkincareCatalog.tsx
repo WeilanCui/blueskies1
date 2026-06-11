@@ -9,6 +9,7 @@ import type {
   SkincareIngredient,
   SkincareProduct,
 } from "./types";
+import styles from "./skincareApi.module.css";
 
 type Tab = "products" | "ingredients";
 
@@ -16,6 +17,10 @@ type SkincareCatalogProps = {
   initialProducts: SkincareProduct[];
   initialError: boolean;
 };
+
+function cx(...classes: Array<string | false | null | undefined>) {
+  return classes.filter(Boolean).join(" ");
+}
 
 export default function SkincareCatalog({
   initialProducts,
@@ -164,21 +169,27 @@ export default function SkincareCatalog({
           <div className="topbar-actions">
             <button
               type="button"
-              className={`nav-button${tab === "products" ? " is-active" : ""}`}
+              className={cx(
+                "nav-button",
+                tab === "products" && styles.navButtonActive,
+              )}
               onClick={() => setTab("products")}
             >
               Products
             </button>
             <button
               type="button"
-              className={`nav-button${tab === "ingredients" ? " is-active" : ""}`}
+              className={cx(
+                "nav-button",
+                tab === "ingredients" && styles.navButtonActive,
+              )}
               onClick={() => setTab("ingredients")}
             >
               Ingredients
             </button>
           </div>
 
-          <div className="field-row">
+          <div className={styles.fieldRow}>
             <label className="field">
               <span>Search</span>
               <input
@@ -187,7 +198,7 @@ export default function SkincareCatalog({
                 placeholder={tab === "products" ? "brand, product, or ingredient" : "ingredient name"}
               />
             </label>
-            <label className="field field--compact">
+            <label className={cx("field", styles.fieldCompact)}>
               <span>Limit</span>
               <input
                 type="number"
@@ -197,7 +208,7 @@ export default function SkincareCatalog({
                 onChange={(event) => setLimit(Number(event.target.value) || 10)}
               />
             </label>
-            <label className="field field--compact">
+            <label className={cx("field", styles.fieldCompact)}>
               <span>Page</span>
               <input
                 type="number"
@@ -209,7 +220,12 @@ export default function SkincareCatalog({
           </div>
 
           <div className="topbar-actions">
-            <button type="button" className="button" onClick={runSearch} disabled={loading}>
+            <button
+              type="button"
+              className={styles.actionButton}
+              onClick={runSearch}
+              disabled={loading}
+            >
               {loading ? "Loading…" : "Search"}
             </button>
             {tab === "products" ? (
@@ -243,12 +259,12 @@ export default function SkincareCatalog({
           {products.length === 0 ? (
             <p>No products to show. Try search or load the full catalog.</p>
           ) : (
-            <ul className="compound-list">
+            <ul className={styles.catalogList}>
               {products.map((product) => (
                 <li key={product.id}>
                   <button
                     type="button"
-                    className="compound-card"
+                    className={styles.catalogCard}
                     onClick={() => loadProductDetail(product.id)}
                   >
                     <strong>{product.brand}</strong>
@@ -265,9 +281,9 @@ export default function SkincareCatalog({
           {ingredients.length === 0 ? (
             <p>No ingredients to show. Run a search to populate results.</p>
           ) : (
-            <ul className="compound-list">
+            <ul className={styles.catalogList}>
               {ingredients.map((ingredient) => (
-                <li key={ingredient.id} className="compound-card">
+                <li key={ingredient.id} className={styles.catalogCard}>
                   <span>{ingredient.ingredient}</span>
                 </li>
               ))}
@@ -278,11 +294,11 @@ export default function SkincareCatalog({
 
       {selectedProduct ? (
         <Panel as="section" variant="default">
-          <h2 className="page-title">
+          <h2 className={styles.pageTitle}>
             {selectedProduct.brand} — {selectedProduct.name}
           </h2>
           <p className="lede">Product #{selectedProduct.id}</p>
-          <ul className="property-list">
+          <ul className={styles.propertyList}>
             {selectedProduct.ingredient_list.map((ingredient) => (
               <li key={ingredient}>{ingredient}</li>
             ))}
@@ -291,7 +307,7 @@ export default function SkincareCatalog({
       ) : null}
 
       <Panel as="section" variant="form">
-        <h2 className="page-title">Add product</h2>
+        <h2 className={styles.pageTitle}>Add product</h2>
         <form className="stack" onSubmit={createProduct}>
           <label className="field">
             <span>Brand</span>
@@ -328,7 +344,7 @@ export default function SkincareCatalog({
               placeholder="water,glycerin,citric acid"
             />
           </label>
-          <button type="submit" className="button" disabled={loading}>
+          <button type="submit" className={styles.actionButton} disabled={loading}>
             {loading ? "Saving…" : "Create product"}
           </button>
           {createMessage ? <p className="lede">{createMessage}</p> : null}

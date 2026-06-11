@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import ContactForm from "./ContactForm";
+import styles from "./page.module.css";
 
 const workflowSteps = [
   {
@@ -47,12 +48,12 @@ const platformLayers = [
 
 export default function Home() {
   return (
-    <main className="shell landing-shell">
-      <nav className="topbar landing-topbar">
+    <main className={["shell", styles.landingShell].join(" ")}>
+      <nav className={["topbar", styles.landingTopbar].join(" ")}>
         <div className="brand">
           <Link href="/">Blueskies</Link>
         </div>
-        <div className="topbar-actions landing-nav">
+        <div className={["topbar-actions", styles.landingNav].join(" ")}>
           <a href="#how-it-works">How it works</a>
           <a href="#science">Science + you</a>
           <Link href="/login">Log in</Link>
@@ -60,52 +61,52 @@ export default function Home() {
         </div>
       </nav>
 
-      <section className="landing-hero">
-        <div className="landing-hero-copy">
+      <section className={styles.landingHero}>
+        <div className={styles.landingHeroCopy}>
           <p className="landing-eyebrow">Early access roadmap</p>
           <h1>Skincare intelligence based on science and based on you.</h1>
-          <p className="landing-lede">
+          <p className={styles.landingLede}>
             Blueskies is being built to help people track their skin in one
             place, understand their regimen, scan products, and connect changes
             to ingredients, hormones, weather, location, and product history.
           </p>
-          <div className="landing-actions">
+          <div className={styles.landingActions}>
             <Link className="primary-button link-button" href="/login">
               Start intake
             </Link>
-            <a className="secondary-button" href="#how-it-works">
+            <a className={styles.secondaryButton} href="#how-it-works">
               See how it works
             </a>
           </div>
         </div>
 
-        <div className="landing-preview" aria-label="Blueskies app preview">
-          <div className="phone-frame">
-            <div className="phone-status">
+        <div className={styles.landingPreview} aria-label="Blueskies app preview">
+          <div className={styles.phoneFrame}>
+            <div className={styles.phoneStatus}>
               <span>Today</span>
               <strong>Skin profile</strong>
             </div>
-            <div className="scan-card">
-              <div className="face-preview">
-                <span className="face-zone face-zone-forehead" />
-                <span className="face-zone face-zone-cheek" />
-                <span className="face-zone face-zone-chin" />
+            <div className={styles.scanCard}>
+              <div className={styles.facePreview}>
+                <span className={[styles.faceZone, styles.faceZoneForehead].join(" ")} />
+                <span className={[styles.faceZone, styles.faceZoneCheek].join(" ")} />
+                <span className={[styles.faceZone, styles.faceZoneChin].join(" ")} />
               </div>
               <div>
                 <strong>Analysis preview</strong>
                 <p>Redness down 12% after barrier routine</p>
               </div>
             </div>
-            <div className="mini-chart" aria-hidden="true">
-              <span style={{ height: "48%" }} />
-              <span style={{ height: "72%" }} />
-              <span style={{ height: "56%" }} />
-              <span style={{ height: "84%" }} />
-              <span style={{ height: "68%" }} />
-              <span style={{ height: "92%" }} />
+            <div className={styles.miniChart} aria-hidden="true">
+              <span className={styles.chartBar1} />
+              <span className={styles.chartBar2} />
+              <span className={styles.chartBar3} />
+              <span className={styles.chartBar4} />
+              <span className={styles.chartBar5} />
+              <span className={styles.chartBar6} />
             </div>
-            <div className="product-scan-card">
-              <div className="barcode-lines" aria-hidden="true">
+            <div className={styles.productScanCard}>
+              <div className={styles.barcodeLines} aria-hidden="true">
                 <span />
                 <span />
                 <span />
@@ -117,25 +118,25 @@ export default function Home() {
                 <p>Niacinamide serum fits current goals</p>
               </div>
             </div>
-            <div className="constraint-row">
+            <div className={styles.constraintRow}>
               <span>Fragrance sensitivity</span>
               <strong>Warn</strong>
             </div>
           </div>
 
-          <div className="floating-panel floating-panel-top">
-            <span className="panel-kicker">Journal signal</span>
+          <div className={[styles.floatingPanel, styles.floatingPanelTop].join(" ")}>
+            <span className={styles.panelKicker}>Journal signal</span>
             <strong>Evidence linked to ingredient role</strong>
           </div>
-          <div className="floating-panel floating-panel-bottom">
-            <span className="panel-kicker">Context</span>
+          <div className={[styles.floatingPanel, styles.floatingPanelBottom].join(" ")}>
+            <span className={styles.panelKicker}>Context</span>
             <strong>Weather, cycle, routine, skin state</strong>
           </div>
         </div>
       </section>
 
-      <section className="landing-section" id="how-it-works">
-        <div className="section-heading">
+      <section className={styles.landingSection} id="how-it-works">
+        <div className={styles.sectionHeading}>
           <p className="landing-eyebrow">How it works</p>
           <h2>From skin analysis to regimen insight.</h2>
           <p>
@@ -143,9 +144,9 @@ export default function Home() {
             products, track changes, and explain what may be helping or hurting.
           </p>
         </div>
-        <div className="workflow-grid">
+        <div className={styles.workflowGrid}>
           {workflowSteps.map((step, index) => (
-            <article className="workflow-card" key={step.title}>
+            <article className={styles.workflowCard} key={step.title}>
               <span>{String(index + 1).padStart(2, "0")}</span>
               <h3>{step.title}</h3>
               <p>{step.text}</p>
@@ -154,8 +155,8 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="landing-section science-section" id="science">
-        <div className="science-copy">
+      <section className={[styles.landingSection, styles.scienceSection].join(" ")} id="science">
+        <div className={styles.scienceCopy}>
           <p className="landing-eyebrow">Science + you</p>
           <h2>Ingredient research gets personal context.</h2>
           <p>
@@ -164,16 +165,16 @@ export default function Home() {
             your changing profile, sensitivities, regimen, and skin history.
           </p>
         </div>
-        <div className="science-panel">
-          <div className="evidence-row">
+        <div className={styles.sciencePanel}>
+          <div className={styles.evidenceRow}>
             <span>Journal articles</span>
             <strong>Evidence strength</strong>
           </div>
-          <div className="evidence-row">
+          <div className={styles.evidenceRow}>
             <span>Ingredient classes</span>
             <strong>Compound matching</strong>
           </div>
-          <div className="evidence-row">
+          <div className={styles.evidenceRow}>
             <span>Your context</span>
             <strong>Personal constraints</strong>
           </div>
@@ -184,15 +185,15 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="landing-section">
-        <div className="section-heading">
+      <section className={styles.landingSection}>
+        <div className={styles.sectionHeading}>
           <p className="landing-eyebrow">Regimen intelligence</p>
           <h2>Know what a product is and how it works for you.</h2>
         </div>
-        <div className="intelligence-grid">
+        <div className={styles.intelligenceGrid}>
           {intelligenceCards.map((item) => (
-            <article className="intelligence-card" key={item}>
-              <div className="intelligence-icon" aria-hidden="true" />
+            <article className={styles.intelligenceCard} key={item}>
+              <div className={styles.intelligenceIcon} aria-hidden="true" />
               <h3>{item}</h3>
               <p>
                 Preview capability for connecting product identity, ingredient
@@ -203,14 +204,14 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="landing-section platform-section">
-        <div className="section-heading">
+      <section className={[styles.landingSection, styles.platformSection].join(" ")}>
+        <div className={styles.sectionHeading}>
           <p className="landing-eyebrow">Platform vision</p>
           <h2>A consumer app with a deeper skincare intelligence layer.</h2>
         </div>
-        <div className="platform-grid">
+        <div className={styles.platformGrid}>
           {platformLayers.map((layer) => (
-            <article className="platform-card" key={layer.title}>
+            <article className={styles.platformCard} key={layer.title}>
               <h3>{layer.title}</h3>
               <p>{layer.text}</p>
             </article>
@@ -218,7 +219,7 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="contact-section" id="contact">
+      <section className={styles.contactSection} id="contact">
         <div>
           <p className="landing-eyebrow">Contact us</p>
           <h2>Tell us what you want Blueskies to help with.</h2>
@@ -231,7 +232,7 @@ export default function Home() {
         <ContactForm />
       </section>
 
-      <footer className="landing-footer">
+      <footer className={styles.landingFooter}>
         <span>Blueskies roadmap preview</span>
         <div>
           <Link href="/login">Log in</Link>

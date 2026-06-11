@@ -4,6 +4,7 @@ import { Suspense } from "react";
 import { getServerApiBaseUrl } from "../../lib/apiBaseUrl";
 import { Panel } from "../../components/Panel";
 import CompoundList, { type Compound } from "./CompoundList";
+import styles from "./compounds.module.css";
 
 async function getCompounds(): Promise<{ compounds: Compound[]; error: boolean }> {
   const baseUrl = getServerApiBaseUrl();
@@ -44,8 +45,8 @@ export default async function CompoundsPage() {
         </div>
       </nav>
 
-      <section className="page-head">
-        <h1 className="page-title">Compounds</h1>
+      <section className={styles.pageHead}>
+        <h1 className={styles.pageTitle}>Compounds</h1>
         <p className="lede">
           Browse ingredients in the database. Select a compound to expand its
           identifiers, structure, properties, and literature.

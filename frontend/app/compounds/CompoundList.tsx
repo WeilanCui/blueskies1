@@ -3,6 +3,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 
+import styles from "./compounds.module.css";
+
 export type CompoundStructure = {
   smiles: string;
   inchi: string;
@@ -107,15 +109,15 @@ function CompoundDetail({ compound }: { compound: Compound }) {
       structure.smiles);
 
   return (
-    <div className="compound-detail">
-      {normalized.notes && <p className="detail-notes">{normalized.notes}</p>}
+    <div className={styles.compoundDetail}>
+      {normalized.notes && <p className={styles.detailNotes}>{normalized.notes}</p>}
 
       {identifiers.length > 0 && (
-        <section className="detail-section">
+        <section className={styles.detailSection}>
           <h3>Identifiers</h3>
-          <dl className="kv-grid">
+          <dl className={styles.kvGrid}>
             {identifiers.map((id) => (
-              <div className="kv-row" key={`${id.id_type}-${id.id_value}`}>
+              <div className={styles.kvRow} key={`${id.id_type}-${id.id_value}`}>
                 <dt>
                   {id.id_type}
                   {id.is_primary ? " (primary)" : ""}
@@ -128,32 +130,32 @@ function CompoundDetail({ compound }: { compound: Compound }) {
       )}
 
       {hasStructure && (
-        <section className="detail-section">
+        <section className={styles.detailSection}>
           <h3>Structure</h3>
-          <dl className="kv-grid">
+          <dl className={styles.kvGrid}>
             {structure?.molecular_formula && (
-              <div className="kv-row">
+              <div className={styles.kvRow}>
                 <dt>Formula</dt>
                 <dd>{structure.molecular_formula}</dd>
               </div>
             )}
             {structure?.molecular_weight !== null &&
               structure?.molecular_weight !== undefined && (
-                <div className="kv-row">
+                <div className={styles.kvRow}>
                   <dt>Mol. weight</dt>
                   <dd>{structure.molecular_weight}</dd>
                 </div>
               )}
             {structure?.inchikey && (
-              <div className="kv-row">
+                <div className={styles.kvRow}>
                 <dt>InChIKey</dt>
-                <dd className="mono">{structure.inchikey}</dd>
+                <dd className={styles.mono}>{structure.inchikey}</dd>
               </div>
             )}
             {structure?.smiles && (
-              <div className="kv-row">
+              <div className={styles.kvRow}>
                 <dt>SMILES</dt>
-                <dd className="mono">{structure.smiles}</dd>
+                <dd className={styles.mono}>{structure.smiles}</dd>
               </div>
             )}
           </dl>
@@ -161,7 +163,7 @@ function CompoundDetail({ compound }: { compound: Compound }) {
       )}
 
       {aliases.length > 0 && (
-        <section className="detail-section">
+        <section className={styles.detailSection}>
           <h3>Aliases</h3>
           <div className="chip-row">
             {aliases.map((alias) => (
@@ -175,7 +177,7 @@ function CompoundDetail({ compound }: { compound: Compound }) {
       )}
 
       {chemical_classes.length > 0 && (
-        <section className="detail-section">
+        <section className={styles.detailSection}>
           <h3>Chemical Classes</h3>
           <div className="chip-row">
             {chemical_classes.map((membership) => (
@@ -195,15 +197,15 @@ function CompoundDetail({ compound }: { compound: Compound }) {
       )}
 
       {properties.length > 0 && (
-        <section className="detail-section">
+        <section className={styles.detailSection}>
           <h3>Properties</h3>
-          <dl className="kv-grid">
+          <dl className={styles.kvGrid}>
             {properties.map((prop) => (
-              <div className="kv-row" key={prop.key}>
+              <div className={styles.kvRow} key={prop.key}>
                 <dt>{prop.label || formatLabel(prop.key)}</dt>
                 <dd>
                   {prop.value}
-                  <span className="kv-source">
+                  <span className={styles.kvSource}>
                     {prop.inherited_from
                       ? `inherited from ${prop.inherited_from}`
                       : prop.source_type}
@@ -215,7 +217,7 @@ function CompoundDetail({ compound }: { compound: Compound }) {
         </section>
       )}
 
-      <section className="detail-section">
+      <section className={styles.detailSection}>
         <h3>Literature</h3>
         <p className="detail-muted">
           {normalized.literature_count} linked reference
@@ -248,32 +250,39 @@ export default function CompoundList({ compounds }: { compounds: Compound[] }) {
   }, [normalizedCompounds, searchParams]);
 
   return (
-    <ul className="compound-list">
+    <ul className={styles.compoundList}>
       {normalizedCompounds.map((compound) => {
         const isExpanded = expandedId === compound.id;
         const title = compound.display_name || compound.canonical_inci;
 
         return (
-          <li className="compound-item" id={`compound-${compound.id}`} key={compound.id}>
+          <li className={styles.compoundItem} id={`compound-${compound.id}`} key={compound.id}>
             <button
               type="button"
-              className="compound-row"
+              className={styles.compoundRow}
               aria-expanded={isExpanded}
               onClick={() =>
                 setExpandedId((current) => (current === compound.id ? null : compound.id))
               }
             >
-              <span className={`chevron ${isExpanded ? "open" : ""}`} aria-hidden>
+              <span
+                className={
+                  isExpanded
+                    ? [styles.chevron, styles.chevronOpen].join(" ")
+                    : styles.chevron
+                }
+                aria-hidden
+              >
                 ▶
               </span>
-              <span className="compound-name">
+              <span className={styles.compoundName}>
                 <strong>{title}</strong>
                 {compound.display_name &&
                   compound.display_name !== compound.canonical_inci && (
-                    <span className="compound-sub">{compound.canonical_inci}</span>
+                    <span className={styles.compoundSub}>{compound.canonical_inci}</span>
                   )}
               </span>
-              <span className="compound-tags">
+              <span className={styles.compoundTags}>
                 <span className="tag">{formatLabel(compound.entity_type)}</span>
                 <span className={`badge badge-${compound.enrichment_status}`}>
                   {formatLabel(compound.enrichment_status)}
