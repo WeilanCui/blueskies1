@@ -9,9 +9,9 @@ from dataclasses import dataclass, field
 
 from django.conf import settings
 
-from core.ingestion.relevance import classify_relevance, infer_role_in_paper
+from literature.ingestion.relevance import classify_relevance, infer_role_in_paper
 from core.models import RelevanceCategory, RoleInPaper
-from core.seeds.property_definitions import FUNCTIONAL_CLASS_VALUES
+from literature.seeds.property_definitions import FUNCTIONAL_CLASS_VALUES
 
 logger = logging.getLogger(__name__)
 

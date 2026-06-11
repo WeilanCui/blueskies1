@@ -5,9 +5,9 @@ from __future__ import annotations
 import logging
 from dataclasses import dataclass, field
 
-from core.enrichment.compound_bootstrap import apply_entity_classification
-from core.ingestion.inci_ingest import ingest_inci_ingredient
-from core.ingestion.ingest import ingest_compound
+from literature.enrichment.compound_bootstrap import apply_entity_classification
+from literature.ingestion.inci_ingest import ingest_inci_ingredient
+from literature.ingestion.ingest import ingest_compound
 from core.models import (
     Compound,
     CompoundAlias,

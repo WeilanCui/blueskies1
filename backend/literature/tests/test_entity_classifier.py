@@ -1,6 +1,6 @@
 from django.test import SimpleTestCase
 
-from core.enrichment.entity_classifier import classify_inci
+from literature.enrichment.entity_classifier import classify_inci
 
 
 class EntityClassifierTests(SimpleTestCase):

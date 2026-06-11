@@ -6,7 +6,7 @@ import logging
 import re
 from dataclasses import dataclass, field
 
-from core.ingestion.http import HttpError, RateLimiter, request_json
+from literature.ingestion.http import HttpError, RateLimiter, request_json
 
 logger = logging.getLogger(__name__)
 

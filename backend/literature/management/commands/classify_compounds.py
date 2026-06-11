@@ -1,6 +1,6 @@
 from django.core.management.base import BaseCommand
 
-from core.enrichment.compound_bootstrap import apply_entity_classification
+from literature.enrichment.compound_bootstrap import apply_entity_classification
 from core.models import Compound
 
 

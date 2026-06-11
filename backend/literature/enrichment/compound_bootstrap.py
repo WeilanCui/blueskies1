@@ -1,4 +1,4 @@
-from core.enrichment.entity_classifier import EntityClassification, classify_inci
+from literature.enrichment.entity_classifier import EntityClassification, classify_inci
 from core.models import Compound, PropertyAssertion, PropertyDefinition, SourceType
 
 

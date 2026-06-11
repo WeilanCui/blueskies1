@@ -7,10 +7,10 @@ from dataclasses import dataclass, field
 
 from django.utils import timezone
 
-from core.enrichment.compound_bootstrap import apply_entity_classification
-from core.ingestion import pubchem_client, pubmed_client
-from core.ingestion.pubchem_client import PubChemRecord
-from core.ingestion.relevance import (
+from literature.enrichment.compound_bootstrap import apply_entity_classification
+from literature.ingestion import pubchem_client, pubmed_client
+from literature.ingestion.pubchem_client import PubChemRecord
+from literature.ingestion.relevance import (
     build_ux_query,
     classify_relevance,
     infer_role_in_paper,
@@ -96,7 +96,7 @@ def ingest_compound(
         )
 
     if enrich and with_pubmed:
-        from core.enrichment import enrich_compound_literature, get_extractor
+        from literature.enrichment import enrich_compound_literature, get_extractor
 
         enrich_compound_literature(
             compound,

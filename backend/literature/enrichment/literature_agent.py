@@ -7,7 +7,7 @@ import logging
 from django.db import transaction
 from django.utils import timezone
 
-from core.enrichment.extractors import (
+from literature.enrichment.extractors import (
     ExtractionContext,
     LiteratureExtraction,
     LiteratureExtractor,
@@ -204,7 +204,7 @@ def _merge_literature_functional_classes(
 def _literature_beats(
     other_source_type: str, other_confidence: float, literature_confidence: float
 ) -> bool:
-    from core.enrichment.provenance import SOURCE_PRECEDENCE
+    from literature.enrichment.provenance import SOURCE_PRECEDENCE
 
     lit_rank = SOURCE_PRECEDENCE.get(SourceType.LITERATURE, 0)
     other_rank = SOURCE_PRECEDENCE.get(other_source_type, 0)

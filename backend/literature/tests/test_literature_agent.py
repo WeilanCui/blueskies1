@@ -4,13 +4,13 @@ from unittest import mock
 
 from django.test import SimpleTestCase, TestCase
 
-from core.enrichment.extractors import (
+from literature.enrichment.extractors import (
     ExtractionContext,
     OpenAIExtractor,
     StubExtractor,
     _validate_extraction,
 )
-from core.enrichment.literature_agent import enrich_literature_link
+from literature.enrichment.literature_agent import enrich_literature_link
 from core.models import (
     Compound,
     CompoundLiterature,
@@ -21,7 +21,7 @@ from core.models import (
     RoleInPaper,
     SourceType,
 )
-from core.seeds.loader import upsert_property_definitions
+from literature.seeds.loader import upsert_property_definitions
 
 XML_PRESERVATIVE_SURVEY = """<?xml version="1.0"?>
 <PubmedArticleSet>

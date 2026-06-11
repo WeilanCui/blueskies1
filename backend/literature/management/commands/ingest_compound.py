@@ -1,6 +1,6 @@
 from django.core.management.base import BaseCommand
 
-from core.ingestion import ingest_compound
+from literature.ingestion import ingest_compound
 
 DEFAULT_SAMPLE = [
     "1,2-Hexanediol",

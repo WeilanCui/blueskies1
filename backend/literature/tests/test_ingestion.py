@@ -4,9 +4,9 @@ from unittest import mock
 
 from django.test import SimpleTestCase, TestCase
 
-from core.ingestion import ingest_compound, pubchem_client, pubmed_client
-from core.ingestion.pubchem_client import PubChemRecord
-from core.ingestion.relevance import (
+from literature.ingestion import ingest_compound, pubchem_client, pubmed_client
+from literature.ingestion.pubchem_client import PubChemRecord
+from literature.ingestion.relevance import (
     build_ux_query,
     classify_relevance,
     infer_role_in_paper,
@@ -21,7 +21,7 @@ from core.models import (
     RelevanceCategory,
     RoleInPaper,
 )
-from core.seeds.loader import upsert_property_definitions
+from literature.seeds.loader import upsert_property_definitions
 
 # --- Fixtures ---------------------------------------------------------------
 

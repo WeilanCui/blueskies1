@@ -7,7 +7,7 @@ import os
 from dataclasses import dataclass, field
 from xml.etree import ElementTree as ET
 
-from core.ingestion.http import HttpError, RateLimiter, request_json, request_text
+from literature.ingestion.http import HttpError, RateLimiter, request_json, request_text
 
 logger = logging.getLogger(__name__)
 

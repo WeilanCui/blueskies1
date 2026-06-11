@@ -9,7 +9,7 @@ from core.models import (
     PropertyDefinition,
     SourceType,
 )
-from core.seeds.loader import upsert_chemical_classes, upsert_property_definitions
+from literature.seeds.loader import upsert_chemical_classes, upsert_property_definitions
 
 
 class ChemicalClassInheritanceTests(TestCase):

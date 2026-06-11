@@ -11,12 +11,12 @@ from core.models import (
     PropertyDefinition,
     SourceType,
 )
-from core.seeds.chemical_classes import CHEMICAL_CLASSES
-from core.seeds.glossary_terms import GLOSSARY_TERMS
-from core.seeds.interaction_rules import INTERACTION_RULES
-from core.seeds.property_definitions import PROPERTY_DEFINITIONS
-from core.enrichment.compound_bootstrap import apply_entity_classification
-from core.seeds.reference_compounds import REFERENCE_COMPOUNDS
+from literature.seeds.chemical_classes import CHEMICAL_CLASSES
+from literature.seeds.glossary_terms import GLOSSARY_TERMS
+from literature.seeds.interaction_rules import INTERACTION_RULES
+from literature.seeds.property_definitions import PROPERTY_DEFINITIONS
+from literature.enrichment.compound_bootstrap import apply_entity_classification
+from literature.seeds.reference_compounds import REFERENCE_COMPOUNDS
 
 
 def upsert_property_definitions() -> dict[str, int]:

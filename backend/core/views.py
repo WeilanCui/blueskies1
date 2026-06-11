@@ -9,7 +9,7 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from core.ingestion import ingest_formulation, parse_inci_list
+from literature.ingestion import ingest_formulation, parse_inci_list
 from core.models import Compound, ContactSubmission, Formulation, Profile
 from core.serializers import (
     CompoundSerializer,

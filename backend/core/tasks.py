@@ -9,7 +9,7 @@ def debug_task() -> str:
 @shared_task
 def ingest_compound_task(name: str, **options) -> dict:
     """Async wrapper around the PubChem + PubMed ingestion orchestrator."""
-    from core.ingestion import ingest_compound
+    from literature.ingestion import ingest_compound
 
     result = ingest_compound(name, **options)
     return {
@@ -30,7 +30,7 @@ def enrich_literature_task(
     **options,
 ) -> dict:
     """Async wrapper around literature LLM enrichment."""
-    from core.enrichment import enrich_compound_literature, get_extractor
+    from literature.enrichment import enrich_compound_literature, get_extractor
     from core.models import Compound
 
     extractor = get_extractor(options.pop("extractor", None))
@@ -78,7 +78,7 @@ def enrich_literature_task(
 @shared_task
 def ingest_formulation_task(formulation_id: int, **options) -> dict:
     """Async wrapper around formulation ingredient enrichment."""
-    from core.ingestion import ingest_formulation_ingredients
+    from literature.ingestion import ingest_formulation_ingredients
 
     result = ingest_formulation_ingredients(formulation_id, **options)
     return {

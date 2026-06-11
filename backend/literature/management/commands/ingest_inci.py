@@ -1,6 +1,6 @@
 from django.core.management.base import BaseCommand
 
-from core.ingestion import inci_client, ingest_inci_ingredient
+from literature.ingestion import inci_client, ingest_inci_ingredient
 
 
 class Command(BaseCommand):

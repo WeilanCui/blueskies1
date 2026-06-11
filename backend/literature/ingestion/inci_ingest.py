@@ -6,10 +6,10 @@ import logging
 import re
 from dataclasses import dataclass, field
 
-from core.enrichment.compound_bootstrap import apply_entity_classification
-from core.enrichment.provenance import assert_property
-from core.ingestion import inci_client
-from core.ingestion.inci_client import InciIngredient
+from literature.enrichment.compound_bootstrap import apply_entity_classification
+from literature.enrichment.provenance import assert_property
+from literature.ingestion import inci_client
+from literature.ingestion.inci_client import InciIngredient
 from core.models import Compound, CompoundAlias, CompoundIdentifier, SourceType
 
 logger = logging.getLogger(__name__)

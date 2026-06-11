@@ -8,7 +8,7 @@ from urllib.parse import quote
 
 from django.conf import settings
 
-from core.ingestion.http import HttpError, RateLimiter, request_json
+from literature.ingestion.http import HttpError, RateLimiter, request_json
 
 logger = logging.getLogger(__name__)
 

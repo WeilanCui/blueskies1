@@ -4,10 +4,10 @@ from unittest import mock
 
 from django.test import SimpleTestCase, TestCase
 
-from core.enrichment.provenance import assert_property
-from core.ingestion import inci_client, ingest_inci_ingredient
-from core.ingestion.inci_client import InciIngredient, parse_ingredient
-from core.ingestion.inci_ingest import map_ingredient
+from literature.enrichment.provenance import assert_property
+from literature.ingestion import inci_client, ingest_inci_ingredient
+from literature.ingestion.inci_client import InciIngredient, parse_ingredient
+from literature.ingestion.inci_ingest import map_ingredient
 from core.models import (
     Compound,
     CompoundAlias,
@@ -16,7 +16,7 @@ from core.models import (
     PropertyDefinition,
     SourceType,
 )
-from core.seeds.loader import upsert_property_definitions
+from literature.seeds.loader import upsert_property_definitions
 
 RETINOL_RAW = {
     "inciName": "Retinol",

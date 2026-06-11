@@ -1,6 +1,6 @@
 from django.core.management.base import BaseCommand
 
-from core.seeds.loader import seed_all
+from literature.seeds.loader import seed_all
 
 
 class Command(BaseCommand):

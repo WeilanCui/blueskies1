@@ -1,8 +1,8 @@
 from django.test import TestCase
 
-from core.ingestion.formulation_ingest import parse_inci_list, resolve_compound
+from literature.ingestion.formulation_ingest import parse_inci_list, resolve_compound
 from core.models import Compound, Formulation, FormulationIngredient
-from core.seeds.loader import upsert_property_definitions
+from literature.seeds.loader import upsert_property_definitions
 
 
 class ParseInciListTests(TestCase):
@@ -43,7 +43,7 @@ class CreateFormulationTests(TestCase):
         upsert_property_definitions()
 
     def test_persists_formulation_rows(self):
-        from core.ingestion.formulation_ingest import create_formulation
+        from literature.ingestion.formulation_ingest import create_formulation
 
         formulation = create_formulation(
             "Test Serum",

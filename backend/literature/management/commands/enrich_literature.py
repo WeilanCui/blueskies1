@@ -1,6 +1,6 @@
 from django.core.management.base import BaseCommand
 
-from core.enrichment import enrich_compound_literature, get_extractor
+from literature.enrichment import enrich_compound_literature, get_extractor
 from core.models import Compound, CompoundLiterature, LiteratureEnrichmentStatus
 
 
