@@ -42,6 +42,9 @@ Use these standards when adding or changing code in this project. Favor clear, m
 - Avoid dense desktop-style tables on mobile; use stacked, scrollable, or summarized layouts instead.
 - Test visual changes at mobile and desktop breakpoints.
 - Prefer accessible semantic HTML before custom interaction patterns.
+- Use HeroUI when practical for buttons, form fields, validation states, cards, modals, and reusable UI controls.
+- Use TanStack Query for client-side backend API fetching and mutations, especially when managing loading, error, and success states.
+- Raw `fetch` is acceptable inside Next.js route handlers, server-side utilities, and very small non-reactive server code.
 - Keep loading, empty, error, and success states designed, not accidental.
 - Preserve performance by avoiding unnecessary client-side JavaScript.
 
