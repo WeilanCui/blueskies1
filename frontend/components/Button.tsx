@@ -5,7 +5,7 @@ import type { ComponentProps } from "react";
 
 type HeroUIButtonProps = ComponentProps<typeof HeroUIButton>;
 
-export type AppButtonVariant = "primary" | "ghost";
+export type AppButtonVariant = "primary" | "secondary" | "ghost" | "danger";
 
 export type ButtonProps = Omit<HeroUIButtonProps, "variant"> & {
   variant?: AppButtonVariant;
@@ -14,12 +14,16 @@ export type ButtonProps = Omit<HeroUIButtonProps, "variant"> & {
 
 const variantClass: Record<AppButtonVariant, string> = {
   primary: "primary-button",
+  secondary: "secondary-app-button",
   ghost: "ghost-button",
+  danger: "danger-button",
 };
 
 const heroVariant: Record<AppButtonVariant, NonNullable<HeroUIButtonProps["variant"]>> = {
-  primary: "ghost",
+  primary: "primary",
+  secondary: "outline",
   ghost: "ghost",
+  danger: "danger",
 };
 
 export function Button({

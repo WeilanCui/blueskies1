@@ -1,3 +1,6 @@
+from django.contrib.auth import authenticate, get_user_model
+from django.contrib.auth.password_validation import validate_password
+from django.db import transaction
 from rest_framework import serializers
 
 from core.models import (
@@ -8,10 +11,22 @@ from core.models import (
     CompoundIdentifier,
     CompoundStructure,
     ContactSubmission,
+    ConstraintEnforcement,
+    ConstraintSeverity,
     Formulation,
     FormulationIngredient,
+    FitzpatrickSkinType,
+    PregnancyStatus,
+    Profile,
+    ProfileConstraint,
+    ProfileConstraintKind,
     PropertyAssertion,
+    SkinProfile,
+    SkinType,
 )
+
+
+User = get_user_model()
 
 
 class CompoundAliasSerializer(serializers.ModelSerializer):
@@ -159,6 +174,91 @@ class FormulationSubmitSerializer(serializers.Serializer):
     formulation = serializers.CharField()
 
 
+class AuthUserSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    username = serializers.CharField()
+    email = serializers.EmailField(allow_blank=True)
+    display_name = serializers.CharField(allow_blank=True)
+    has_completed_intake = serializers.BooleanField()
+
+
+def auth_user_payload(user) -> dict:
+    profile, _ = Profile.objects.get_or_create(user=user)
+    return {
+        "id": user.id,
+        "username": user.get_username(),
+        "email": user.email,
+        "display_name": profile.display_name,
+        "has_completed_intake": profile.skin_profiles.filter(is_current=True).exists(),
+    }
+
+
+def _unique_username_from_email(email: str) -> str:
+    base = email.split("@", 1)[0].strip().lower() or "user"
+    base = "".join(char if char.isalnum() or char in "._-" else "-" for char in base)
+    base = base[:24] or "user"
+    candidate = base
+    counter = 1
+    while User.objects.filter(username=candidate).exists():
+        suffix = f"-{counter}"
+        candidate = f"{base[: 30 - len(suffix)]}{suffix}"
+        counter += 1
+    return candidate
+
+
+class SignupSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    password = serializers.CharField(write_only=True, trim_whitespace=False)
+    display_name = serializers.CharField(required=False, allow_blank=True, max_length=128)
+
+    def validate_email(self, value: str) -> str:
+        email = value.strip().lower()
+        if User.objects.filter(email__iexact=email).exists():
+            raise serializers.ValidationError("An account with this email already exists.")
+        return email
+
+    def validate_password(self, value: str) -> str:
+        validate_password(value)
+        return value
+
+    def create(self, validated_data: dict):
+        email = validated_data["email"]
+        user = User.objects.create_user(
+            username=_unique_username_from_email(email),
+            email=email,
+            password=validated_data["password"],
+        )
+        Profile.objects.get_or_create(
+            user=user,
+            defaults={"display_name": validated_data.get("display_name", "").strip()},
+        )
+        return user
+
+
+class LoginSerializer(serializers.Serializer):
+    identifier = serializers.CharField()
+    password = serializers.CharField(write_only=True, trim_whitespace=False)
+
+    def validate(self, attrs: dict) -> dict:
+        identifier = attrs["identifier"].strip()
+        password = attrs["password"]
+        username = identifier
+        if "@" in identifier:
+            user = User.objects.filter(email__iexact=identifier).first()
+            if user is not None:
+                username = user.get_username()
+
+        user = authenticate(
+            request=self.context.get("request"),
+            username=username,
+            password=password,
+        )
+        if user is None:
+            raise serializers.ValidationError("Invalid email or password.")
+        attrs["user"] = user
+        return attrs
+
+
 class ContactSubmissionSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(required=True, allow_blank=False)
 
@@ -234,3 +334,128 @@ class FormulationSerializer(serializers.ModelSerializer):
 
     def get_ingredient_count(self, obj: Formulation) -> int:
         return obj.ingredients.count()
+
+
+class IntakeSerializer(serializers.Serializer):
+    skin_type = serializers.ChoiceField(choices=SkinType.choices)
+    fitzpatrick_skin_type = serializers.ChoiceField(
+        choices=FitzpatrickSkinType.choices,
+        required=False,
+        default=FitzpatrickSkinType.NOT_PROVIDED,
+    )
+    baseline_sensitivity = serializers.IntegerField(
+        min_value=0,
+        max_value=10,
+        required=False,
+        allow_null=True,
+    )
+    primary_concerns = serializers.ListField(
+        child=serializers.CharField(max_length=64),
+        required=False,
+        default=list,
+    )
+    goals = serializers.ListField(
+        child=serializers.CharField(max_length=128),
+        required=False,
+        default=list,
+    )
+    goals_text = serializers.CharField(required=False, allow_blank=True)
+    pregnancy_status = serializers.ChoiceField(
+        choices=PregnancyStatus.choices,
+        required=False,
+        default=PregnancyStatus.NOT_PROVIDED,
+    )
+    climate = serializers.CharField(required=False, allow_blank=True, max_length=64)
+    routine_notes = serializers.CharField(required=False, allow_blank=True)
+    sensitivities = serializers.ListField(
+        child=serializers.CharField(max_length=128),
+        required=False,
+        default=list,
+    )
+
+    def validate_primary_concerns(self, value: list[str]) -> list[str]:
+        return self._clean_unique_list(value)
+
+    def validate_goals(self, value: list[str]) -> list[str]:
+        return self._clean_unique_list(value)
+
+    def validate_sensitivities(self, value: list[str]) -> list[str]:
+        return self._clean_unique_list(value)
+
+    def _clean_unique_list(self, values: list[str]) -> list[str]:
+        seen = set()
+        cleaned = []
+        for item in values:
+            value = item.strip()
+            if not value or value.lower() in seen:
+                continue
+            seen.add(value.lower())
+            cleaned.append(value)
+        return cleaned
+
+    @transaction.atomic
+    def save(self, **kwargs):
+        user = self.context["request"].user
+        profile, _ = Profile.objects.get_or_create(user=user)
+        data = self.validated_data
+        goals = data.get("goals", [])
+        goals_text = data.get("goals_text", "").strip()
+        if goals_text:
+            goals = [*goals, goals_text]
+
+        profile.skin_profiles.filter(is_current=True).update(is_current=False)
+        skin_profile = SkinProfile.objects.create(
+            profile=profile,
+            label="Initial intake",
+            is_current=True,
+            skin_type=data["skin_type"],
+            fitzpatrick_skin_type=data.get(
+                "fitzpatrick_skin_type",
+                FitzpatrickSkinType.NOT_PROVIDED,
+            ),
+            primary_concerns=data.get("primary_concerns", []),
+            goals=goals,
+            pregnancy_status=data.get(
+                "pregnancy_status",
+                PregnancyStatus.NOT_PROVIDED,
+            ),
+            baseline_sensitivity=data.get("baseline_sensitivity"),
+            climate=data.get("climate", "").strip(),
+            routine_notes=data.get("routine_notes", "").strip(),
+        )
+
+        profile.constraints.filter(source="intake").delete()
+        for sensitivity in data.get("sensitivities", []):
+            ProfileConstraint.objects.create(
+                profile=profile,
+                kind=ProfileConstraintKind.SENSITIVITY,
+                enforcement=ConstraintEnforcement.WARN,
+                severity=ConstraintSeverity.MODERATE,
+                raw_label=sensitivity,
+                source="intake",
+            )
+
+        return skin_profile
+
+
+def intake_payload(profile: Profile) -> dict:
+    skin_profile = profile.skin_profiles.filter(is_current=True).first()
+    constraints = profile.constraints.filter(source="intake", is_active=True)
+    return {
+        "profile_id": profile.id,
+        "skin_profile": None
+        if skin_profile is None
+        else {
+            "id": skin_profile.id,
+            "skin_type": skin_profile.skin_type,
+            "fitzpatrick_skin_type": skin_profile.fitzpatrick_skin_type,
+            "primary_concerns": skin_profile.primary_concerns,
+            "goals": skin_profile.goals,
+            "pregnancy_status": skin_profile.pregnancy_status,
+            "baseline_sensitivity": skin_profile.baseline_sensitivity,
+            "climate": skin_profile.climate,
+            "routine_notes": skin_profile.routine_notes,
+            "captured_at": skin_profile.captured_at,
+        },
+        "sensitivities": [constraint.raw_label for constraint in constraints],
+    }

@@ -34,8 +34,8 @@ export default async function CompoundsPage() {
           <Link href="/">Blueskies</Link>
         </div>
         <div className="topbar-actions">
-          <Link className="nav-button" href="/experience">
-            Personalized experience
+          <Link className="nav-button" href="/login">
+            Start intake
           </Link>
           <Link className="nav-button" href="/skincareApi">
             Skincare catalog

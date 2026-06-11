@@ -12,7 +12,7 @@ product.
 
 - A roadmap landing page for users and investors at `/`
 - A contact form that stores name, email, and feedback for admin follow-up
-- A personalized skincare experience prototype at `/experience`
+- Login/signup at `/login` and a mobile-friendly skin intake at `/intake`
 - A compound browser backed by the Django API at `/compounds`
 - A skincare catalog prototype at `/skincareApi`
 - Backend ingredient/formulation models, literature enrichment, and profile

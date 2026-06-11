@@ -41,8 +41,8 @@ export default async function SkincareApiPage() {
           <Link className="nav-button" href="/compounds">
             Compounds
           </Link>
-          <Link className="nav-button" href="/experience">
-            Personalized experience
+          <Link className="nav-button" href="/login">
+            Start intake
           </Link>
         </div>
       </nav>

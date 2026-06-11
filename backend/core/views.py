@@ -1,16 +1,25 @@
+from django.contrib.auth import login as django_login
+from django.contrib.auth import logout as django_logout
 from django.db import connection
 from django.shortcuts import get_object_or_404
 from rest_framework import status
 from rest_framework.decorators import api_view
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+from rest_framework.decorators import permission_classes
 
 from core.ingestion import ingest_formulation, parse_inci_list
-from core.models import Compound, Formulation
+from core.models import Compound, Formulation, Profile
 from core.serializers import (
+    LoginSerializer,
     CompoundSerializer,
     ContactSubmissionSerializer,
     FormulationSerializer,
     FormulationSubmitSerializer,
+    IntakeSerializer,
+    SignupSerializer,
+    auth_user_payload,
+    intake_payload,
 )
 
 
@@ -98,6 +107,60 @@ def formulation_detail(request, formulation_id: int):
         pk=formulation_id,
     )
     return Response(FormulationSerializer(formulation).data)
+
+
+@api_view(["GET"])
+def auth_me(request):
+    if not request.user.is_authenticated:
+        return Response(
+            {"detail": "Authentication credentials were not provided."},
+            status=status.HTTP_401_UNAUTHORIZED,
+        )
+    return Response({"user": auth_user_payload(request.user)})
+
+
+@api_view(["POST"])
+def auth_signup(request):
+    serializer = SignupSerializer(data=request.data)
+    serializer.is_valid(raise_exception=True)
+    user = serializer.save()
+    django_login(request, user)
+    return Response({"user": auth_user_payload(user)}, status=status.HTTP_201_CREATED)
+
+
+@api_view(["POST"])
+def auth_login(request):
+    serializer = LoginSerializer(
+        data=request.data,
+        context={"request": request},
+    )
+    serializer.is_valid(raise_exception=True)
+    user = serializer.validated_data["user"]
+    django_login(request, user)
+    return Response({"user": auth_user_payload(user)})
+
+
+@api_view(["POST"])
+def auth_logout(request):
+    django_logout(request)
+    return Response({"detail": "Logged out."})
+
+
+@api_view(["GET", "POST"])
+@permission_classes([IsAuthenticated])
+def intake(request):
+    profile, _ = Profile.objects.get_or_create(user=request.user)
+    if request.method == "GET":
+        return Response(intake_payload(profile))
+
+    serializer = IntakeSerializer(
+        data=request.data,
+        context={"request": request},
+    )
+    serializer.is_valid(raise_exception=True)
+    serializer.save()
+    profile.refresh_from_db()
+    return Response(intake_payload(profile), status=status.HTTP_201_CREATED)
 
 
 @api_view(["POST"])

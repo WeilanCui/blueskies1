@@ -55,7 +55,7 @@ export default function Home() {
         <div className="topbar-actions landing-nav">
           <a href="#how-it-works">How it works</a>
           <a href="#science">Science + you</a>
-          <Link href="/experience">Prototype</Link>
+          <Link href="/login">Log in</Link>
           <a href="#contact">Contact us</a>
         </div>
       </nav>
@@ -70,9 +70,9 @@ export default function Home() {
             to ingredients, hormones, weather, location, and product history.
           </p>
           <div className="landing-actions">
-            <a className="primary-button link-button" href="#contact">
-              Contact us
-            </a>
+            <Link className="primary-button link-button" href="/login">
+              Start intake
+            </Link>
             <a className="secondary-button" href="#how-it-works">
               See how it works
             </a>
@@ -234,7 +234,7 @@ export default function Home() {
       <footer className="landing-footer">
         <span>Blueskies roadmap preview</span>
         <div>
-          <Link href="/experience">Prototype</Link>
+          <Link href="/login">Log in</Link>
           <Link href="/compounds">Compounds</Link>
           <Link href="/skincareApi">Catalog</Link>
         </div>
