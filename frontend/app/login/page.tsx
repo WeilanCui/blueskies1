@@ -153,7 +153,12 @@ export default function LoginPage() {
                 value={displayName}
               >
                 <Label>Name</Label>
-                <Input placeholder="Your name" variant="secondary" />
+                <Input
+                  autoComplete="name"
+                  name="name"
+                  placeholder="Your name"
+                  variant="secondary"
+                />
               </TextField>
             )}
 
@@ -165,11 +170,18 @@ export default function LoginPage() {
               onChange={setEmail}
               type="email"
               value={email}
-            >
-              <Label>Email</Label>
-              <Input placeholder="you@example.com" variant="secondary" />
-              {emailError && <FieldError>{emailError}</FieldError>}
-            </TextField>
+          >
+            <Label>Email</Label>
+            <Input
+              autoComplete="email"
+              inputMode="email"
+              name="email"
+              placeholder="you@example.com"
+              type="email"
+              variant="secondary"
+            />
+            {emailError && <FieldError>{emailError}</FieldError>}
+          </TextField>
 
             <TextField
               className="contact-field"
@@ -179,11 +191,17 @@ export default function LoginPage() {
               onChange={setPassword}
               type="password"
               value={password}
-            >
-              <Label>Password</Label>
-              <Input placeholder="Password" variant="secondary" />
-              {passwordError && <FieldError>{passwordError}</FieldError>}
-            </TextField>
+          >
+            <Label>Password</Label>
+            <Input
+              autoComplete={mode === "signup" ? "new-password" : "current-password"}
+              name={mode === "signup" ? "new-password" : "current-password"}
+              placeholder="Password"
+              type="password"
+              variant="secondary"
+            />
+            {passwordError && <FieldError>{passwordError}</FieldError>}
+          </TextField>
 
             <Button
               type="submit"
