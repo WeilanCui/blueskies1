@@ -3,7 +3,8 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Blueskies",
-  description: "Personalized skincare intelligence with ingredient research",
+  description:
+    "Personalized skincare intelligence for skin tracking, regimen analysis, and ingredient science.",
 };
 
 export default function RootLayout({
