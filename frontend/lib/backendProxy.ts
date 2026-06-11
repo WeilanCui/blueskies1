@@ -7,6 +7,19 @@ type ProxyOptions = {
   body?: unknown;
 };
 
+const unsafeMethods = new Set(["DELETE", "PATCH", "POST", "PUT"]);
+
+function readCookie(cookieHeader: string, name: string): string | null {
+  const cookies = cookieHeader.split(";");
+  for (const cookie of cookies) {
+    const [rawKey, ...rawValue] = cookie.trim().split("=");
+    if (rawKey === name) {
+      return decodeURIComponent(rawValue.join("="));
+    }
+  }
+  return null;
+}
+
 function appendSetCookies(response: NextResponse, backendResponse: Response) {
   const headers = backendResponse.headers as Headers & {
     getSetCookie?: () => string[];
@@ -34,6 +47,14 @@ export async function proxyBackendJson(
   const cookie = request.headers.get("cookie");
   if (cookie) {
     headers.Cookie = cookie;
+    const csrfToken = readCookie(cookie, "csrftoken");
+    if (csrfToken && unsafeMethods.has(method.toUpperCase())) {
+      headers["X-CSRFToken"] = csrfToken;
+    }
+  }
+  const requestCsrfToken = request.headers.get("x-csrftoken");
+  if (requestCsrfToken && unsafeMethods.has(method.toUpperCase())) {
+    headers["X-CSRFToken"] = requestCsrfToken;
   }
 
   try {

@@ -1,12 +1,12 @@
 from django.contrib.auth import login as django_login
 from django.contrib.auth import logout as django_logout
 from django.db import connection
+from django.middleware.csrf import get_token
 from django.shortcuts import get_object_or_404
 from rest_framework import status
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, permission_classes, throttle_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from rest_framework.decorators import permission_classes
 
 from core.ingestion import ingest_formulation, parse_inci_list
 from core.models import Compound, Formulation, Profile
@@ -20,6 +20,12 @@ from core.serializers import (
     SignupSerializer,
     auth_user_payload,
     intake_payload,
+)
+from core.throttles import (
+    AuthRateThrottle,
+    ContactRateThrottle,
+    FormulationSubmitRateThrottle,
+    SignupRateThrottle,
 )
 
 
@@ -56,6 +62,8 @@ def compound_list(request):
 
 
 @api_view(["POST"])
+@permission_classes([IsAuthenticated])
+@throttle_classes([FormulationSubmitRateThrottle])
 def formulation_submit(request):
     serializer = FormulationSubmitSerializer(data=request.data)
     serializer.is_valid(raise_exception=True)
@@ -111,6 +119,7 @@ def formulation_detail(request, formulation_id: int):
 
 @api_view(["GET"])
 def auth_me(request):
+    get_token(request)
     if not request.user.is_authenticated:
         return Response(
             {"detail": "Authentication credentials were not provided."},
@@ -120,15 +129,18 @@ def auth_me(request):
 
 
 @api_view(["POST"])
+@throttle_classes([SignupRateThrottle])
 def auth_signup(request):
     serializer = SignupSerializer(data=request.data)
     serializer.is_valid(raise_exception=True)
     user = serializer.save()
     django_login(request, user)
+    get_token(request)
     return Response({"user": auth_user_payload(user)}, status=status.HTTP_201_CREATED)
 
 
 @api_view(["POST"])
+@throttle_classes([AuthRateThrottle])
 def auth_login(request):
     serializer = LoginSerializer(
         data=request.data,
@@ -137,6 +149,7 @@ def auth_login(request):
     serializer.is_valid(raise_exception=True)
     user = serializer.validated_data["user"]
     django_login(request, user)
+    get_token(request)
     return Response({"user": auth_user_payload(user)})
 
 
@@ -164,6 +177,7 @@ def intake(request):
 
 
 @api_view(["POST"])
+@throttle_classes([ContactRateThrottle])
 def contact_submit(request):
     serializer = ContactSubmissionSerializer(data=request.data)
     serializer.is_valid(raise_exception=True)

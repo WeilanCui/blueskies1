@@ -37,6 +37,7 @@ function getContactErrorMessage(data: unknown): string {
 async function submitContact(payload: ContactPayload): Promise<ContactResponse> {
   const response = await fetch("/api/contact", {
     method: "POST",
+    credentials: "same-origin",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
   });

@@ -214,7 +214,7 @@ class SignupSerializer(serializers.Serializer):
     def validate_email(self, value: str) -> str:
         email = value.strip().lower()
         if User.objects.filter(email__iexact=email).exists():
-            raise serializers.ValidationError("An account with this email already exists.")
+            raise serializers.ValidationError("Unable to create an account with these credentials.")
         return email
 
     def validate_password(self, value: str) -> str:

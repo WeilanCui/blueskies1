@@ -1,5 +1,7 @@
+import json
+
 from django.contrib.auth import get_user_model
-from django.test import TestCase
+from django.test import Client, TestCase
 from django.urls import reverse
 from rest_framework.test import APIClient
 
@@ -74,6 +76,39 @@ class AuthApiTests(TestCase):
         )
 
         self.assertEqual(response.status_code, 400)
+
+    def test_login_sets_csrf_cookie_for_session_authenticated_writes(self):
+        user = get_user_model().objects.create_user(
+            username="csrf-user",
+            email="csrf-user@example.com",
+            password="strong-test-pass-123",
+        )
+        Profile.objects.create(user=user)
+        client = Client(enforce_csrf_checks=True, HTTP_HOST="localhost")
+
+        login = client.post(
+            reverse("auth-login"),
+            data=json.dumps(
+                {
+                    "identifier": "csrf-user@example.com",
+                    "password": "strong-test-pass-123",
+                }
+            ),
+            content_type="application/json",
+        )
+
+        self.assertEqual(login.status_code, 200)
+        self.assertIn("csrftoken", client.cookies)
+        csrf_token = client.cookies["csrftoken"].value
+
+        response = client.post(
+            reverse("intake"),
+            data=json.dumps({"skin_type": "combination"}),
+            content_type="application/json",
+            HTTP_X_CSRFTOKEN=csrf_token,
+        )
+
+        self.assertEqual(response.status_code, 201)
 
 
 class IntakeApiTests(TestCase):
@@ -158,3 +193,20 @@ class IntakeApiTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data["skin_profile"]["skin_type"], "oily")
         self.assertEqual(response.data["sensitivities"], ["Fragrance"])
+
+
+class ProtectedWriteEndpointTests(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+
+    def test_formulation_submit_requires_authentication(self):
+        response = self.client.post(
+            reverse("formulation-submit"),
+            {
+                "name": "Example Product",
+                "formulation": "Water, Glycerin",
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 403)

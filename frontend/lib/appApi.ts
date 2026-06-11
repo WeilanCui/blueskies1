@@ -78,6 +78,7 @@ async function requestJson<T>(
 ): Promise<T> {
   const response = await fetch(path, {
     ...options,
+    credentials: "same-origin",
     headers: {
       "Content-Type": "application/json",
       ...options.headers,
