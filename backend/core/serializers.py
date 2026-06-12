@@ -313,6 +313,9 @@ class ProductSummarySerializer(serializers.ModelSerializer):
 class FormulationIngredientSerializer(serializers.ModelSerializer):
     compound_name = serializers.SerializerMethodField()
     enrichment_status = serializers.SerializerMethodField()
+    inherited_functional_classes = serializers.SerializerMethodField()
+    effective_functional_classes = serializers.SerializerMethodField()
+    is_function_override = serializers.SerializerMethodField()
 
     class Meta:
         model = FormulationIngredient
@@ -323,6 +326,13 @@ class FormulationIngredientSerializer(serializers.ModelSerializer):
             "compound",
             "compound_name",
             "enrichment_status",
+            "inherited_functional_classes",
+            "functional_classes_override",
+            "effective_functional_classes",
+            "is_function_override",
+            "function_override_source",
+            "function_override_confidence",
+            "function_override_notes",
             "is_key_active",
             "active_note",
         ]
@@ -336,6 +346,15 @@ class FormulationIngredientSerializer(serializers.ModelSerializer):
         if obj.compound is None:
             return ""
         return obj.compound.enrichment_status
+
+    def get_inherited_functional_classes(self, obj: FormulationIngredient) -> list[str]:
+        return obj.inherited_functional_classes
+
+    def get_effective_functional_classes(self, obj: FormulationIngredient) -> list[str]:
+        return obj.effective_functional_classes
+
+    def get_is_function_override(self, obj: FormulationIngredient) -> bool:
+        return obj.is_function_override
 
 
 class FormulationSerializer(serializers.ModelSerializer):

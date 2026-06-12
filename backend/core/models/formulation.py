@@ -1,6 +1,8 @@
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 
 from core.models.compound import EnrichmentStatus
+from core.models.metadata import SourceType
 from core.models.product import Product
 
 
@@ -82,6 +84,18 @@ class FormulationIngredient(models.Model):
     )
     is_key_active = models.BooleanField(default=False)
     active_note = models.TextField(blank=True)
+    functional_classes_override = models.JSONField(default=list, blank=True)
+    function_override_source = models.CharField(
+        max_length=32,
+        choices=SourceType.choices,
+        blank=True,
+    )
+    function_override_confidence = models.FloatField(
+        null=True,
+        blank=True,
+        validators=[MinValueValidator(0.0), MaxValueValidator(1.0)],
+    )
+    function_override_notes = models.TextField(blank=True)
 
     class Meta:
         ordering = ["position"]
@@ -94,3 +108,32 @@ class FormulationIngredient(models.Model):
 
     def __str__(self) -> str:
         return f"{self.position}. {self.raw_text}"
+
+    @property
+    def inherited_functional_classes(self) -> list[str]:
+        if self.compound_id is None:
+            return []
+
+        values: list[str] = []
+        assertions = self.compound.property_assertions.filter(
+            property_def__key="functional_class",
+            is_active=True,
+        )
+        for assertion in assertions:
+            raw_value = assertion.value_json
+            if isinstance(raw_value, list):
+                values.extend(str(value) for value in raw_value if value)
+            elif assertion.value_text:
+                values.append(assertion.value_text)
+
+        return list(dict.fromkeys(values))
+
+    @property
+    def effective_functional_classes(self) -> list[str]:
+        if self.functional_classes_override:
+            return [str(value) for value in self.functional_classes_override if value]
+        return self.inherited_functional_classes
+
+    @property
+    def is_function_override(self) -> bool:
+        return bool(self.functional_classes_override)

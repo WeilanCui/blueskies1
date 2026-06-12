@@ -174,15 +174,33 @@ class InteractionRuleAdmin(admin.ModelAdmin):
 class FormulationIngredientInline(admin.TabularInline):
     model = FormulationIngredient
     extra = 0
+    readonly_fields = (
+        "inherited_functional_classes_display",
+        "effective_functional_classes_display",
+    )
     fields = (
         "position",
         "raw_text",
         "compound",
         "parse_status",
+        "inherited_functional_classes_display",
+        "functional_classes_override",
+        "function_override_source",
+        "function_override_confidence",
+        "function_override_notes",
+        "effective_functional_classes_display",
         "is_key_active",
         "active_note",
     )
     ordering = ("position",)
+
+    @admin.display(description="Inherited functional classes")
+    def inherited_functional_classes_display(self, obj: FormulationIngredient) -> str:
+        return ", ".join(obj.inherited_functional_classes)
+
+    @admin.display(description="Effective functional classes")
+    def effective_functional_classes_display(self, obj: FormulationIngredient) -> str:
+        return ", ".join(obj.effective_functional_classes)
 
 
 class ProductFormulationInline(admin.TabularInline):
