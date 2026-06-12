@@ -17,6 +17,7 @@ from core.models import (
     FormulationIngredient,
     FitzpatrickSkinType,
     PregnancyStatus,
+    Product,
     Profile,
     ProfileConstraint,
     ProfileConstraintKind,
@@ -289,6 +290,19 @@ class ContactSubmissionSerializer(serializers.ModelSerializer):
         return value
 
 
+class ProductSummarySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Product
+        fields = [
+            "id",
+            "brand",
+            "name",
+            "display_name",
+            "category",
+            "image_url",
+        ]
+
+
 class FormulationIngredientSerializer(serializers.ModelSerializer):
     compound_name = serializers.SerializerMethodField()
     enrichment_status = serializers.SerializerMethodField()
@@ -302,6 +316,8 @@ class FormulationIngredientSerializer(serializers.ModelSerializer):
             "compound",
             "compound_name",
             "enrichment_status",
+            "is_key_active",
+            "active_note",
         ]
 
     def get_compound_name(self, obj: FormulationIngredient) -> str:
@@ -316,6 +332,10 @@ class FormulationIngredientSerializer(serializers.ModelSerializer):
 
 
 class FormulationSerializer(serializers.ModelSerializer):
+    product = ProductSummarySerializer(read_only=True)
+    product_id = serializers.IntegerField(read_only=True)
+    name = serializers.CharField(read_only=True)
+    brand = serializers.CharField(read_only=True)
     ingredients = FormulationIngredientSerializer(many=True, read_only=True)
     ingredient_count = serializers.SerializerMethodField()
 
@@ -323,8 +343,17 @@ class FormulationSerializer(serializers.ModelSerializer):
         model = Formulation
         fields = [
             "id",
+            "product_id",
+            "product",
             "name",
             "brand",
+            "sku",
+            "barcode",
+            "market",
+            "made_in",
+            "version_label",
+            "effective_from",
+            "effective_to",
             "enrichment_status",
             "raw_inci_text",
             "ingredient_count",

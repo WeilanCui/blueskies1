@@ -78,7 +78,9 @@ class CompoundViewSet(ReadOnlyResourceViewSet):
 
 
 class FormulationViewSet(viewsets.ModelViewSet):
-    queryset = Formulation.objects.prefetch_related("ingredients__compound")
+    queryset = Formulation.objects.select_related("product").prefetch_related(
+        "ingredients__compound"
+    )
     serializer_class = FormulationSerializer
     http_method_names = ["get", "post", "head", "options"]
 

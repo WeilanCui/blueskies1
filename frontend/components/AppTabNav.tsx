@@ -8,8 +8,8 @@ type AppTabNavProps = {
 
 const tabs = [
   { id: "home", label: "Home", href: "/home" },
-  { id: "scan", label: "Scan", href: "/scan" },
-  { id: "intake", label: "Intake", href: "/intake" },
+  { id: "scan", label: "Add products", href: "/scan" },
+  { id: "intake", label: "profile", href: "/intake" },
   { id: "catalog", label: "Catalog", href: "/skincareApi" },
 ] as const;
 

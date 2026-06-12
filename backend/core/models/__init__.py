@@ -9,7 +9,7 @@ from core.models.compound import (
     EnrichmentStatus,
 )
 from core.models.contact import ContactSubmission, ContactSubmissionStatus
-from core.models.formulation import Formulation, FormulationIngredient
+from core.models.formulation import Formulation, FormulationIngredient, Product
 from core.models.metadata import SourceMetadata, SourceType
 from core.models.interactions import (
     InteractionAssertion,
@@ -77,6 +77,7 @@ __all__ = [
     "LiteratureEnrichmentStatus",
     "LiteratureReference",
     "PregnancyStatus",
+    "Product",
     "Profile",
     "ProfileConstraint",
     "ProfileConstraintKind",

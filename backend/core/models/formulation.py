@@ -1,13 +1,49 @@
 from django.db import models
+from django.db.models.functions import Lower
 
 from core.models.compound import EnrichmentStatus
 
 
-class Formulation(models.Model):
-    """A product or master formula sheet."""
+class Product(models.Model):
+    """A commercial skincare product that can have multiple formula variants."""
 
-    name = models.CharField(max_length=512)
     brand = models.CharField(max_length=256, blank=True)
+    name = models.CharField(max_length=512)
+    display_name = models.CharField(max_length=512, blank=True)
+    category = models.CharField(max_length=128, blank=True)
+    description = models.TextField(blank=True)
+    image_url = models.URLField(max_length=1024, blank=True)
+    source = models.CharField(max_length=64, blank=True)
+    source_ref = models.CharField(max_length=512, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["brand", "name"]
+        constraints = [
+            models.UniqueConstraint(
+                Lower("brand"),
+                Lower("name"),
+                name="unique_product_brand_name_ci",
+            )
+        ]
+
+    def __str__(self) -> str:
+        if self.display_name:
+            return self.display_name
+        if self.brand:
+            return f"{self.brand} {self.name}"
+        return self.name
+
+
+class Formulation(models.Model):
+    """A specific ingredient-list variant for a product."""
+
+    product = models.ForeignKey(
+        Product,
+        on_delete=models.CASCADE,
+        related_name="formulations",
+    )
     sku = models.CharField(max_length=128, blank=True)
     barcode = models.CharField(max_length=64, blank=True, unique=True, null=True)
     enrichment_status = models.CharField(
@@ -18,14 +54,31 @@ class Formulation(models.Model):
     raw_inci_text = models.TextField(blank=True)
     source = models.CharField(max_length=64, blank=True)
     source_ref = models.CharField(max_length=512, blank=True)
+    market = models.CharField(max_length=64, blank=True)
+    made_in = models.CharField(max_length=128, blank=True)
+    version_label = models.CharField(max_length=128, blank=True)
+    effective_from = models.DateField(null=True, blank=True)
+    effective_to = models.DateField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        ordering = ["name"]
+        ordering = ["product__brand", "product__name", "market", "version_label", "id"]
+
+    @property
+    def name(self) -> str:
+        return self.product.name
+
+    @property
+    def brand(self) -> str:
+        return self.product.brand
 
     def __str__(self) -> str:
-        return self.name
+        variant_bits = [self.version_label, self.market, self.made_in, self.barcode]
+        variant = " / ".join(bit for bit in variant_bits if bit)
+        if variant:
+            return f"{self.product} ({variant})"
+        return str(self.product)
 
 
 class FormulationIngredient(models.Model):
@@ -54,6 +107,8 @@ class FormulationIngredient(models.Model):
         ],
         default="unmatched",
     )
+    is_key_active = models.BooleanField(default=False)
+    active_note = models.TextField(blank=True)
 
     class Meta:
         ordering = ["position"]

@@ -101,7 +101,7 @@ class RecommendationMatcher:
             key=lambda match: (
                 match.excluded,
                 -match.final_score,
-                match.formulation.name.lower(),
+                match.formulation.product.name.lower(),
                 match.formulation.id,
             ),
         )

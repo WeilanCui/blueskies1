@@ -147,8 +147,12 @@ class ProfileConstraintEvaluator:
             return False
 
         return Formulation.objects.filter(pk=formulation.pk).filter(
-            Q(name__icontains=label)
-            | Q(brand__icontains=label)
+            Q(product__name__icontains=label)
+            | Q(product__brand__icontains=label)
+            | Q(version_label__icontains=label)
+            | Q(market__icontains=label)
+            | Q(made_in__icontains=label)
+            | Q(barcode__icontains=label)
             | Q(raw_inci_text__icontains=label)
             | Q(ingredients__raw_text__icontains=label)
             | Q(ingredients__compound__canonical_inci__icontains=label)

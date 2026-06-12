@@ -14,6 +14,7 @@ from core.models import (
     EnrichmentStatus,
     Formulation,
     FormulationIngredient,
+    Product,
 )
 
 logger = logging.getLogger(__name__)
@@ -103,9 +104,9 @@ def create_formulation(
 ) -> Formulation:
     """Persist a formulation and parsed ingredient rows without running enrichment."""
     ingredient_names = parse_inci_list(raw_inci_text)
+    product = _get_or_create_product(product_name, brand=brand)
     formulation = Formulation.objects.create(
-        name=product_name.strip(),
-        brand=brand.strip(),
+        product=product,
         raw_inci_text=raw_inci_text.strip(),
         source="frontend",
         enrichment_status=EnrichmentStatus.PENDING,
@@ -124,6 +125,23 @@ def create_formulation(
     return formulation
 
 
+def _get_or_create_product(product_name: str, *, brand: str = "") -> Product:
+    name = product_name.strip() or "Unnamed product"
+    brand = brand.strip()
+    product = Product.objects.filter(
+        brand__iexact=brand,
+        name__iexact=name,
+    ).first()
+    if product is not None:
+        return product
+    return Product.objects.create(
+        brand=brand,
+        name=name,
+        display_name=name,
+        source="frontend",
+    )
+
+
 def ingest_formulation_ingredients(
     formulation_id: int,
     *,
@@ -132,7 +150,8 @@ def ingest_formulation_ingredients(
 ) -> FormulationIngestResult:
     """Run INCI + PubChem/PubMed ingestion for every ingredient on a formulation."""
     formulation = (
-        Formulation.objects.prefetch_related("ingredients__compound")
+        Formulation.objects.select_related("product")
+        .prefetch_related("ingredients__compound")
         .get(pk=formulation_id)
     )
     results: list[IngredientIngestResult] = []
@@ -150,7 +169,7 @@ def ingest_formulation_ingredients(
 
     return FormulationIngestResult(
         formulation_id=formulation.pk,
-        product_name=formulation.name,
+        product_name=formulation.product.name,
         ingredient_count=len(results),
         enrichment_status=formulation.enrichment_status,
         ingredients=results,

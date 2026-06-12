@@ -56,6 +56,7 @@ export default function ContactForm() {
   const [email, setEmail] = useState("");
   const [feedback, setFeedback] = useState("");
   const [submitted, setSubmitted] = useState(false);
+  const [showValidation, setShowValidation] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const contactMutation = useMutation({
@@ -82,8 +83,13 @@ export default function ContactForm() {
     trimmedFeedback.length > 0;
   const isLocked = contactMutation.isPending || submitted;
 
+  function revealValidation() {
+    setShowValidation(true);
+  }
+
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    revealValidation();
     if (isLocked) {
       return;
     }
@@ -125,22 +131,20 @@ export default function ContactForm() {
       <TextField
         className="contact-field"
         isDisabled={isLocked}
-        isInvalid={Boolean(nameError)}
-        isRequired
+        isInvalid={showValidation && Boolean(nameError)}
         name="name"
         onChange={setName}
         value={name}
       >
         <Label>Name</Label>
         <Input placeholder="Your name" variant="secondary" />
-        {nameError && <FieldError>{nameError}</FieldError>}
+        {showValidation && nameError && <FieldError>{nameError}</FieldError>}
       </TextField>
 
       <TextField
         className="contact-field"
         isDisabled={isLocked}
-        isInvalid={Boolean(emailError)}
-        isRequired
+        isInvalid={showValidation && Boolean(emailError)}
         name="email"
         onChange={setEmail}
         type="email"
@@ -148,14 +152,13 @@ export default function ContactForm() {
       >
         <Label>Email</Label>
         <Input placeholder="you@example.com" variant="secondary" />
-        {emailError && <FieldError>{emailError}</FieldError>}
+        {showValidation && emailError && <FieldError>{emailError}</FieldError>}
       </TextField>
 
       <TextField
         className="contact-field"
         isDisabled={isLocked}
-        isInvalid={Boolean(feedbackError)}
-        isRequired
+        isInvalid={showValidation && Boolean(feedbackError)}
         name="feedback"
         onChange={setFeedback}
         value={feedback}
@@ -166,14 +169,14 @@ export default function ContactForm() {
           rows={5}
           variant="secondary"
         />
-        {feedbackError && <FieldError>{feedbackError}</FieldError>}
+        {showValidation && feedbackError && <FieldError>{feedbackError}</FieldError>}
       </TextField>
 
-      <Button type="submit" isDisabled={isLocked || !canSubmit}>
+      <Button type="submit" isDisabled={isLocked}>
         {contactMutation.isPending ? "Sending..." : submitted ? "Submitted" : "Send message"}
       </Button>
 
-      {!submitted && !canSubmit && (
+      {showValidation && !submitted && !canSubmit && (
         <p className="contact-help">Complete all fields with a valid email to send.</p>
       )}
       {message && <p className="contact-success">{message}</p>}

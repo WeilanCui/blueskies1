@@ -16,6 +16,7 @@ from core.models import (
     InteractionAssertion,
     InteractionRule,
     LiteratureReference,
+    Product,
     Profile,
     ProfileConstraint,
     PropertyAssertion,
@@ -150,7 +151,8 @@ class PropertyAssertionAdmin(admin.ModelAdmin):
     search_fields = (
         "compound__canonical_inci",
         "chemical_class__name",
-        "formulation__name",
+        "formulation__product__name",
+        "formulation__product__brand",
     )
 
 
@@ -171,14 +173,67 @@ class InteractionRuleAdmin(admin.ModelAdmin):
 class FormulationIngredientInline(admin.TabularInline):
     model = FormulationIngredient
     extra = 0
+    fields = (
+        "position",
+        "raw_text",
+        "compound",
+        "parse_status",
+        "is_key_active",
+        "active_note",
+    )
     ordering = ("position",)
+
+
+class ProductFormulationInline(admin.TabularInline):
+    model = Formulation
+    extra = 0
+    fields = (
+        "sku",
+        "barcode",
+        "market",
+        "made_in",
+        "version_label",
+        "enrichment_status",
+        "source",
+    )
+
+
+@admin.register(Product)
+class ProductAdmin(admin.ModelAdmin):
+    list_display = (
+        "brand",
+        "name",
+        "display_name",
+        "category",
+        "source",
+        "updated_at",
+    )
+    list_filter = ("category", "source", "created_at", "updated_at")
+    search_fields = ("brand", "name", "display_name", "category", "source_ref")
+    readonly_fields = ("created_at", "updated_at")
+    inlines = [ProductFormulationInline]
 
 
 @admin.register(Formulation)
 class FormulationAdmin(admin.ModelAdmin):
-    list_display = ("name", "brand", "enrichment_status", "barcode")
-    search_fields = ("name", "brand", "barcode")
-    list_filter = ("enrichment_status",)
+    list_display = (
+        "product",
+        "market",
+        "made_in",
+        "version_label",
+        "barcode",
+        "enrichment_status",
+    )
+    search_fields = (
+        "product__name",
+        "product__brand",
+        "barcode",
+        "sku",
+        "market",
+        "made_in",
+    )
+    list_filter = ("enrichment_status", "market", "made_in", "source")
+    readonly_fields = ("created_at", "updated_at")
     inlines = [FormulationIngredientInline]
 
 
@@ -363,6 +418,7 @@ class ProfileConstraintAdmin(admin.ModelAdmin):
         "raw_label",
         "compound__canonical_inci",
         "chemical_class__name",
-        "formulation__name",
+        "formulation__product__name",
+        "formulation__product__brand",
         "property_def__key",
     )

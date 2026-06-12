@@ -2,12 +2,12 @@
 
 import Link from "next/link";
 import { FieldError, Input, Label, TextField } from "@heroui/react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { Button } from "../../components/Button";
-import { login, signup, type AuthResponse } from "../../lib/appApi";
+import { getMe, login, signup, type AuthResponse } from "../../lib/appApi";
 import styles from "./login.module.css";
 
 type AuthMode = "login" | "signup";
@@ -33,6 +33,11 @@ export default function LoginPage() {
   const passwordError = password.length === 0 ? "Password is required." : "";
   const canSubmit = !emailError && !passwordError;
 
+  const meQuery = useQuery({
+    queryKey: ["me"],
+    queryFn: getMe,
+    retry: false,
+  });
   const authMutation = useMutation({
     mutationFn: () =>
       mode === "signup"
@@ -62,6 +67,20 @@ export default function LoginPage() {
     }
     setError(null);
     authMutation.mutate();
+  }
+
+  useEffect(() => {
+    if (meQuery.isSuccess) {
+      router.replace("/home");
+    }
+  }, [meQuery.isSuccess, router]);
+
+  if (meQuery.isLoading || meQuery.isSuccess) {
+    return (
+      <main className={styles.authShell}>
+        <p className="detail-muted">Checking your session...</p>
+      </main>
+    );
   }
 
   return (
