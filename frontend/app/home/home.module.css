@@ -1,0 +1,191 @@
+.homeShell {
+  background: #fbfdff;
+  color: #171412;
+  display: grid;
+  gap: 22px;
+  min-height: 100vh;
+  padding: 20px;
+}
+
+.homeTopbar {
+  padding-bottom: 14px;
+}
+
+.homeLayout {
+  display: grid;
+  gap: 16px;
+  margin: 0 auto;
+  max-width: 1080px;
+  width: 100%;
+}
+
+.homeHero {
+  background:
+    linear-gradient(135deg, rgba(244, 251, 235, 0.94), rgba(251, 253, 255, 0.9)),
+    #ffffff;
+  border: 1px solid #dfe6ea;
+  border-radius: 8px;
+  display: grid;
+  gap: 18px;
+  padding: 20px;
+}
+
+.homeHeroCopy {
+  display: grid;
+  gap: 8px;
+}
+
+.homeHero h1 {
+  font-size: clamp(30px, 8vw, 52px);
+  line-height: 1;
+  margin: 0;
+}
+
+.homeHero p {
+  color: #4b5563;
+  font-size: 16px;
+  line-height: 1.5;
+  margin: 0;
+  max-width: 680px;
+}
+
+.homeHeroActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.summaryGrid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.summaryCard {
+  background: rgba(255, 255, 255, 0.78);
+  border: 1px solid rgba(223, 230, 234, 0.9);
+  border-radius: 8px;
+  display: grid;
+  gap: 4px;
+  padding: 12px;
+}
+
+.summaryCard span {
+  color: #66737c;
+  font-size: 0.74rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.summaryCard strong {
+  color: #171412;
+  font-size: 1rem;
+  line-height: 1.15;
+}
+
+.sectionGrid {
+  display: grid;
+  gap: 14px;
+}
+
+.panel {
+  background: #ffffff;
+  border: 1px solid #dfe6ea;
+  border-radius: 8px;
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+}
+
+.panelHeader {
+  display: grid;
+  gap: 6px;
+}
+
+.panelHeader h2 {
+  font-size: 22px;
+  line-height: 1.1;
+  margin: 0;
+}
+
+.panelHeader p {
+  color: #5d6972;
+  line-height: 1.45;
+  margin: 0;
+}
+
+.tagList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.statusList {
+  display: grid;
+  gap: 10px;
+}
+
+.statusItem {
+  align-items: center;
+  border: 1px solid #e5ecef;
+  border-radius: 8px;
+  display: flex;
+  gap: 10px;
+  justify-content: space-between;
+  padding: 12px;
+}
+
+.statusItem strong {
+  font-size: 0.95rem;
+}
+
+.statusItem span {
+  color: #66737c;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.soonBadge {
+  background: #f4fbeb;
+  border: 1px solid #d9f99d;
+  border-radius: 999px;
+  color: #274f1a;
+  font-size: 0.72rem;
+  font-weight: 900;
+  padding: 5px 8px;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.emptyState {
+  background: #f8fafb;
+  border: 1px dashed #cdd7dd;
+  border-radius: 8px;
+  color: #4b5563;
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+}
+
+.emptyState p {
+  margin: 0;
+}
+
+@media (min-width: 760px) {
+  .homeShell {
+    padding: 36px;
+  }
+
+  .homeHero {
+    grid-template-columns: minmax(0, 1.3fr) minmax(280px, 0.7fr);
+    padding: 28px;
+  }
+
+  .summaryGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .sectionGrid {
+    grid-template-columns: minmax(0, 1fr) minmax(300px, 0.75fr);
+  }
+}

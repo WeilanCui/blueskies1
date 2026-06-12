@@ -1,0 +1,155 @@
+.scanShell {
+  background: #fbfdff;
+  color: #171412;
+  display: grid;
+  gap: 18px;
+  min-height: 100vh;
+  padding: 20px;
+}
+
+.scanTopbar {
+  padding-bottom: 14px;
+}
+
+.scanLayout {
+  display: grid;
+  gap: 16px;
+  margin: 0 auto;
+  max-width: 900px;
+  width: 100%;
+}
+
+.scanHero {
+  display: grid;
+  gap: 8px;
+}
+
+.scanHero h1 {
+  font-size: clamp(32px, 10vw, 56px);
+  line-height: 1;
+  margin: 0;
+}
+
+.scanHero p {
+  color: #4b5563;
+  font-size: 16px;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.scanPanel {
+  background: #ffffff;
+  border: 1px solid #dfe6ea;
+  border-radius: 8px;
+  display: grid;
+  gap: 16px;
+  padding: 18px;
+}
+
+.scanPreview {
+  align-items: center;
+  aspect-ratio: 4 / 3;
+  background:
+    linear-gradient(135deg, rgba(244, 251, 235, 0.84), rgba(240, 249, 255, 0.82)),
+    #f8fafb;
+  border: 1px dashed #cdd7dd;
+  border-radius: 8px;
+  display: grid;
+  justify-items: center;
+  overflow: hidden;
+  text-align: center;
+}
+
+.scanPreview img {
+  height: 100%;
+  object-fit: cover;
+  width: 100%;
+}
+
+.scanPlaceholder {
+  display: grid;
+  gap: 8px;
+  max-width: 280px;
+  padding: 18px;
+}
+
+.scanPlaceholder strong {
+  font-size: 1.05rem;
+}
+
+.scanPlaceholder span {
+  color: #66737c;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.scanActions {
+  display: grid;
+  gap: 10px;
+}
+
+.fileAction {
+  align-items: center;
+  background: #171412;
+  border: 1px solid #171412;
+  border-radius: 999px;
+  color: #ffffff;
+  cursor: pointer;
+  display: inline-flex;
+  font-size: 0.95rem;
+  font-weight: 900;
+  justify-content: center;
+  min-height: 48px;
+  padding: 12px 18px;
+  text-align: center;
+}
+
+.fileActionSecondary {
+  background: #ffffff;
+  border-color: #b7c5cc;
+  color: #171412;
+}
+
+.fileInput {
+  height: 1px;
+  opacity: 0;
+  overflow: hidden;
+  position: absolute;
+  width: 1px;
+}
+
+.scanMeta {
+  background: #f8fafb;
+  border: 1px solid #e5ecef;
+  border-radius: 8px;
+  color: #4b5563;
+  display: grid;
+  gap: 4px;
+  padding: 12px;
+}
+
+.scanMeta strong {
+  color: #171412;
+}
+
+.scanNote {
+  color: #66737c;
+  font-size: 0.88rem;
+  line-height: 1.45;
+  margin: 0;
+}
+
+@media (min-width: 760px) {
+  .scanShell {
+    padding: 36px;
+  }
+
+  .scanPanel {
+    grid-template-columns: minmax(0, 1fr) minmax(260px, 0.7fr);
+    padding: 24px;
+  }
+
+  .scanActions {
+    align-content: start;
+  }
+}

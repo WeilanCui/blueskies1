@@ -6,6 +6,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
+import { AppTabNav } from "../../components/AppTabNav";
 import { Button } from "../../components/Button";
 import FaceMap from "../experience/FaceMap";
 import {
@@ -13,6 +14,7 @@ import {
   getMe,
   logout,
   saveIntake,
+  type AuthResponse,
   type IntakePayload,
 } from "../../lib/appApi";
 import styles from "./intake.module.css";
@@ -27,13 +29,55 @@ const skinTypes = [
 ];
 
 const fitzpatrickTypes = [
-  ["not_provided", "Not sure / skip"],
-  ["type_i", "Type I"],
-  ["type_ii", "Type II"],
-  ["type_iii", "Type III"],
-  ["type_iv", "Type IV"],
-  ["type_v", "Type V"],
-  ["type_vi", "Type VI"],
+  {
+    value: "not_provided",
+    label: "Not sure",
+    tone: "Skip for now",
+    response: "You can update this later.",
+    className: styles.fitzpatrickTileNotProvided,
+  },
+  {
+    value: "type_i",
+    label: "Type I",
+    tone: "Ivory",
+    response: "Always freckles, always burns or peels, never tans.",
+    className: styles.fitzpatrickTileTypeI,
+  },
+  {
+    value: "type_ii",
+    label: "Type II",
+    tone: "Pale or fair",
+    response: "Usually freckles, often burns or peels, rarely tans.",
+    className: styles.fitzpatrickTileTypeII,
+  },
+  {
+    value: "type_iii",
+    label: "Type III",
+    tone: "Fair to beige",
+    response: "Might freckle, burns on occasion, sometimes tans.",
+    className: styles.fitzpatrickTileTypeIII,
+  },
+  {
+    value: "type_iv",
+    label: "Type IV",
+    tone: "Olive or light brown",
+    response: "Doesn't really freckle, rarely burns, often tans.",
+    className: styles.fitzpatrickTileTypeIV,
+  },
+  {
+    value: "type_v",
+    label: "Type V",
+    tone: "Dark brown",
+    response: "Rarely freckles, almost never burns, always tans.",
+    className: styles.fitzpatrickTileTypeV,
+  },
+  {
+    value: "type_vi",
+    label: "Type VI",
+    tone: "Deep brown",
+    response: "Never freckles, never burns, always tans.",
+    className: styles.fitzpatrickTileTypeVI,
+  },
 ];
 
 const concernSections = [
@@ -192,6 +236,17 @@ export default function IntakePage() {
     mutationFn: saveIntake,
     onSuccess: (data) => {
       queryClient.setQueryData(["intake"], data);
+      queryClient.setQueryData<AuthResponse | undefined>(["me"], (current) =>
+        current
+          ? {
+              user: {
+                ...current.user,
+                has_completed_intake: true,
+              },
+            }
+          : current,
+      );
+      router.replace("/home");
       setMessage("Your skin profile is saved.");
       setError(null);
     },
@@ -289,6 +344,7 @@ export default function IntakePage() {
           Log out
         </Button>
       </nav>
+      <AppTabNav active="intake" />
 
       <section className={styles.appHero}>
         <p className="landing-eyebrow">Skin intake</p>
@@ -331,19 +387,36 @@ export default function IntakePage() {
               ))}
             </div>
           </fieldset>
-          <label className="field">
-            <span>Fitzpatrick skin type</span>
-            <select
-              value={fitzpatrickSkinType}
-              onChange={(event) => setFitzpatrickSkinType(event.target.value)}
-            >
-              {fitzpatrickTypes.map(([value, label]) => (
-                <option value={value} key={value}>
-                  {label}
-                </option>
+          <fieldset className="choice-group">
+            <legend>Fitzpatrick skin type</legend>
+            <div className={styles.fitzpatrickGrid}>
+              {fitzpatrickTypes.map((type) => (
+                <label
+                  className={[
+                    "choice-card",
+                    styles.fitzpatrickTile,
+                    type.className,
+                  ].join(" ")}
+                  key={type.value}
+                >
+                  <input
+                    type="radio"
+                    name="fitzpatrick_skin_type"
+                    value={type.value}
+                    checked={fitzpatrickSkinType === type.value}
+                    onChange={() => setFitzpatrickSkinType(type.value)}
+                  />
+                  <span className={styles.fitzpatrickType}>{type.label}</span>
+                  <span className={styles.fitzpatrickInfo}>
+                    <span className={styles.fitzpatrickTone}>{type.tone}</span>
+                    <span className={styles.fitzpatrickResponse}>
+                      {type.response}
+                    </span>
+                  </span>
+                </label>
               ))}
-            </select>
-          </label>
+            </div>
+          </fieldset>
           <label className="field">
             <span>Baseline sensitivity: {baselineSensitivity}/10</span>
             <input

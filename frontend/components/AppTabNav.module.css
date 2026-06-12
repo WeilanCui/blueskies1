@@ -1,0 +1,50 @@
+.tabNav {
+  margin: 0 auto;
+  max-width: 1080px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  scrollbar-width: none;
+  width: 100%;
+}
+
+.tabNav::-webkit-scrollbar {
+  display: none;
+}
+
+.tabList {
+  display: flex;
+  gap: 8px;
+  min-width: max-content;
+}
+
+.tabLink {
+  align-items: center;
+  background: #ffffff;
+  border: 1px solid #dfe6ea;
+  border-radius: 999px;
+  color: #23313a;
+  display: inline-flex;
+  font-size: 0.86rem;
+  font-weight: 800;
+  justify-content: center;
+  min-height: 42px;
+  padding: 10px 14px;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.tabLinkActive {
+  background: var(--fresh-lime-soft);
+  border-color: #a3e635;
+  color: #274f1a;
+}
+
+@media (min-width: 760px) {
+  .tabNav {
+    padding-bottom: 0;
+  }
+
+  .tabList {
+    min-width: 0;
+  }
+}

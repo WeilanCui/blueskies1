@@ -120,6 +120,116 @@
   outline-offset: 2px;
 }
 
+.fitzpatrickGrid {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.fitzpatrickTile {
+  align-content: stretch;
+  border-color: rgba(23, 20, 18, 0.14);
+  display: grid;
+  gap: 8px;
+  min-height: 168px;
+  overflow: hidden;
+  padding: 10px;
+  text-align: center;
+}
+
+.fitzpatrickTile input {
+  appearance: none;
+  height: 1px;
+  margin: 0;
+  opacity: 0;
+  overflow: hidden;
+  pointer-events: none;
+  position: absolute;
+  width: 1px;
+}
+
+.fitzpatrickType {
+  align-items: center;
+  background: rgba(255, 255, 255, 0.78);
+  border: 1px solid rgba(255, 255, 255, 0.64);
+  border-radius: 6px;
+  color: #171412;
+  display: flex;
+  font-size: 0.82rem;
+  font-weight: 900;
+  justify-content: center;
+  line-height: 1;
+  min-height: 38px;
+  padding: 8px;
+  text-transform: uppercase;
+}
+
+.fitzpatrickInfo {
+  align-content: center;
+  background: rgba(255, 255, 255, 0.82);
+  border: 1px solid rgba(255, 255, 255, 0.64);
+  border-radius: 6px;
+  display: grid;
+  gap: 8px;
+  min-height: 96px;
+  padding: 10px 8px;
+}
+
+.fitzpatrickTone {
+  color: #171412;
+  font-size: 0.74rem;
+  font-weight: 800;
+  line-height: 1.12;
+}
+
+.fitzpatrickResponse {
+  color: #2f2a26;
+  font-size: 0.66rem;
+  font-weight: 700;
+  line-height: 1.18;
+}
+
+.fitzpatrickTile:has(input:checked) {
+  border-color: #67a94a;
+  box-shadow:
+    0 0 0 2px rgba(103, 169, 74, 0.18),
+    0 12px 28px rgba(23, 20, 18, 0.14);
+  transform: translateY(-1px);
+}
+
+.fitzpatrickTile:has(input:focus-visible) {
+  outline: 3px solid rgba(52, 111, 170, 0.24);
+  outline-offset: 2px;
+}
+
+.fitzpatrickTileNotProvided {
+  background: #e9eff4;
+}
+
+.fitzpatrickTileTypeI {
+  background: #f5e3d8;
+}
+
+.fitzpatrickTileTypeII {
+  background: #e9cc9f;
+}
+
+.fitzpatrickTileTypeIII {
+  background: #d2ad7c;
+}
+
+.fitzpatrickTileTypeIV {
+  background: #a97661;
+}
+
+.fitzpatrickTileTypeV {
+  background: #6b3f2d;
+}
+
+.fitzpatrickTileTypeVI {
+  background: #3a2114;
+}
+
 .concernSectionStack {
   display: grid;
   gap: 14px;
@@ -184,6 +294,26 @@
 
   .skinTypeTile span {
     font-size: 0.88rem;
+  }
+
+  .fitzpatrickGrid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .fitzpatrickTile {
+    min-height: 184px;
+  }
+
+  .fitzpatrickType {
+    font-size: 0.9rem;
+  }
+
+  .fitzpatrickTone {
+    font-size: 0.8rem;
+  }
+
+  .fitzpatrickResponse {
+    font-size: 0.7rem;
   }
 }
 

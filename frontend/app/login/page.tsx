@@ -44,7 +44,7 @@ export default function LoginPage() {
         : login({ identifier: trimmedEmail, password }),
     onSuccess: (data: AuthResponse) => {
       queryClient.setQueryData(["me"], data);
-      router.replace("/intake");
+      router.replace(data.user.has_completed_intake ? "/home" : "/intake");
     },
     onError: (submissionError) => {
       setError(
