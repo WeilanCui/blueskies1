@@ -137,3 +137,9 @@ docker-compose.yml
 Use [CODEX.md](./CODEX.md) as the project guideline for code quality, backend
 work, and frontend design. Frontend changes should be designed mobile-first and
 verified on mobile-width screens before handoff.
+
+## Data
+Seed basic sample data
+```bash
+docker compose exec backend python manage.py seed_catalog
+```
