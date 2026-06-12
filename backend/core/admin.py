@@ -16,13 +16,14 @@ from core.models import (
     InteractionAssertion,
     InteractionRule,
     LiteratureReference,
-    Product,
     Profile,
     ProfileConstraint,
     PropertyAssertion,
     PropertyDefinition,
     SkinProfile,
 )
+from core.models.brand import Brand
+from core.models.product import Product
 
 
 class CompoundAliasInline(admin.TabularInline):
@@ -152,7 +153,7 @@ class PropertyAssertionAdmin(admin.ModelAdmin):
         "compound__canonical_inci",
         "chemical_class__name",
         "formulation__product__name",
-        "formulation__product__brand",
+        "formulation__product__brand__name",
     )
 
 
@@ -198,6 +199,13 @@ class ProductFormulationInline(admin.TabularInline):
     )
 
 
+@admin.register(Brand)
+class BrandAdmin(admin.ModelAdmin):
+    list_display = ("name", "display_name", "website_url", "updated_at")
+    search_fields = ("name", "display_name", "description")
+    readonly_fields = ("created_at", "updated_at")
+
+
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):
     list_display = (
@@ -209,7 +217,7 @@ class ProductAdmin(admin.ModelAdmin):
         "updated_at",
     )
     list_filter = ("category", "source", "created_at", "updated_at")
-    search_fields = ("brand", "name", "display_name", "category", "source_ref")
+    search_fields = ("brand__name", "name", "display_name", "category", "source_ref")
     readonly_fields = ("created_at", "updated_at")
     inlines = [ProductFormulationInline]
 
@@ -226,7 +234,7 @@ class FormulationAdmin(admin.ModelAdmin):
     )
     search_fields = (
         "product__name",
-        "product__brand",
+        "product__brand__name",
         "barcode",
         "sku",
         "market",
@@ -419,6 +427,6 @@ class ProfileConstraintAdmin(admin.ModelAdmin):
         "compound__canonical_inci",
         "chemical_class__name",
         "formulation__product__name",
-        "formulation__product__brand",
+        "formulation__product__brand__name",
         "property_def__key",
     )

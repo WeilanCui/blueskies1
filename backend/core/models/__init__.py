@@ -9,7 +9,9 @@ from core.models.compound import (
     EnrichmentStatus,
 )
 from core.models.contact import ContactSubmission, ContactSubmissionStatus
-from core.models.formulation import Formulation, FormulationIngredient, Product
+from core.models.brand import Brand
+from core.models.formulation import Formulation, FormulationIngredient
+from core.models.product import Product
 from core.models.metadata import SourceMetadata, SourceType
 from core.models.interactions import (
     InteractionAssertion,
@@ -51,6 +53,7 @@ from core.models.profiles import (
 )
 
 __all__ = [
+    "Brand",
     "Compound",
     "CompoundAlias",
     "ChemicalClass",

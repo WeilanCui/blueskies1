@@ -1,7 +1,8 @@
 from django.test import TestCase
 
 from literature.ingestion.formulation_ingest import parse_inci_list, resolve_compound
-from core.models import Compound, FormulationIngredient, Product
+from core.models import Compound, FormulationIngredient
+from core.models.product import Product
 from literature.seeds.loader import upsert_property_definitions
 
 
@@ -54,5 +55,5 @@ class CreateFormulationTests(TestCase):
         self.assertEqual(formulation.brand, "Blueskies")
         self.assertEqual(Product.objects.count(), 1)
         self.assertEqual(formulation.product.name, "Test Serum")
-        self.assertEqual(formulation.product.brand, "Blueskies")
+        self.assertEqual(formulation.product.brand.name, "Blueskies")
         self.assertEqual(FormulationIngredient.objects.filter(formulation=formulation).count(), 2)

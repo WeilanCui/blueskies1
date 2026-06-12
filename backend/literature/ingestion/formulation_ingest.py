@@ -14,8 +14,9 @@ from core.models import (
     EnrichmentStatus,
     Formulation,
     FormulationIngredient,
-    Product,
 )
+from core.models.brand import Brand
+from core.models.product import Product
 
 logger = logging.getLogger(__name__)
 
@@ -127,15 +128,15 @@ def create_formulation(
 
 def _get_or_create_product(product_name: str, *, brand: str = "") -> Product:
     name = product_name.strip() or "Unnamed product"
-    brand = brand.strip()
+    brand_obj = Brand.get_or_create_by_name(brand)
     product = Product.objects.filter(
-        brand__iexact=brand,
+        brand=brand_obj,
         name__iexact=name,
     ).first()
     if product is not None:
         return product
     return Product.objects.create(
-        brand=brand,
+        brand=brand_obj,
         name=name,
         display_name=name,
         source="frontend",
@@ -150,7 +151,7 @@ def ingest_formulation_ingredients(
 ) -> FormulationIngestResult:
     """Run INCI + PubChem/PubMed ingestion for every ingredient on a formulation."""
     formulation = (
-        Formulation.objects.select_related("product")
+        Formulation.objects.select_related("product__brand")
         .prefetch_related("ingredients__compound")
         .get(pk=formulation_id)
     )

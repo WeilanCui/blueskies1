@@ -11,7 +11,6 @@ from core.models import (
     ConstraintSeverity,
     Formulation,
     FormulationIngredient,
-    Product,
     Profile,
     ProfileConstraint,
     ProfileConstraintKind,
@@ -21,6 +20,8 @@ from core.models import (
     SkinProfile,
     ValueType,
 )
+from core.models.brand import Brand
+from core.models.product import Product
 from core.profiles import ProfileConstraintEvaluator, RecommendationMatcher
 
 
@@ -97,9 +98,10 @@ class ProfileConstraintEvaluatorTests(TestCase):
             chemical_class=self.retinoids,
             is_active=True,
         )
+        self.brand = Brand.objects.create(name="Blueskies")
         self.product = Product.objects.create(
             name="Night Renewal Serum",
-            brand="Blueskies",
+            brand=self.brand,
         )
         self.formulation = Formulation.objects.create(
             product=self.product,
@@ -241,9 +243,10 @@ class RecommendationMatcherTests(TestCase):
             canonical_inci="GLYCERIN",
             display_name="Glycerin",
         )
+        self.brand = Brand.objects.create(name="Blueskies")
         self.safe_product = Product.objects.create(
             name="Barrier Cream",
-            brand="Blueskies",
+            brand=self.brand,
         )
         self.safe_formulation = Formulation.objects.create(
             product=self.safe_product,
@@ -257,7 +260,7 @@ class RecommendationMatcherTests(TestCase):
         )
         self.excluded_product = Product.objects.create(
             name="Retinol Night Cream",
-            brand="Blueskies",
+            brand=self.brand,
         )
         self.excluded_formulation = Formulation.objects.create(
             product=self.excluded_product,

@@ -51,6 +51,28 @@ export type IntakeResponse = {
   sensitivities: string[];
 };
 
+export type CatalogIngredient = {
+  name: string;
+  role: string;
+  note: string;
+  is_key_active: boolean;
+  parse_status: string;
+};
+
+export type CatalogProduct = {
+  id: string;
+  product_id: number;
+  formulation_id: number | null;
+  brand: string;
+  name: string;
+  display_name: string;
+  category: string;
+  description: string;
+  enrichment_status: string;
+  ingredient_count: number;
+  ingredients: CatalogIngredient[];
+};
+
 function getErrorMessage(data: unknown, fallback: string): string {
   if (data && typeof data === "object") {
     const detail = "detail" in data ? data.detail : undefined;
@@ -137,5 +159,22 @@ export function saveIntake(payload: IntakePayload): Promise<IntakeResponse> {
       body: JSON.stringify(payload),
     },
     "Could not save intake.",
+  );
+}
+
+export function getCatalogProducts(query = ""): Promise<CatalogProduct[]> {
+  const suffix = query.trim() ? `?q=${encodeURIComponent(query.trim())}` : "";
+  return requestJson<CatalogProduct[]>(
+    `/api/products${suffix}`,
+    {},
+    "Could not load products.",
+  );
+}
+
+export function getCatalogProduct(id: string): Promise<CatalogProduct> {
+  return requestJson<CatalogProduct>(
+    `/api/products/${encodeURIComponent(id)}`,
+    {},
+    "Could not load product.",
   );
 }

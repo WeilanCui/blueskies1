@@ -1,6 +1,8 @@
 from django.contrib.auth import login as django_login
 from django.contrib.auth import logout as django_logout
 from django.db import connection
+from django.db.models import Prefetch, Q
+from django.http import Http404
 from django.middleware.csrf import get_token
 from django.shortcuts import get_object_or_404
 from rest_framework import status, viewsets
@@ -11,6 +13,7 @@ from rest_framework.views import APIView
 
 from literature.ingestion import ingest_formulation, parse_inci_list
 from core.models import Compound, ContactSubmission, Formulation, Profile
+from core.models.product import Product
 from core.serializers import (
     CompoundSerializer,
     ContactSubmissionSerializer,
@@ -20,7 +23,9 @@ from core.serializers import (
     LoginSerializer,
     SignupSerializer,
     auth_user_payload,
+    catalog_slug,
     intake_payload,
+    serialize_catalog_product,
 )
 from core.throttles import (
     AuthRateThrottle,
@@ -78,7 +83,7 @@ class CompoundViewSet(ReadOnlyResourceViewSet):
 
 
 class FormulationViewSet(viewsets.ModelViewSet):
-    queryset = Formulation.objects.select_related("product").prefetch_related(
+    queryset = Formulation.objects.select_related("product__brand").prefetch_related(
         "ingredients__compound"
     )
     serializer_class = FormulationSerializer
@@ -143,6 +148,62 @@ class FormulationViewSet(viewsets.ModelViewSet):
             },
             status=status.HTTP_201_CREATED,
         )
+
+
+class ProductCatalogViewSet(ReadOnlyResourceViewSet):
+    """Public read-only catalog of products with their primary formulation."""
+
+    lookup_field = "pk"
+    lookup_url_kwarg = "pk"
+
+    def get_queryset(self):
+        return (
+            Product.objects.select_related("brand")
+            .prefetch_related(
+                Prefetch(
+                    "formulations",
+                    queryset=Formulation.objects.prefetch_related(
+                        "ingredients__compound"
+                    ).order_by("market", "version_label", "id"),
+                )
+            )
+            .filter(formulations__isnull=False)
+            .distinct()
+            .order_by("brand__name", "name")
+        )
+
+    def filter_queryset(self, queryset):
+        queryset = super().filter_queryset(queryset)
+        query = self.request.query_params.get("q", "").strip()
+        if not query:
+            return queryset
+        return queryset.filter(
+            Q(name__icontains=query)
+            | Q(display_name__icontains=query)
+            | Q(category__icontains=query)
+            | Q(description__icontains=query)
+            | Q(brand__name__icontains=query)
+        )
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.filter_queryset(self.get_queryset())
+        return Response(
+            [serialize_catalog_product(product) for product in queryset]
+        )
+
+    def retrieve(self, request, *args, **kwargs):
+        product = self.get_object()
+        return Response(serialize_catalog_product(product))
+
+    def get_object(self):
+        lookup = self.kwargs[self.lookup_url_kwarg]
+        queryset = self.get_queryset()
+        if lookup.isdigit():
+            return get_object_or_404(queryset, pk=int(lookup))
+        for product in queryset:
+            if catalog_slug(product) == lookup:
+                return product
+        raise Http404
 
 
 class SessionAuthViewSet(viewsets.ViewSet):

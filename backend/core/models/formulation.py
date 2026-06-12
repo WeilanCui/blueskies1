@@ -1,39 +1,10 @@
 from django.db import models
-from django.db.models.functions import Lower
 
 from core.models.compound import EnrichmentStatus
+from core.models.product import Product
 
 
-class Product(models.Model):
-    """A commercial skincare product that can have multiple formula variants."""
 
-    brand = models.CharField(max_length=256, blank=True)
-    name = models.CharField(max_length=512)
-    display_name = models.CharField(max_length=512, blank=True)
-    category = models.CharField(max_length=128, blank=True)
-    description = models.TextField(blank=True)
-    image_url = models.URLField(max_length=1024, blank=True)
-    source = models.CharField(max_length=64, blank=True)
-    source_ref = models.CharField(max_length=512, blank=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
-    class Meta:
-        ordering = ["brand", "name"]
-        constraints = [
-            models.UniqueConstraint(
-                Lower("brand"),
-                Lower("name"),
-                name="unique_product_brand_name_ci",
-            )
-        ]
-
-    def __str__(self) -> str:
-        if self.display_name:
-            return self.display_name
-        if self.brand:
-            return f"{self.brand} {self.name}"
-        return self.name
 
 
 class Formulation(models.Model):
@@ -63,7 +34,7 @@ class Formulation(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        ordering = ["product__brand", "product__name", "market", "version_label", "id"]
+        ordering = ["product__brand__name", "product__name", "market", "version_label", "id"]
 
     @property
     def name(self) -> str:
@@ -71,7 +42,9 @@ class Formulation(models.Model):
 
     @property
     def brand(self) -> str:
-        return self.product.brand
+        if self.product.brand_id is None:
+            return ""
+        return self.product.brand.name
 
     def __str__(self) -> str:
         variant_bits = [self.version_label, self.market, self.made_in, self.barcode]

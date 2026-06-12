@@ -1,8 +1,7 @@
 .tabNav {
   margin: 0 auto;
-  max-width: 1180px;
+  max-width: 1040px;
   overflow-x: auto;
-  padding-bottom: 4px;
   scrollbar-width: none;
   width: 100%;
 }
@@ -12,50 +11,74 @@
 }
 
 .tabList {
-  background: rgba(255, 255, 255, 0.68);
-  border: 1px solid rgba(207, 217, 223, 0.72);
-  border-radius: 999px;
-  display: flex;
-  gap: 4px;
+  align-items: stretch;
+  background: #ffffff;
+  display: grid;
+  gap: 2px;
+  grid-template-columns: repeat(5, minmax(76px, 1fr));
   min-width: max-content;
-  padding: 4px;
 }
 
 .tabLink {
   align-items: center;
-  background: transparent;
-  border: 1px solid transparent;
-  border-radius: 999px;
-  color: #23313a;
-  display: inline-flex;
-  flex: 1 0 auto;
-  font-size: 0.84rem;
-  font-weight: 800;
-  justify-content: center;
-  min-height: 38px;
-  min-width: 92px;
-  padding: 9px 14px;
+  border-radius: 8px;
+  color: #6384a8;
+  display: grid;
+  font-size: 0.72rem;
+  font-weight: 900;
+  gap: 5px;
+  justify-items: center;
+  min-height: 58px;
+  padding: 8px 9px;
+  text-align: center;
   text-decoration: none;
   white-space: nowrap;
 }
 
+.tabLink:hover {
+  color: #171412;
+}
+
 .tabLinkActive {
-  background: #ffffff;
-  border-color: rgba(52, 111, 170, 0.18);
-  box-shadow: 0 10px 22px rgba(35, 49, 58, 0.08);
-  color: var(--accent-strong);
+  color: #171412;
+}
+
+.tabIcon {
+  color: currentColor;
+  display: block;
+  height: 24px;
+  width: 24px;
 }
 
 @media (min-width: 760px) {
-  .tabNav {
-    padding-bottom: 0;
-  }
-
   .tabList {
+    background: #ffffff;
+    border: 0;
+    border-radius: 8px;
+    box-shadow: 0 12px 28px rgba(35, 49, 58, 0.06);
+    gap: 2px;
     min-width: 0;
+    padding: 8px 10px;
   }
 
   .tabLink {
-    min-width: 112px;
+    border: 0;
+    display: grid;
+    font-size: 0.82rem;
+    gap: 6px;
+    justify-content: stretch;
+    min-height: 60px;
+    min-width: 104px;
+    padding: 8px 12px;
+  }
+
+  .tabLinkActive {
+    background: #ffffff;
+    box-shadow: none;
+  }
+
+  .tabIcon {
+    height: 20px;
+    width: 20px;
   }
 }

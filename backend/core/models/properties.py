@@ -144,7 +144,7 @@ class PropertyAssertion(SourceMetadata):
 
     def __str__(self) -> str:
         target = self.compound or self.chemical_class or self.formulation
-        return f"{self.property_def.key}={self.display_value} on {target}"
+        return f"{self.property_def.key}={self.display_value()} on {target}"
 
     def display_value(self) -> str:
         if self.value_json is not None:

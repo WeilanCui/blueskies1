@@ -1,13 +1,16 @@
 from django.db import IntegrityError, transaction
 from django.test import TestCase
 
-from core.models import Formulation, FormulationIngredient, Product
+from core.models import Formulation, FormulationIngredient
+from core.models.brand import Brand
+from core.models.product import Product
 
 
 class ProductModelTests(TestCase):
     def test_product_can_have_multiple_formulation_variants(self):
+        brand = Brand.objects.create(name="Blueskies")
         product = Product.objects.create(
-            brand="Blueskies",
+            brand=brand,
             name="Barrier Cream",
         )
         first = Formulation.objects.create(
@@ -30,15 +33,24 @@ class ProductModelTests(TestCase):
         self.assertEqual(second.brand, "Blueskies")
 
     def test_product_brand_name_identity_is_case_insensitive(self):
-        Product.objects.create(brand="Blueskies", name="Barrier Cream")
+        brand = Brand.objects.create(name="Blueskies")
+        Product.objects.create(brand=brand, name="Barrier Cream")
 
         with self.assertRaises(IntegrityError):
             with transaction.atomic():
-                Product.objects.create(brand="blueskies", name="barrier cream")
+                Product.objects.create(brand=brand, name="barrier cream")
+
+    def test_brand_name_identity_is_case_insensitive(self):
+        Brand.objects.create(name="Blueskies")
+
+        with self.assertRaises(IntegrityError):
+            with transaction.atomic():
+                Brand.objects.create(name="blueskies")
 
     def test_formulation_ingredient_can_mark_key_active(self):
+        brand = Brand.objects.create(name="Blueskies")
         product = Product.objects.create(
-            brand="Blueskies",
+            brand=brand,
             name="Brightening Serum",
         )
         formulation = Formulation.objects.create(product=product)

@@ -7,12 +7,14 @@ from .views import (
     FormulationViewSet,
     HealthCheckView,
     IntakeViewSet,
+    ProductCatalogViewSet,
     SessionAuthViewSet,
 )
 
 router = DefaultRouter()
 router.register("auth", SessionAuthViewSet, basename="auth")
 router.register("compounds", CompoundViewSet, basename="compound")
+router.register("products", ProductCatalogViewSet, basename="product-catalog")
 router.register("formulations", FormulationViewSet, basename="formulation")
 router.register("contact", ContactSubmissionViewSet, basename="contact-submission")
 router.register("intake", IntakeViewSet, basename="intake")
