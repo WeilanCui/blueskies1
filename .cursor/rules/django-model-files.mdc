@@ -1,0 +1,40 @@
+---
+description: One Django model (or tight pair) per file under core/models/
+globs: backend/core/models/**/*.py
+alwaysApply: false
+---
+
+# Django model file layout
+
+When adding or moving models in `backend/core/models/`, give each model its **own module file** — do not append new models to `profiles.py` or other aggregate files.
+
+## Convention
+
+- **One primary model per file**, named after the model in snake_case:
+  - `Brand` → `brand.py`
+  - `Product` → `product.py`
+  - `DailyCheckIn` / `DailyProductUse` → `daily_checkin.py` (child model stays with parent)
+- **TextChoices** used by only that model live in the same file.
+- **Shared enums** used across multiple models may stay in a dedicated choices module or the primary consumer file — prefer a small `*_choices.py` only when truly shared.
+- Re-export from `core/models/__init__.py` so `from core.models import Foo` keeps working.
+- Update direct imports (`from core.models.foo import Foo`) where the codebase already uses them.
+
+## Examples
+
+```python
+# ✅ GOOD — new model in its own file: core/models/skin_profile.py
+class SkinProfile(models.Model):
+    profile = models.ForeignKey("core.Profile", ...)
+```
+
+```python
+# ❌ BAD — adding another model at the bottom of profiles.py
+class SkinProfile(models.Model):
+    ...
+```
+
+## After moving or creating
+
+- No migration needed for file-only moves (same app label + class name).
+- Run/create migrations only when fields or Meta change.
+- Register in `admin.py` from the new module path if applicable.

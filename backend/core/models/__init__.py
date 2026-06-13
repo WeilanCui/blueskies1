@@ -10,6 +10,12 @@ from core.models.compound import (
 )
 from core.models.contact import ContactSubmission, ContactSubmissionStatus
 from core.models.brand import Brand
+from core.models.daily_checkin import (
+    DailyCheckIn,
+    DailyProductUse,
+    RoutineStep,
+    RoutineTimeOfDay,
+)
 from core.models.formulation import Formulation, FormulationIngredient
 from core.models.product import Product
 from core.models.metadata import SourceMetadata, SourceType
@@ -38,16 +44,12 @@ from core.models.properties import (
 from core.models.profiles import (
     ConstraintEnforcement,
     ConstraintSeverity,
-    DailyCheckIn,
-    DailyProductUse,
     FitzpatrickSkinType,
     PregnancyStatus,
     Profile,
     ProfileConstraint,
     ProfileConstraintKind,
     ProfileVisibility,
-    RoutineStep,
-    RoutineTimeOfDay,
     SkinProfile,
     SkinType,
 )
