@@ -1,13 +1,12 @@
 "use client";
 
-import Link from "next/link";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
-import { AppTabNav } from "../../components/AppTabNav";
+import { AppChrome } from "../../components/AppChrome";
 import { Button } from "../../components/Button";
-import { getCatalogProducts, getMe, logout, type CatalogProduct } from "../../lib/appApi";
+import { getCatalogProducts, getMe, type CatalogProduct } from "../../lib/appApi";
 import styles from "./scan.module.css";
 
 const authFreshMs = 5 * 60 * 1000;
@@ -50,7 +49,6 @@ function formatBytes(bytes: number): string {
 
 export default function ScanPage() {
   const router = useRouter();
-  const queryClient = useQueryClient();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
@@ -68,14 +66,6 @@ export default function ScanPage() {
     enabled: meQuery.isSuccess,
     staleTime: authFreshMs,
   });
-  const logoutMutation = useMutation({
-    mutationFn: logout,
-    onSettled: () => {
-      queryClient.clear();
-      router.replace("/login");
-    },
-  });
-
   useEffect(() => {
     if (meQuery.isError) {
       router.replace("/login");
@@ -126,21 +116,7 @@ export default function ScanPage() {
 
   return (
     <main className={styles.scanShell}>
-      <nav className={styles.scanHeader}>
-        <Link className={styles.scanBrand} href="/home">
-          <span className={styles.brandMark} aria-hidden="true" />
-          <span>Blueskies</span>
-        </Link>
-        <Button
-          className={styles.headerButton}
-          type="button"
-          variant="ghost"
-          isDisabled={logoutMutation.isPending}
-          onPress={() => logoutMutation.mutate()}
-        >
-          Log out
-        </Button>
-      </nav>
+      <AppChrome active="scan" />
 
       <div className={styles.scanLayout}>
         {selectedProduct ? (
@@ -362,9 +338,6 @@ export default function ScanPage() {
         )}
       </div>
 
-      <div className={styles.bottomNav}>
-        <AppTabNav active="scan" />
-      </div>
     </main>
   );
 }

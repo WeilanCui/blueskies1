@@ -1,13 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
-import { AppTabNav } from "../../components/AppTabNav";
+import { AppChrome } from "../../components/AppChrome";
 import { Button } from "../../components/Button";
-import { getIntake, getMe, logout } from "../../lib/appApi";
+import { getIntake, getMe } from "../../lib/appApi";
 import styles from "./home.module.css";
 
 const authFreshMs = 5 * 60 * 1000;
@@ -43,7 +43,6 @@ function formatToken(value: string): string {
 
 export default function HomePage() {
   const router = useRouter();
-  const queryClient = useQueryClient();
 
   const meQuery = useQuery({
     queryKey: ["me"],
@@ -57,14 +56,6 @@ export default function HomePage() {
     enabled: meQuery.isSuccess,
     retry: false,
   });
-  const logoutMutation = useMutation({
-    mutationFn: logout,
-    onSettled: () => {
-      queryClient.clear();
-      router.replace("/login");
-    },
-  });
-
   useEffect(() => {
     if (meQuery.isError) {
       router.replace("/login");
@@ -135,22 +126,7 @@ export default function HomePage() {
 
   return (
     <main className={styles.homeShell}>
-      <nav className={styles.appHeader}>
-        <Link className={styles.appBrand} href="/home">
-          <span className={styles.brandMark} aria-hidden="true" />
-          <span>Blueskies</span>
-        </Link>
-        <Button
-          className={styles.headerButton}
-          type="button"
-          variant="ghost"
-          isDisabled={logoutMutation.isPending}
-          onPress={() => logoutMutation.mutate()}
-        >
-          Log out
-        </Button>
-      </nav>
-      <AppTabNav active="home" />
+      <AppChrome active="home" />
 
       <div className={styles.homeLayout}>
         <section className={styles.welcomePanel}>

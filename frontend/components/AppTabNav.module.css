@@ -55,21 +55,21 @@
     background: #ffffff;
     border: 0;
     border-radius: 8px;
-    box-shadow: 0 12px 28px rgba(35, 49, 58, 0.06);
+    box-shadow: 0 8px 20px rgba(35, 49, 58, 0.05);
     gap: 2px;
     min-width: 0;
-    padding: 8px 10px;
+    padding: 6px 8px;
   }
 
   .tabLink {
     border: 0;
     display: grid;
-    font-size: 0.82rem;
-    gap: 6px;
+    font-size: 0.74rem;
+    gap: 4px;
     justify-content: stretch;
-    min-height: 60px;
-    min-width: 104px;
-    padding: 8px 12px;
+    min-height: 50px;
+    min-width: 92px;
+    padding: 6px 10px;
   }
 
   .tabLinkActive {
@@ -78,7 +78,7 @@
   }
 
   .tabIcon {
-    height: 20px;
-    width: 20px;
+    height: 18px;
+    width: 18px;
   }
 }

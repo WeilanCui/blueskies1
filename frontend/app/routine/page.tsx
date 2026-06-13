@@ -1,13 +1,12 @@
 "use client";
 
-import Link from "next/link";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
-import { AppTabNav } from "../../components/AppTabNav";
+import { AppChrome } from "../../components/AppChrome";
 import { Button } from "../../components/Button";
-import { getMe, logout } from "../../lib/appApi";
+import { getMe } from "../../lib/appApi";
 import styles from "./routine.module.css";
 
 const authFreshMs = 5 * 60 * 1000;
@@ -36,7 +35,6 @@ const moods = [
 
 export default function RoutinePage() {
   const router = useRouter();
-  const queryClient = useQueryClient();
   const [activeView, setActiveView] = useState<"log" | "history" | "routine">("log");
   const [timeOfDay, setTimeOfDay] = useState<"am" | "pm">("am");
   const [completed, setCompleted] = useState<string[]>([]);
@@ -49,14 +47,6 @@ export default function RoutinePage() {
     retry: false,
     staleTime: authFreshMs,
   });
-  const logoutMutation = useMutation({
-    mutationFn: logout,
-    onSettled: () => {
-      queryClient.clear();
-      router.replace("/login");
-    },
-  });
-
   useEffect(() => {
     if (meQuery.isError) {
       router.replace("/login");
@@ -87,25 +77,7 @@ export default function RoutinePage() {
 
   return (
     <main className={styles.routineShell}>
-      <nav className={styles.routineHeader}>
-        <Link className={styles.routineBrand} href="/home">
-          <span className={styles.brandMark} aria-hidden="true" />
-          <span>Blueskies</span>
-        </Link>
-        <Button
-          className={styles.headerButton}
-          type="button"
-          variant="ghost"
-          isDisabled={logoutMutation.isPending}
-          onPress={() => logoutMutation.mutate()}
-        >
-          Log out
-        </Button>
-      </nav>
-
-      <div className={styles.topNav}>
-        <AppTabNav active="routine" />
-      </div>
+      <AppChrome active="routine" />
 
       <div className={styles.routineLayout}>
         <section className={styles.routineHero}>
@@ -274,9 +246,6 @@ export default function RoutinePage() {
         )}
       </div>
 
-      <div className={styles.bottomNav}>
-        <AppTabNav active="routine" />
-      </div>
     </main>
   );
 }

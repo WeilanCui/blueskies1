@@ -3,15 +3,24 @@ import { HomeIcon, MagnifyingGlassIcon, SunIcon, PresentationChartBarIcon, Spark
 
 import styles from "./AppTabNav.module.css";
 
+export type AppTabNavActive =
+  | "home"
+  | "scan"
+  | "intake"
+  | "catalog"
+  | "routine"
+  | "reactions"
+  | "forYou";
+
 type AppTabNavProps = {
-  active: "home" | "scan" | "intake" | "catalog" | "routine" | "reactions" | "forYou";
+  active: AppTabNavActive;
 };
 
 const tabs = [
   { id: "home", label: "Home", href: "/home", icon: HomeIcon },
   { id: "scan", label: "Products", href: "/scan", icon: MagnifyingGlassIcon },
   { id: "routine", label: "Routine", href: "/routine", icon: SunIcon },
-  { id: "reactions", label: "Reactions", href: "/home", icon: PresentationChartBarIcon },
+  { id: "reactions", label: "Reactions", href: "/reactions", icon: PresentationChartBarIcon },
   { id: "forYou", label: "For You", href: "/skincareApi", icon: SparklesIcon },
 ] as const;
 

@@ -6,10 +6,6 @@
   padding: 20px;
 }
 
-.appTopbar {
-  padding-bottom: 14px;
-}
-
 .appHero {
   display: grid;
   gap: 6px;

@@ -1,18 +1,16 @@
 "use client";
 
-import Link from "next/link";
 import { Input, Label, TextArea, TextField } from "@heroui/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
-import { AppTabNav } from "../../components/AppTabNav";
+import { AppChrome } from "../../components/AppChrome";
 import { Button } from "../../components/Button";
 import FaceMap from "../experience/FaceMap";
 import {
   getIntake,
   getMe,
-  logout,
   saveIntake,
   type AuthResponse,
   type IntakePayload,
@@ -255,14 +253,6 @@ export default function IntakePage() {
       setMessage(null);
     },
   });
-  const logoutMutation = useMutation({
-    mutationFn: logout,
-    onSettled: () => {
-      queryClient.clear();
-      router.replace("/login");
-    },
-  });
-
   useEffect(() => {
     if (meQuery.isError) {
       router.replace("/login");
@@ -331,20 +321,7 @@ export default function IntakePage() {
 
   return (
     <main className={styles.appShell}>
-      <nav className={["topbar", styles.appTopbar].join(" ")}>
-        <Link className="brand" href="/">
-          Blueskies
-        </Link>
-        <Button
-          type="button"
-          variant="ghost"
-          isDisabled={logoutMutation.isPending}
-          onPress={() => logoutMutation.mutate()}
-        >
-          Log out
-        </Button>
-      </nav>
-      <AppTabNav active="intake" />
+      <AppChrome active="intake" />
 
       <section className={styles.appHero}>
         <p className="landing-eyebrow">Skin intake</p>

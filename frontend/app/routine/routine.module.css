@@ -9,59 +9,6 @@
   padding: 18px 16px 112px;
 }
 
-.routineHeader {
-  align-items: center;
-  border-top: 1px solid rgba(52, 111, 170, 0.16);
-  display: flex;
-  justify-content: space-between;
-  margin: 0 auto;
-  max-width: 1040px;
-  padding-top: 18px;
-  width: 100%;
-}
-
-.routineBrand {
-  align-items: center;
-  color: #171412;
-  display: inline-flex;
-  font-size: 1.05rem;
-  font-weight: 800;
-  gap: 10px;
-  text-decoration: none;
-}
-
-.brandMark {
-  align-items: center;
-  background: var(--accent-strong);
-  border-radius: 999px;
-  box-shadow: 0 10px 24px rgba(52, 111, 170, 0.22);
-  display: inline-flex;
-  height: 34px;
-  justify-content: center;
-  width: 34px;
-}
-
-.brandMark::before {
-  background: #ffffff;
-  border-radius: 999px 999px 999px 2px;
-  content: "";
-  display: block;
-  height: 13px;
-  transform: rotate(38deg);
-  width: 9px;
-}
-
-.headerButton {
-  min-height: 38px;
-  padding: 9px 13px;
-}
-
-.topNav {
-  margin: 0 auto;
-  max-width: 1040px;
-  width: 100%;
-}
-
 .routineLayout {
   display: grid;
   gap: 18px;
@@ -456,10 +403,6 @@
   padding: 5px 9px;
 }
 
-.bottomNav {
-  display: none;
-}
-
 @media (max-width: 620px) {
   .routineHero h1 {
     font-size: 2.7rem;
@@ -492,96 +435,78 @@
   }
 }
 
-@media (max-width: 759px) {
-  .topNav {
-    display: none;
-  }
-
-  .bottomNav {
-    background: rgba(255, 255, 255, 0.96);
-    border-top: 1px solid rgba(207, 217, 223, 0.82);
-    bottom: 0;
-    display: block;
-    left: 0;
-    padding: 8px 12px 10px;
-    position: fixed;
-    right: 0;
-    z-index: 10;
-  }
-}
-
 @media (min-width: 760px) {
   .routineShell {
-    padding: 26px 28px 42px;
+    padding: 22px 24px 32px;
   }
 
   .routineHero h1 {
-    font-size: 4rem;
+    font-size: 3.1rem;
   }
 
   .routineHero p {
-    font-size: 1.35rem;
+    font-size: 1.05rem;
   }
 
   .routineLayout {
-    gap: 24px;
+    gap: 18px;
   }
 
   .viewTab {
-    font-size: 1.12rem;
-    min-height: 72px;
+    font-size: 0.95rem;
+    min-height: 58px;
   }
 
   .dayButton {
-    font-size: 1.12rem;
-    min-height: 72px;
+    font-size: 0.95rem;
+    min-height: 58px;
   }
 
   .routineItem {
-    min-height: 130px;
-    padding: 24px 34px;
+    min-height: 104px;
+    padding: 18px 24px;
   }
 
   .routineItem strong {
-    font-size: 1.28rem;
+    font-size: 1.05rem;
   }
 
   .skinFeelCard {
-    padding: 28px 32px;
+    padding: 20px 24px;
   }
 
   .cardHeading h2 {
-    font-size: 1.42rem;
+    font-size: 1.15rem;
   }
 
   .moodButton {
-    min-height: 122px;
+    min-height: 96px;
   }
 
   .moodButton strong {
-    font-size: 1rem;
+    font-size: 0.86rem;
   }
 
   .notesField textarea {
-    font-size: 1.16rem;
-    min-height: 150px;
-    padding: 24px 28px;
+    font-size: 1rem;
+    min-height: 126px;
+    padding: 18px 22px;
   }
 
   .historyPanel,
   .routineGroup {
-    padding: 28px 32px;
+    padding: 20px 24px;
   }
 
   .routineGroupHeader h2 {
-    font-size: 1.55rem;
+    font-size: 1.2rem;
   }
 
   .routineProductCard {
-    padding: 18px 22px;
+    padding: 14px 18px;
   }
 
   .routineProductCard strong {
-    font-size: 1.12rem;
+    font-size: 0.96rem;
   }
 }

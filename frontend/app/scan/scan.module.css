@@ -9,58 +9,11 @@
   padding: 18px 16px 108px;
 }
 
-.scanHeader {
-  align-items: center;
-  border-top: 1px solid rgba(52, 111, 170, 0.16);
-  display: flex;
-  justify-content: space-between;
-  margin: 0 auto;
-  max-width: 980px;
-  padding-top: 18px;
-  width: 100%;
-}
-
-.scanBrand {
-  align-items: center;
-  color: #171412;
-  display: inline-flex;
-  font-size: 1.05rem;
-  font-weight: 800;
-  gap: 10px;
-  text-decoration: none;
-}
-
-.brandMark {
-  align-items: center;
-  background: var(--accent-strong);
-  border-radius: 999px;
-  box-shadow: 0 10px 24px rgba(52, 111, 170, 0.22);
-  display: inline-flex;
-  height: 34px;
-  justify-content: center;
-  width: 34px;
-}
-
-.brandMark::before {
-  background: #ffffff;
-  border-radius: 999px 999px 999px 2px;
-  content: "";
-  display: block;
-  height: 13px;
-  transform: rotate(38deg);
-  width: 9px;
-}
-
-.headerButton {
-  min-height: 38px;
-  padding: 9px 13px;
-}
-
 .scanLayout {
   display: grid;
   gap: 18px;
   margin: 0 auto;
-  max-width: 980px;
+  max-width: 620px;
   width: 100%;
 }
 
@@ -733,13 +686,6 @@
   margin: 12px 0 0;
 }
 
-.bottomNav {
-  margin: 0 auto;
-  max-width: 1040px;
-  order: -1;
-  width: 100%;
-}
-
 @media (max-width: 520px) {
   .searchRow {
     grid-template-columns: minmax(0, 1fr);
@@ -781,62 +727,84 @@
 
 @media (min-width: 760px) {
   .scanShell {
-    padding: 26px 28px 36px;
+    gap: 18px;
+    padding: 18px 24px 32px;
   }
 
   .scanHero h1 {
-    font-size: 4rem;
+    font-size: 2.05rem;
+    line-height: 1.05;
   }
 
   .scanHero p {
-    font-size: 1.35rem;
+    font-size: 0.95rem;
   }
 
   .searchField,
   .scanButton {
-    min-height: 64px;
+    min-height: 48px;
+  }
+
+  .searchField {
+    padding-inline: 14px;
+  }
+
+  .searchField input,
+  .scanButton {
+    font-size: 0.9rem;
+  }
+
+  .scanButton {
+    min-width: 92px;
+    padding-inline: 16px;
   }
 
   .productCard {
-    grid-template-columns: 96px minmax(0, 1fr) auto;
-    min-height: 152px;
-    padding: 22px 30px;
+    grid-template-columns: 72px minmax(0, 1fr) auto;
+    min-height: 96px;
+    padding: 12px 16px;
   }
 
   .productInfo > span {
-    font-size: 1.05rem;
+    font-size: 0.8rem;
   }
 
   .productInfo h2 {
-    font-size: 1.28rem;
+    font-size: 0.92rem;
+    line-height: 1.2;
+  }
+
+  .productMeta strong,
+  .productMeta em {
+    font-size: 0.78rem;
   }
 
   .backButton {
-    font-size: 1.35rem;
+    font-size: 1rem;
   }
 
   .detailBody {
-    padding: 28px 40px 40px;
+    padding: 22px 28px 30px;
   }
 
   .detailTitleRow h1 {
-    font-size: 2.35rem;
-  }
-
-  .detailBody > p {
-    font-size: 1.25rem;
-  }
-
-  .analysisSection h2 {
     font-size: 1.85rem;
   }
 
+  .detailBody > p {
+    font-size: 1rem;
+  }
+
+  .analysisSection h2 {
+    font-size: 1.35rem;
+  }
+
   .ingredientCard {
-    padding: 24px 32px;
+    padding: 18px 22px;
   }
 
   .ingredientTitleRow h3 {
-    font-size: 1.4rem;
+    font-size: 1.1rem;
   }
 
   .scanPanel {
@@ -844,32 +812,16 @@
   }
 }
 
-@media (max-width: 759px) {
-  .bottomNav {
-    background: rgba(255, 255, 255, 0.96);
-    border-top: 1px solid rgba(207, 217, 223, 0.82);
-    bottom: 0;
-    left: 0;
-    max-width: none;
-    order: 0;
-    padding: 8px 12px 10px;
-    position: fixed;
-    right: 0;
-    z-index: 10;
-  }
-}
-
 @media (min-width: 1080px) {
   .scanShell {
-    padding-inline: 40px;
+    padding-inline: 24px;
   }
 
-  .scanLayout,
-  .scanHeader {
-    max-width: 1040px;
+  .scanLayout {
+    max-width: 620px;
   }
 
   .productList {
-    gap: 16px;
+    gap: 12px;
   }
 }

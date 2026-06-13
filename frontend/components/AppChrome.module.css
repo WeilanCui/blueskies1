@@ -1,0 +1,56 @@
+.chrome {
+  display: grid;
+  gap: 16px;
+  width: 100%;
+}
+
+.appHeader {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+  margin: 0 auto;
+  max-width: 1180px;
+  width: 100%;
+}
+
+.appBrand {
+  align-items: center;
+  color: #171412;
+  display: inline-flex;
+  font-size: 1.05rem;
+  font-weight: 800;
+  gap: 10px;
+  text-decoration: none;
+}
+
+.brandMark {
+  align-items: center;
+  background: var(--accent-strong);
+  border-radius: 999px;
+  box-shadow: 0 10px 24px rgba(52, 111, 170, 0.22);
+  display: inline-flex;
+  height: 34px;
+  justify-content: center;
+  width: 34px;
+}
+
+.brandMark::before {
+  background: #ffffff;
+  border-radius: 999px 999px 999px 2px;
+  content: "";
+  display: block;
+  height: 13px;
+  transform: rotate(38deg);
+  width: 9px;
+}
+
+.headerButton {
+  min-height: 38px;
+  padding: 9px 13px;
+}
+
+.appNav {
+  margin: 0 auto;
+  max-width: 1180px;
+  width: 100%;
+}

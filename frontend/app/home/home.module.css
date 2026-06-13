@@ -9,51 +9,6 @@
   padding: 18px 16px 104px;
 }
 
-.appHeader {
-  align-items: center;
-  display: flex;
-  justify-content: space-between;
-  margin: 0 auto;
-  max-width: 1180px;
-  width: 100%;
-}
-
-.appBrand {
-  align-items: center;
-  color: #171412;
-  display: inline-flex;
-  font-size: 1.05rem;
-  font-weight: 800;
-  gap: 10px;
-  text-decoration: none;
-}
-
-.brandMark {
-  align-items: center;
-  background: var(--accent-strong);
-  border-radius: 999px;
-  box-shadow: 0 10px 24px rgba(52, 111, 170, 0.22);
-  display: inline-flex;
-  height: 34px;
-  justify-content: center;
-  width: 34px;
-}
-
-.brandMark::before {
-  background: #ffffff;
-  border-radius: 999px 999px 999px 2px;
-  content: "";
-  display: block;
-  height: 13px;
-  transform: rotate(38deg);
-  width: 9px;
-}
-
-.headerButton {
-  min-height: 38px;
-  padding: 9px 13px;
-}
-
 .homeLayout {
   display: grid;
   gap: 14px;
@@ -388,17 +343,17 @@
 @media (min-width: 760px) {
   .homeShell {
     gap: 18px;
-    padding: 28px 28px 36px;
+    padding: 22px 24px 32px;
   }
 
   .welcomePanel {
     align-items: stretch;
     grid-template-columns: minmax(0, 1fr) minmax(280px, 0.42fr);
-    padding: 24px;
+    padding: 20px;
   }
 
   .welcomeCopy h1 {
-    font-size: 3.25rem;
+    font-size: 2.75rem;
   }
 
   .dashboardGrid {
@@ -407,7 +362,7 @@
 
   .scanCard {
     grid-template-columns: minmax(220px, 0.58fr) minmax(0, 1fr);
-    padding: 20px;
+    padding: 16px;
   }
 
   .scanVisual {
@@ -429,11 +384,11 @@
 
 @media (min-width: 1080px) {
   .homeShell {
-    padding-inline: 40px;
+    padding-inline: 32px;
   }
 
   .welcomeCopy h1 {
-    font-size: 3.85rem;
+    font-size: 3.1rem;
   }
 
   .scanCard {
