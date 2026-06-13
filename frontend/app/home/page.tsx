@@ -5,7 +5,6 @@ import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
-import { AppChrome } from "../../components/AppChrome";
 import { Button } from "../../components/Button";
 import { getIntake, getMe } from "../../lib/appApi";
 import styles from "./home.module.css";
@@ -63,11 +62,7 @@ export default function HomePage() {
   }, [meQuery.isError, router]);
 
   if (meQuery.isLoading || meQuery.isError || !meQuery.data) {
-    return (
-      <main className={styles.homeShell}>
-        <p className="detail-muted">Loading your session...</p>
-      </main>
-    );
+    return <p className="detail-muted">Loading your session...</p>;
   }
 
   const user = meQuery.data.user;
@@ -125,9 +120,7 @@ export default function HomePage() {
   ];
 
   return (
-    <main className={styles.homeShell}>
-      <AppChrome active="home" />
-
+    <>
       <div className={styles.homeLayout}>
         <section className={styles.welcomePanel}>
           <div className={styles.welcomeCopy}>
@@ -324,6 +317,6 @@ export default function HomePage() {
           </Button>
         </Link>
       </div>
-    </main>
+    </>
   );
 }

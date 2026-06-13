@@ -10,6 +10,8 @@ from core.models import (
     CompoundRelationship,
     CompoundStructure,
     ContactSubmission,
+    DailyCheckIn,
+    DailyProductUse,
     Formulation,
     FormulationIngredient,
     GlossaryTerm,
@@ -20,6 +22,9 @@ from core.models import (
     ProfileConstraint,
     PropertyAssertion,
     PropertyDefinition,
+    ReactionEvent,
+    Routine,
+    RoutineItem,
     SkinProfile,
 )
 from core.models.brand import Brand
@@ -373,6 +378,28 @@ class ProfileConstraintInline(admin.TabularInline):
     )
 
 
+class RoutineItemInline(admin.TabularInline):
+    model = RoutineItem
+    extra = 0
+    fields = (
+        "position",
+        "routine_step",
+        "custom_step_label",
+        "product",
+        "formulation",
+        "raw_product_name",
+        "frequency",
+        "schedule",
+    )
+    ordering = ("position",)
+
+
+class RoutineInline(admin.TabularInline):
+    model = Routine
+    extra = 0
+    fields = ("name", "time_of_day", "custom_time_label", "is_active", "notes")
+
+
 @admin.register(Profile)
 class ProfileAdmin(admin.ModelAdmin):
     fields = (
@@ -409,7 +436,106 @@ class ProfileAdmin(admin.ModelAdmin):
     list_filter = ("visibility", "timezone", "locale", "created_at", "updated_at")
     search_fields = ("user__username", "user__email", "handle", "display_name")
     date_hierarchy = "created_at"
-    inlines = [SkinProfileInline, ProfileConstraintInline]
+    inlines = [SkinProfileInline, ProfileConstraintInline, RoutineInline]
+
+
+@admin.register(Routine)
+class RoutineAdmin(admin.ModelAdmin):
+    list_display = (
+        "profile",
+        "name",
+        "time_of_day",
+        "custom_time_label",
+        "is_active",
+        "updated_at",
+    )
+    list_filter = ("time_of_day", "is_active", "created_at", "updated_at")
+    search_fields = ("profile__user__username", "profile__handle", "name")
+    inlines = [RoutineItemInline]
+
+
+@admin.register(RoutineItem)
+class RoutineItemAdmin(admin.ModelAdmin):
+    list_display = (
+        "routine",
+        "position",
+        "routine_step",
+        "product",
+        "formulation",
+        "raw_product_name",
+    )
+    list_filter = ("routine_step", "routine__time_of_day", "routine__is_active")
+    search_fields = (
+        "routine__profile__user__username",
+        "routine__name",
+        "product__name",
+        "product__brand__name",
+        "raw_product_name",
+    )
+
+
+class DailyProductUseInline(admin.TabularInline):
+    model = DailyProductUse
+    extra = 0
+    fields = (
+        "time_of_day",
+        "routine_step",
+        "routine",
+        "routine_item",
+        "product",
+        "formulation",
+        "raw_product_name",
+        "notes",
+    )
+
+
+@admin.register(DailyCheckIn)
+class DailyCheckInAdmin(admin.ModelAdmin):
+    list_display = ("profile", "checkin_date", "skin_feel", "created_at")
+    list_filter = ("checkin_date", "skin_feel", "created_at")
+    search_fields = ("profile__user__username", "profile__handle", "skin_notes")
+    inlines = [DailyProductUseInline]
+
+
+@admin.register(DailyProductUse)
+class DailyProductUseAdmin(admin.ModelAdmin):
+    list_display = (
+        "checkin",
+        "time_of_day",
+        "routine_step",
+        "product",
+        "formulation",
+        "raw_product_name",
+    )
+    list_filter = ("time_of_day", "routine_step", "created_at")
+    search_fields = (
+        "checkin__profile__user__username",
+        "product__name",
+        "product__brand__name",
+        "raw_product_name",
+    )
+
+
+@admin.register(ReactionEvent)
+class ReactionEventAdmin(admin.ModelAdmin):
+    list_display = (
+        "profile",
+        "title",
+        "severity",
+        "status",
+        "occurred_on",
+        "product",
+        "routine",
+    )
+    list_filter = ("severity", "status", "occurred_on", "created_at")
+    search_fields = (
+        "profile__user__username",
+        "profile__handle",
+        "title",
+        "suspected_trigger",
+        "product__name",
+        "product__brand__name",
+    )
 
 
 @admin.register(SkinProfile)

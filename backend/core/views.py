@@ -5,6 +5,7 @@ from django.db.models import Prefetch, Q
 from django.http import Http404
 from django.middleware.csrf import get_token
 from django.shortcuts import get_object_or_404
+from django.utils import timezone
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny, IsAuthenticated
@@ -12,16 +13,20 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from literature.ingestion import ingest_formulation, parse_inci_list
-from core.models import Compound, ContactSubmission, Formulation, Profile
+from core.models import Compound, ContactSubmission, DailyCheckIn, Formulation, Profile, ReactionEvent, Routine
 from core.models.product import Product
 from core.serializers import (
     CompoundSerializer,
     ContactSubmissionSerializer,
+    DailyCheckInSerializer,
     FormulationSerializer,
     FormulationSubmitSerializer,
     IntakeSerializer,
     LoginSerializer,
+    ReactionEventSerializer,
+    RoutineSerializer,
     SignupSerializer,
+    TodayCheckInSerializer,
     auth_user_payload,
     catalog_slug,
     intake_payload,
@@ -300,6 +305,123 @@ class IntakeViewSet(viewsets.ModelViewSet):
         serializer.save()
         profile = Profile.objects.get(user=request.user)
         return Response(intake_payload(profile), status=status_code)
+
+
+class RoutineViewSet(viewsets.ModelViewSet):
+    """Profile-owned skincare routine templates."""
+
+    serializer_class = RoutineSerializer
+    permission_classes = [IsAuthenticated]
+    http_method_names = ["get", "post", "put", "patch", "delete", "head", "options"]
+
+    def get_queryset(self):
+        profile, _ = Profile.objects.get_or_create(user=self.request.user)
+        queryset = (
+            Routine.objects.filter(profile=profile)
+            .prefetch_related(
+                "items__product__brand",
+                "items__formulation__product__brand",
+                "items__formulation__ingredients__compound",
+            )
+            .order_by("time_of_day", "-is_active", "name", "id")
+        )
+        active = self.request.query_params.get("active")
+        if active == "true":
+            queryset = queryset.filter(is_active=True)
+        elif active == "false":
+            queryset = queryset.filter(is_active=False)
+        return queryset
+
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        profile, _ = Profile.objects.get_or_create(user=self.request.user)
+        context["profile"] = profile
+        return context
+
+    def perform_destroy(self, instance):
+        instance.is_active = False
+        instance.save(update_fields=["is_active", "updated_at"])
+
+    @action(detail=True, methods=["post"], url_path="archive")
+    def archive(self, request, pk=None):
+        routine = self.get_object()
+        routine.is_active = False
+        routine.save(update_fields=["is_active", "updated_at"])
+        return Response(self.get_serializer(routine).data)
+
+
+class DailyCheckInViewSet(viewsets.ReadOnlyModelViewSet):
+    """Current user's daily skin logs and product usage."""
+
+    serializer_class = DailyCheckInSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        profile, _ = Profile.objects.get_or_create(user=self.request.user)
+        return (
+            DailyCheckIn.objects.filter(profile=profile)
+            .prefetch_related(
+                "product_uses__product__brand",
+                "product_uses__formulation__product__brand",
+                "product_uses__routine_item__product__brand",
+                "product_uses__routine_item__formulation__product__brand",
+            )
+            .order_by("-checkin_date", "-created_at")
+        )
+
+    @action(detail=False, methods=["get", "post", "put"], url_path="today")
+    def today(self, request):
+        profile, _ = Profile.objects.get_or_create(user=request.user)
+        checkin_date = timezone.localdate()
+        if request.method.lower() == "get":
+            checkin, _ = DailyCheckIn.objects.get_or_create(
+                profile=profile,
+                checkin_date=checkin_date,
+                defaults={
+                    "skin_profile": profile.skin_profiles.filter(is_current=True).first(),
+                },
+            )
+            return Response(self.get_serializer(checkin).data)
+
+        serializer = TodayCheckInSerializer(
+            data=request.data,
+            context={"profile": profile, "checkin_date": checkin_date},
+        )
+        serializer.is_valid(raise_exception=True)
+        checkin = serializer.save()
+        return Response(self.get_serializer(checkin).data)
+
+
+class ReactionEventViewSet(viewsets.ModelViewSet):
+    """Current user's reaction log."""
+
+    serializer_class = ReactionEventSerializer
+    permission_classes = [IsAuthenticated]
+    http_method_names = ["get", "post", "put", "patch", "head", "options"]
+
+    def get_queryset(self):
+        profile, _ = Profile.objects.get_or_create(user=self.request.user)
+        return (
+            ReactionEvent.objects.filter(profile=profile)
+            .select_related(
+                "daily_checkin",
+                "routine",
+                "routine_item",
+                "product__brand",
+                "formulation__product__brand",
+            )
+            .order_by("-occurred_on", "-created_at")
+        )
+
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        profile, _ = Profile.objects.get_or_create(user=self.request.user)
+        context["profile"] = profile
+        return context
+
+    def perform_create(self, serializer):
+        profile, _ = Profile.objects.get_or_create(user=self.request.user)
+        serializer.save(profile=profile)
 
 
 class ContactSubmissionViewSet(CreateOnlyModelViewSet):

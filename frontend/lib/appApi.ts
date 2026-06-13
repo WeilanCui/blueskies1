@@ -73,6 +73,126 @@ export type CatalogProduct = {
   ingredients: CatalogIngredient[];
 };
 
+export type RoutineTimeOfDay = "am" | "pm" | "any" | "custom";
+
+export type RoutineItem = {
+  id: number;
+  position: number;
+  routine_step: string;
+  custom_step_label: string;
+  product: null | {
+    id: number;
+    brand: string;
+    name: string;
+    display_name: string;
+    category: string;
+    image_url: string;
+  };
+  product_id: number | null;
+  formulation: null | {
+    id: number;
+    product_id: number;
+    name: string;
+    brand: string;
+  };
+  formulation_id: number | null;
+  raw_product_name: string;
+  display_name: string;
+  usage_notes: string;
+  frequency: string;
+  schedule: string;
+};
+
+export type Routine = {
+  id: number;
+  name: string;
+  time_of_day: RoutineTimeOfDay;
+  custom_time_label: string;
+  is_active: boolean;
+  notes: string;
+  items: RoutineItem[];
+  created_at: string;
+  updated_at: string;
+};
+
+export type RoutineItemPayload = {
+  position: number;
+  routine_step: string;
+  custom_step_label?: string;
+  product_id?: number | null;
+  formulation_id?: number | null;
+  raw_product_name?: string;
+  usage_notes?: string;
+  frequency?: string;
+  schedule?: string;
+};
+
+export type RoutinePayload = {
+  name: string;
+  time_of_day: RoutineTimeOfDay;
+  custom_time_label?: string;
+  is_active?: boolean;
+  notes?: string;
+  items?: RoutineItemPayload[];
+};
+
+export type DailyProductUse = {
+  id: number;
+  routine: number | null;
+  routine_item: RoutineItem | null;
+  product: RoutineItem["product"];
+  formulation: RoutineItem["formulation"];
+  raw_product_name: string;
+  time_of_day: RoutineTimeOfDay;
+  routine_step: string;
+  notes: string;
+  created_at: string;
+};
+
+export type DailyCheckIn = {
+  id: number;
+  checkin_date: string;
+  skin_feel: string;
+  skin_notes: string;
+  symptoms: string[];
+  suspected_triggers: string[];
+  am_routine_completed: boolean | null;
+  pm_routine_completed: boolean | null;
+  product_uses: DailyProductUse[];
+  completed_routine_item_ids: number[];
+  created_at: string;
+  updated_at: string;
+};
+
+export type TodayCheckInPayload = {
+  skin_feel?: string;
+  skin_notes?: string;
+  symptoms?: string[];
+  suspected_triggers?: string[];
+  completed_routine_item_ids?: number[];
+};
+
+export type ReactionEvent = {
+  id: number;
+  daily_checkin: number | null;
+  routine: number | null;
+  routine_item: number | null;
+  product: RoutineItem["product"];
+  product_id: number | null;
+  formulation: RoutineItem["formulation"];
+  formulation_id: number | null;
+  title: string;
+  severity: "mild" | "moderate" | "severe";
+  status: "active" | "resolved";
+  occurred_on: string;
+  resolved_on: string | null;
+  symptoms: string[];
+  suspected_trigger: string;
+  notes: string;
+  created_at: string;
+  updated_at: string;
+};
+
 function getErrorMessage(data: unknown, fallback: string): string {
   if (data && typeof data === "object") {
     const detail = "detail" in data ? data.detail : undefined;
@@ -177,4 +297,70 @@ export function getCatalogProduct(id: string): Promise<CatalogProduct> {
     {},
     "Could not load product.",
   );
+}
+
+export function getRoutines(activeOnly = true): Promise<Routine[]> {
+  const suffix = activeOnly ? "?active=true" : "";
+  return requestJson<Routine[]>(`/api/routines${suffix}`, {}, "Could not load routines.");
+}
+
+export function createRoutine(payload: RoutinePayload): Promise<Routine> {
+  return requestJson<Routine>(
+    "/api/routines",
+    {
+      method: "POST",
+      body: JSON.stringify(payload),
+    },
+    "Could not save routine.",
+  );
+}
+
+export function updateRoutine(id: number, payload: RoutinePayload): Promise<Routine> {
+  return requestJson<Routine>(
+    `/api/routines/${id}`,
+    {
+      method: "PUT",
+      body: JSON.stringify(payload),
+    },
+    "Could not update routine.",
+  );
+}
+
+export function archiveRoutine(id: number): Promise<Routine> {
+  return requestJson<Routine>(
+    `/api/routines/${id}/archive`,
+    { method: "POST" },
+    "Could not archive routine.",
+  );
+}
+
+export function getTodayCheckIn(): Promise<DailyCheckIn> {
+  return requestJson<DailyCheckIn>(
+    "/api/daily-checkins/today",
+    {},
+    "Could not load today's log.",
+  );
+}
+
+export function getDailyCheckIns(): Promise<DailyCheckIn[]> {
+  return requestJson<DailyCheckIn[]>(
+    "/api/daily-checkins",
+    {},
+    "Could not load routine history.",
+  );
+}
+
+export function saveTodayCheckIn(payload: TodayCheckInPayload): Promise<DailyCheckIn> {
+  return requestJson<DailyCheckIn>(
+    "/api/daily-checkins/today",
+    {
+      method: "POST",
+      body: JSON.stringify(payload),
+    },
+    "Could not save today's log.",
+  );
+}
+
+export function getReactions(): Promise<ReactionEvent[]> {
+  return requestJson<ReactionEvent[]>("/api/reactions", {}, "Could not load reactions.");
 }

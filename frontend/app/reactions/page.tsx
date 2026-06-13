@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
-import { AppChrome } from "../../components/AppChrome";
+import { AppPageHeader } from "../../components/AppPageHeader";
 import { Button } from "../../components/Button";
 import { getMe } from "../../lib/appApi";
 import styles from "./reactions.module.css";
@@ -48,31 +48,25 @@ export default function ReactionsPage() {
   }, [meQuery.isError, router]);
 
   if (meQuery.isLoading || meQuery.isError) {
-    return (
-      <main className={styles.reactionsShell}>
-        <p className="detail-muted">Loading your session...</p>
-      </main>
-    );
+    return <p className="detail-muted">Loading your session...</p>;
   }
 
   const activeCount = reactionEntries.filter((entry) => entry.status === "active").length;
   const resolvedCount = reactionEntries.filter((entry) => entry.status === "resolved").length;
 
   return (
-    <main className={styles.reactionsShell}>
-      <AppChrome active="reactions" />
-
+    <>
       <div className={styles.reactionsLayout}>
-        <section className={styles.reactionsHero}>
-          <div>
-            <h1>Reaction Log</h1>
-            <p>Track adverse reactions and sensitivities.</p>
-          </div>
-          <Button className={styles.logButton} type="button">
-            <span aria-hidden="true">+</span>
-            Log
-          </Button>
-        </section>
+        <AppPageHeader
+          title="Reaction Log"
+          description="Track adverse reactions and sensitivities."
+          action={
+            <Button className={styles.logButton} type="button">
+              <span aria-hidden="true">+</span>
+              Log
+            </Button>
+          }
+        />
 
         <section className={styles.statsCard} aria-label="Reaction summary">
           <div>
@@ -114,6 +108,6 @@ export default function ReactionsPage() {
         </section>
       </div>
 
-    </main>
+    </>
   );
 }

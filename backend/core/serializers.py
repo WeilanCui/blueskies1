@@ -13,6 +13,8 @@ from core.models import (
     ContactSubmission,
     ConstraintEnforcement,
     ConstraintSeverity,
+    DailyCheckIn,
+    DailyProductUse,
     Formulation,
     FormulationIngredient,
     FitzpatrickSkinType,
@@ -21,6 +23,13 @@ from core.models import (
     ProfileConstraint,
     ProfileConstraintKind,
     PropertyAssertion,
+    ReactionEvent,
+    ReactionSeverity,
+    ReactionStatus,
+    Routine,
+    RoutineItem,
+    RoutineStep,
+    RoutineTimeOfDay,
     SkinProfile,
     SkinType,
 )
@@ -389,6 +398,413 @@ class FormulationSerializer(serializers.ModelSerializer):
 
     def get_ingredient_count(self, obj: Formulation) -> int:
         return obj.ingredients.count()
+
+
+class RoutineItemSerializer(serializers.ModelSerializer):
+    product = ProductSummarySerializer(read_only=True)
+    formulation = FormulationSerializer(read_only=True)
+    product_id = serializers.IntegerField(required=False, allow_null=True)
+    formulation_id = serializers.IntegerField(required=False, allow_null=True)
+    display_name = serializers.CharField(read_only=True)
+
+    class Meta:
+        model = RoutineItem
+        fields = [
+            "id",
+            "position",
+            "routine_step",
+            "custom_step_label",
+            "product",
+            "product_id",
+            "formulation",
+            "formulation_id",
+            "raw_product_name",
+            "display_name",
+            "usage_notes",
+            "frequency",
+            "schedule",
+            "created_at",
+            "updated_at",
+        ]
+        read_only_fields = ["id", "created_at", "updated_at"]
+
+    def validate(self, attrs: dict) -> dict:
+        attrs = super().validate(attrs)
+        product_id = attrs.pop("product_id", None)
+        formulation_id = attrs.pop("formulation_id", None)
+        product = None
+        formulation = None
+
+        if product_id is not None:
+            product = Product.objects.filter(pk=product_id).first()
+            if product is None:
+                raise serializers.ValidationError({"product_id": "Product not found."})
+
+        if formulation_id is not None:
+            formulation = Formulation.objects.select_related("product").filter(
+                pk=formulation_id,
+            ).first()
+            if formulation is None:
+                raise serializers.ValidationError(
+                    {"formulation_id": "Formulation not found."}
+                )
+            if product is not None and formulation.product_id != product.id:
+                raise serializers.ValidationError(
+                    {"formulation_id": "Formulation must belong to product."}
+                )
+            product = product or formulation.product
+
+        raw_product_name = attrs.get("raw_product_name", "").strip()
+        if product is None and formulation is None and not raw_product_name:
+            raise serializers.ValidationError(
+                "Routine item needs a product, formulation, or raw_product_name."
+            )
+
+        attrs["product"] = product
+        attrs["formulation"] = formulation
+        attrs["raw_product_name"] = raw_product_name
+        attrs["custom_step_label"] = attrs.get("custom_step_label", "").strip()
+        attrs["usage_notes"] = attrs.get("usage_notes", "").strip()
+        attrs["frequency"] = attrs.get("frequency", "").strip()
+        attrs["schedule"] = attrs.get("schedule", "").strip()
+        return attrs
+
+
+class RoutineSerializer(serializers.ModelSerializer):
+    items = RoutineItemSerializer(many=True, required=False)
+
+    class Meta:
+        model = Routine
+        fields = [
+            "id",
+            "name",
+            "time_of_day",
+            "custom_time_label",
+            "is_active",
+            "notes",
+            "items",
+            "created_at",
+            "updated_at",
+        ]
+        read_only_fields = ["id", "created_at", "updated_at"]
+
+    def validate_name(self, value: str) -> str:
+        value = value.strip()
+        if not value:
+            raise serializers.ValidationError("Routine name is required.")
+        return value
+
+    def validate(self, attrs: dict) -> dict:
+        attrs = super().validate(attrs)
+        time_of_day = attrs.get(
+            "time_of_day",
+            getattr(self.instance, "time_of_day", RoutineTimeOfDay.ANY),
+        )
+        custom_time_label = attrs.get(
+            "custom_time_label",
+            getattr(self.instance, "custom_time_label", ""),
+        ).strip()
+        if time_of_day == RoutineTimeOfDay.CUSTOM and not custom_time_label:
+            raise serializers.ValidationError(
+                {"custom_time_label": "Custom routines need a label."}
+            )
+        attrs["custom_time_label"] = custom_time_label
+        attrs["notes"] = attrs.get("notes", "").strip()
+        return attrs
+
+    @transaction.atomic
+    def create(self, validated_data: dict) -> Routine:
+        items = validated_data.pop("items", [])
+        profile = self.context["profile"]
+        routine = Routine.objects.create(profile=profile, **validated_data)
+        self._replace_items(routine, items)
+        self._deactivate_competing(routine)
+        return routine
+
+    @transaction.atomic
+    def update(self, instance: Routine, validated_data: dict) -> Routine:
+        items = validated_data.pop("items", None)
+        for field, value in validated_data.items():
+            setattr(instance, field, value)
+        instance.save()
+        if items is not None:
+            instance.items.all().delete()
+            self._replace_items(instance, items)
+        self._deactivate_competing(instance)
+        return instance
+
+    def _replace_items(self, routine: Routine, items: list[dict]) -> None:
+        for index, item in enumerate(items, start=1):
+            item.setdefault("position", index)
+            RoutineItem.objects.create(routine=routine, **item)
+
+    def _deactivate_competing(self, routine: Routine) -> None:
+        if not routine.is_active:
+            return
+        Routine.objects.filter(
+            profile=routine.profile,
+            time_of_day=routine.time_of_day,
+            is_active=True,
+        ).exclude(pk=routine.pk).update(is_active=False)
+
+
+class DailyProductUseSerializer(serializers.ModelSerializer):
+    product = ProductSummarySerializer(read_only=True)
+    formulation = FormulationSerializer(read_only=True)
+    routine_item = RoutineItemSerializer(read_only=True)
+
+    class Meta:
+        model = DailyProductUse
+        fields = [
+            "id",
+            "routine",
+            "routine_item",
+            "product",
+            "formulation",
+            "raw_product_name",
+            "time_of_day",
+            "routine_step",
+            "notes",
+            "created_at",
+        ]
+
+
+class DailyCheckInSerializer(serializers.ModelSerializer):
+    product_uses = DailyProductUseSerializer(many=True, read_only=True)
+    completed_routine_item_ids = serializers.SerializerMethodField()
+
+    class Meta:
+        model = DailyCheckIn
+        fields = [
+            "id",
+            "checkin_date",
+            "skin_feel",
+            "skin_notes",
+            "symptoms",
+            "suspected_triggers",
+            "am_routine_completed",
+            "pm_routine_completed",
+            "product_uses",
+            "completed_routine_item_ids",
+            "created_at",
+            "updated_at",
+        ]
+
+    def get_completed_routine_item_ids(self, obj: DailyCheckIn) -> list[int]:
+        return [
+            product_use.routine_item_id
+            for product_use in obj.product_uses.all()
+            if product_use.routine_item_id is not None
+        ]
+
+
+class TodayCheckInSerializer(serializers.Serializer):
+    skin_feel = serializers.CharField(required=False, allow_blank=True, max_length=64)
+    skin_notes = serializers.CharField(required=False, allow_blank=True)
+    symptoms = serializers.ListField(
+        child=serializers.CharField(max_length=128),
+        required=False,
+        default=list,
+    )
+    suspected_triggers = serializers.ListField(
+        child=serializers.CharField(max_length=128),
+        required=False,
+        default=list,
+    )
+    completed_routine_item_ids = serializers.ListField(
+        child=serializers.IntegerField(),
+        required=False,
+        default=list,
+    )
+
+    def validate_completed_routine_item_ids(self, value: list[int]) -> list[int]:
+        profile = self.context["profile"]
+        item_ids = list(dict.fromkeys(value))
+        existing_ids = set(
+            RoutineItem.objects.filter(
+                routine__profile=profile,
+                pk__in=item_ids,
+            ).values_list("id", flat=True)
+        )
+        missing_ids = [item_id for item_id in item_ids if item_id not in existing_ids]
+        if missing_ids:
+            raise serializers.ValidationError(
+                f"Routine items not found: {', '.join(str(item_id) for item_id in missing_ids)}"
+            )
+        return item_ids
+
+    @transaction.atomic
+    def save(self, **kwargs) -> DailyCheckIn:
+        profile = self.context["profile"]
+        checkin_date = self.context["checkin_date"]
+        data = self.validated_data
+        checkin, _ = DailyCheckIn.objects.get_or_create(
+            profile=profile,
+            checkin_date=checkin_date,
+            defaults={
+                "skin_profile": profile.skin_profiles.filter(is_current=True).first(),
+            },
+        )
+        checkin.skin_feel = data.get("skin_feel", "").strip()
+        checkin.skin_notes = data.get("skin_notes", "").strip()
+        checkin.symptoms = self._clean_unique_list(data.get("symptoms", []))
+        checkin.suspected_triggers = self._clean_unique_list(
+            data.get("suspected_triggers", [])
+        )
+
+        item_ids = data.get("completed_routine_item_ids", [])
+        items = list(
+            RoutineItem.objects.select_related("routine", "product", "formulation")
+            .filter(routine__profile=profile, pk__in=item_ids)
+            .order_by("routine__time_of_day", "position", "id")
+        )
+        completed_item_ids = {item.id for item in items}
+        active_routines = profile.routines.filter(
+            is_active=True,
+            time_of_day__in=[RoutineTimeOfDay.AM, RoutineTimeOfDay.PM],
+        ).prefetch_related("items")
+        active_item_ids_by_time = {
+            routine.time_of_day: {item.id for item in routine.items.all()}
+            for routine in active_routines
+        }
+        am_item_ids = active_item_ids_by_time.get(RoutineTimeOfDay.AM)
+        pm_item_ids = active_item_ids_by_time.get(RoutineTimeOfDay.PM)
+        checkin.am_routine_completed = (
+            am_item_ids.issubset(completed_item_ids) if am_item_ids else None
+        )
+        checkin.pm_routine_completed = (
+            pm_item_ids.issubset(completed_item_ids) if pm_item_ids else None
+        )
+        checkin.save()
+
+        checkin.product_uses.filter(routine_item__isnull=False).delete()
+        for item in items:
+            DailyProductUse.objects.create(
+                checkin=checkin,
+                routine=item.routine,
+                routine_item=item,
+                product=item.product,
+                formulation=item.formulation,
+                raw_product_name=item.raw_product_name,
+                time_of_day=item.routine.time_of_day,
+                routine_step=item.routine_step,
+                notes=item.usage_notes,
+            )
+
+        return checkin
+
+    def _clean_unique_list(self, values: list[str]) -> list[str]:
+        seen = set()
+        cleaned = []
+        for item in values:
+            value = item.strip()
+            if not value or value.lower() in seen:
+                continue
+            seen.add(value.lower())
+            cleaned.append(value)
+        return cleaned
+
+
+class ReactionEventSerializer(serializers.ModelSerializer):
+    product = ProductSummarySerializer(read_only=True)
+    formulation = FormulationSerializer(read_only=True)
+    product_id = serializers.IntegerField(required=False, allow_null=True)
+    formulation_id = serializers.IntegerField(required=False, allow_null=True)
+
+    class Meta:
+        model = ReactionEvent
+        fields = [
+            "id",
+            "daily_checkin",
+            "routine",
+            "routine_item",
+            "product",
+            "product_id",
+            "formulation",
+            "formulation_id",
+            "title",
+            "severity",
+            "status",
+            "occurred_on",
+            "resolved_on",
+            "symptoms",
+            "suspected_trigger",
+            "notes",
+            "created_at",
+            "updated_at",
+        ]
+        read_only_fields = ["id", "created_at", "updated_at"]
+
+    def validate_title(self, value: str) -> str:
+        value = value.strip()
+        if not value:
+            raise serializers.ValidationError("Reaction title is required.")
+        return value
+
+    def validate(self, attrs: dict) -> dict:
+        attrs = super().validate(attrs)
+        profile = self.context["profile"]
+        self._validate_owned_fk(attrs, profile)
+
+        product_id = attrs.pop("product_id", None)
+        formulation_id = attrs.pop("formulation_id", None)
+        product = None
+        formulation = None
+        if product_id is not None:
+            product = Product.objects.filter(pk=product_id).first()
+            if product is None:
+                raise serializers.ValidationError({"product_id": "Product not found."})
+        if formulation_id is not None:
+            formulation = Formulation.objects.select_related("product").filter(
+                pk=formulation_id,
+            ).first()
+            if formulation is None:
+                raise serializers.ValidationError(
+                    {"formulation_id": "Formulation not found."}
+                )
+            if product is not None and formulation.product_id != product.id:
+                raise serializers.ValidationError(
+                    {"formulation_id": "Formulation must belong to product."}
+                )
+            product = product or formulation.product
+
+        attrs["product"] = product
+        attrs["formulation"] = formulation
+        attrs["suspected_trigger"] = attrs.get("suspected_trigger", "").strip()
+        attrs["notes"] = attrs.get("notes", "").strip()
+        attrs["symptoms"] = self._clean_unique_list(attrs.get("symptoms", []))
+        return attrs
+
+    def _validate_owned_fk(self, attrs: dict, profile: Profile) -> None:
+        owned_checks = [
+            ("daily_checkin", DailyCheckIn),
+            ("routine", Routine),
+            ("routine_item", RoutineItem),
+        ]
+        for field, model in owned_checks:
+            value = attrs.get(field)
+            if value is None:
+                continue
+            queryset = model.objects.filter(pk=value.pk)
+            if field == "daily_checkin":
+                queryset = queryset.filter(profile=profile)
+            elif field == "routine":
+                queryset = queryset.filter(profile=profile)
+            else:
+                queryset = queryset.filter(routine__profile=profile)
+            if not queryset.exists():
+                raise serializers.ValidationError({field: "Object not found."})
+
+    def _clean_unique_list(self, values: list[str]) -> list[str]:
+        seen = set()
+        cleaned = []
+        for item in values:
+            value = item.strip()
+            if not value or value.lower() in seen:
+                continue
+            seen.add(value.lower())
+            cleaned.append(value)
+        return cleaned
 
 
 CATALOG_SOURCE_PREFIX = "seed:catalog:product:"

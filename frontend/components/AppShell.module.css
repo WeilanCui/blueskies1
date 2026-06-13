@@ -1,0 +1,20 @@
+.shell {
+  align-content: start;
+  align-items: start;
+  background:
+    linear-gradient(180deg, rgba(240, 249, 255, 0.94), rgba(251, 253, 255, 0.98) 46%),
+    #fbfdff;
+  color: #171412;
+  display: grid;
+  gap: 8px;
+  grid-auto-rows: max-content;
+  min-height: 100vh;
+  padding: 18px 16px 112px;
+}
+
+@media (min-width: 760px) {
+  .shell {
+    gap: 8px;
+    padding: 22px 24px 32px;
+  }
+}

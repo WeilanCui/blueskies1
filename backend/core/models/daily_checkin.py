@@ -8,6 +8,7 @@ class RoutineTimeOfDay(models.TextChoices):
     AM = "am", "AM"
     PM = "pm", "PM"
     ANY = "any", "Any time"
+    CUSTOM = "custom", "Custom"
 
 
 class RoutineStep(models.TextChoices):
@@ -110,6 +111,27 @@ class DailyProductUse(models.Model):
     )
     formulation = models.ForeignKey(
         "core.Formulation",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="daily_product_uses",
+    )
+    product = models.ForeignKey(
+        "core.Product",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="daily_product_uses",
+    )
+    routine = models.ForeignKey(
+        "core.Routine",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="daily_product_uses",
+    )
+    routine_item = models.ForeignKey(
+        "core.RoutineItem",
         on_delete=models.SET_NULL,
         null=True,
         blank=True,

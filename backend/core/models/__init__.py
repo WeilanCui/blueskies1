@@ -18,6 +18,8 @@ from core.models.daily_checkin import (
 )
 from core.models.formulation import Formulation, FormulationIngredient
 from core.models.product import Product
+from core.models.reaction import ReactionEvent, ReactionSeverity, ReactionStatus
+from core.models.routine import Routine, RoutineItem
 from core.models.metadata import SourceMetadata, SourceType
 from core.models.interactions import (
     InteractionAssertion,
@@ -92,8 +94,13 @@ __all__ = [
     "PropertyDomain",
     "RelationshipType",
     "RelevanceCategory",
+    "ReactionEvent",
+    "ReactionSeverity",
+    "ReactionStatus",
     "RiskClass",
     "RoleInPaper",
+    "Routine",
+    "RoutineItem",
     "RoutineStep",
     "RoutineTimeOfDay",
     "SkinProfile",

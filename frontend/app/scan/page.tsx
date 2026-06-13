@@ -4,7 +4,6 @@ import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
-import { AppChrome } from "../../components/AppChrome";
 import { Button } from "../../components/Button";
 import { getCatalogProducts, getMe, type CatalogProduct } from "../../lib/appApi";
 import styles from "./scan.module.css";
@@ -107,17 +106,11 @@ export default function ScanPage() {
     : null;
 
   if (meQuery.isLoading || meQuery.isError) {
-    return (
-      <main className={styles.scanShell}>
-        <p className="detail-muted">Loading your session...</p>
-      </main>
-    );
+    return <p className="detail-muted">Loading your session...</p>;
   }
 
   return (
-    <main className={styles.scanShell}>
-      <AppChrome active="scan" />
-
+    <>
       <div className={styles.scanLayout}>
         {selectedProduct ? (
           <section className={styles.productDetail}>
@@ -338,6 +331,6 @@ export default function ScanPage() {
         )}
       </div>
 
-    </main>
+    </>
   );
 }

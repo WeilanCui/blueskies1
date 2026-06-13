@@ -1,0 +1,175 @@
+from django.contrib.auth import get_user_model
+from django.test import TestCase
+from django.urls import reverse
+from django.utils import timezone
+from rest_framework.test import APIClient
+
+from core.models import (
+    DailyCheckIn,
+    DailyProductUse,
+    Formulation,
+    Product,
+    Profile,
+    ReactionEvent,
+    Routine,
+    RoutineItem,
+)
+
+
+class RoutineApiTests(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.user = get_user_model().objects.create_user(
+            username="routine-user",
+            email="routine@example.com",
+            password="strong-test-pass-123",
+        )
+        self.other_user = get_user_model().objects.create_user(
+            username="other-user",
+            email="other@example.com",
+            password="strong-test-pass-123",
+        )
+        self.profile = Profile.objects.create(user=self.user)
+        self.other_profile = Profile.objects.create(user=self.other_user)
+        self.product = Product.objects.create(name="Ultra Facial Cream")
+        self.formulation = Formulation.objects.create(product=self.product)
+        self.client.force_authenticate(user=self.user)
+
+    def test_routine_create_preserves_order_and_product_formulation_links(self):
+        response = self.client.post(
+            reverse("routine-list"),
+            {
+                "name": "AM Routine",
+                "time_of_day": "am",
+                "items": [
+                    {
+                        "position": 1,
+                        "routine_step": "cleanser",
+                        "raw_product_name": "Manual Cleanser",
+                    },
+                    {
+                        "position": 2,
+                        "routine_step": "moisturizer",
+                        "product_id": self.product.id,
+                        "formulation_id": self.formulation.id,
+                    },
+                ],
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 201)
+        routine = Routine.objects.get(profile=self.profile)
+        self.assertEqual(list(routine.items.values_list("position", flat=True)), [1, 2])
+        linked_item = routine.items.get(position=2)
+        self.assertEqual(linked_item.product, self.product)
+        self.assertEqual(linked_item.formulation, self.formulation)
+        self.assertEqual(response.data["items"][0]["display_name"], "Manual Cleanser")
+
+    def test_activating_same_timing_deactivates_prior_routine_in_domain_logic(self):
+        existing = Routine.objects.create(
+            profile=self.profile,
+            name="Old AM",
+            time_of_day="am",
+            is_active=True,
+        )
+
+        response = self.client.post(
+            reverse("routine-list"),
+            {"name": "New AM", "time_of_day": "am", "is_active": True},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 201)
+        existing.refresh_from_db()
+        self.assertFalse(existing.is_active)
+        self.assertTrue(Routine.objects.get(name="New AM").is_active)
+
+    def test_user_only_sees_own_routines(self):
+        Routine.objects.create(profile=self.profile, name="Mine", time_of_day="am")
+        Routine.objects.create(profile=self.other_profile, name="Theirs", time_of_day="am")
+
+        response = self.client.get(reverse("routine-list"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual([routine["name"] for routine in response.data], ["Mine"])
+
+    def test_today_log_creates_checkin_and_daily_product_uses(self):
+        routine = Routine.objects.create(profile=self.profile, name="PM", time_of_day="pm")
+        item = RoutineItem.objects.create(
+            routine=routine,
+            position=1,
+            routine_step="treatment",
+            product=self.product,
+            formulation=self.formulation,
+        )
+
+        response = self.client.post(
+            reverse("daily-checkin-today"),
+            {
+                "skin_feel": "good",
+                "skin_notes": "Less redness.",
+                "completed_routine_item_ids": [item.id],
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 200)
+        checkin = DailyCheckIn.objects.get(
+            profile=self.profile,
+            checkin_date=timezone.localdate(),
+        )
+        self.assertEqual(checkin.skin_feel, "good")
+        product_use = DailyProductUse.objects.get(checkin=checkin)
+        self.assertEqual(product_use.routine_item, item)
+        self.assertEqual(product_use.product, self.product)
+        self.assertEqual(response.data["completed_routine_item_ids"], [item.id])
+
+    def test_today_log_rejects_other_users_routine_item(self):
+        other_routine = Routine.objects.create(
+            profile=self.other_profile,
+            name="Other PM",
+            time_of_day="pm",
+        )
+        other_item = RoutineItem.objects.create(
+            routine=other_routine,
+            position=1,
+            raw_product_name="Other product",
+        )
+
+        response = self.client.post(
+            reverse("daily-checkin-today"),
+            {"completed_routine_item_ids": [other_item.id]},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 400)
+
+    def test_reaction_event_links_to_routine_context(self):
+        routine = Routine.objects.create(profile=self.profile, name="PM", time_of_day="pm")
+        item = RoutineItem.objects.create(
+            routine=routine,
+            position=1,
+            raw_product_name="Retinol",
+        )
+
+        response = self.client.post(
+            reverse("reaction-list"),
+            {
+                "title": "Mild peeling",
+                "severity": "mild",
+                "status": "active",
+                "routine": routine.id,
+                "routine_item": item.id,
+                "product_id": self.product.id,
+                "symptoms": ["peeling", "peeling"],
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 201)
+        reaction = ReactionEvent.objects.get(profile=self.profile)
+        self.assertEqual(reaction.routine, routine)
+        self.assertEqual(reaction.routine_item, item)
+        self.assertEqual(reaction.product, self.product)
+        self.assertEqual(reaction.symptoms, ["peeling"])

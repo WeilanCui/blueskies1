@@ -5,7 +5,6 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
-import { AppChrome } from "../../components/AppChrome";
 import { Button } from "../../components/Button";
 import FaceMap from "../experience/FaceMap";
 import {
@@ -312,17 +311,11 @@ export default function IntakePage() {
   }
 
   if (meQuery.isLoading || meQuery.isError) {
-    return (
-      <main className={styles.appShell}>
-        <p className="detail-muted">Loading your session...</p>
-      </main>
-    );
+    return <p className="detail-muted">Loading your session...</p>;
   }
 
   return (
-    <main className={styles.appShell}>
-      <AppChrome active="intake" />
-
+    <>
       <section className={styles.appHero}>
         <p className="landing-eyebrow">Skin intake</p>
         <h1>Build your first skin profile.</h1>
@@ -505,6 +498,6 @@ export default function IntakePage() {
           {error && <p className="contact-error">{error}</p>}
         </div>
       </form>
-    </main>
+    </>
   );
 }
