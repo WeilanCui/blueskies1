@@ -24,6 +24,7 @@ from core.serializers import (
     IntakeSerializer,
     LoginSerializer,
     ReactionEventSerializer,
+    RoutineAddProductSerializer,
     RoutineSerializer,
     SignupSerializer,
     TodayCheckInSerializer,
@@ -348,6 +349,25 @@ class RoutineViewSet(viewsets.ModelViewSet):
         routine.is_active = False
         routine.save(update_fields=["is_active", "updated_at"])
         return Response(self.get_serializer(routine).data)
+
+    @action(detail=False, methods=["post"], url_path="add-product")
+    def add_product(self, request):
+        profile, _ = Profile.objects.get_or_create(user=request.user)
+        serializer = RoutineAddProductSerializer(
+            data=request.data,
+            context={"profile": profile},
+        )
+        serializer.is_valid(raise_exception=True)
+        routine = serializer.save()
+        routine_serializer = self.get_serializer(routine)
+        return Response(
+            {
+                "routine": routine_serializer.data,
+                "item_id": serializer.item.id,
+                "created": serializer.created,
+            },
+            status=status.HTTP_201_CREATED if serializer.created else status.HTTP_200_OK,
+        )
 
 
 class DailyCheckInViewSet(viewsets.ReadOnlyModelViewSet):

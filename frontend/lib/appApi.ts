@@ -136,6 +136,25 @@ export type RoutinePayload = {
   items?: RoutineItemPayload[];
 };
 
+export type AddRoutineProductPayload = {
+  routine_id?: number | null;
+  time_of_day?: RoutineTimeOfDay;
+  custom_time_label?: string;
+  routine_step?: string;
+  product_id?: number | null;
+  formulation_id?: number | null;
+  raw_product_name?: string;
+  usage_notes?: string;
+  frequency?: string;
+  schedule?: string;
+};
+
+export type AddRoutineProductResponse = {
+  routine: Routine;
+  item_id: number;
+  created: boolean;
+};
+
 export type DailyProductUse = {
   id: number;
   routine: number | null;
@@ -331,6 +350,19 @@ export function archiveRoutine(id: number): Promise<Routine> {
     `/api/routines/${id}/archive`,
     { method: "POST" },
     "Could not archive routine.",
+  );
+}
+
+export function addProductToRoutine(
+  payload: AddRoutineProductPayload,
+): Promise<AddRoutineProductResponse> {
+  return requestJson<AddRoutineProductResponse>(
+    "/api/routines/add-product",
+    {
+      method: "POST",
+      body: JSON.stringify(payload),
+    },
+    "Could not add product to routine.",
   );
 }
 

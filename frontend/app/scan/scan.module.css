@@ -555,6 +555,51 @@
   padding: 6px 13px;
 }
 
+.routineAddPanel {
+  display: grid;
+  gap: 10px;
+}
+
+.routineSelectLabel {
+  display: grid;
+  gap: 6px;
+}
+
+.routineSelectLabel span {
+  color: #6384a8;
+  font-size: 0.82rem;
+  font-weight: 900;
+}
+
+.routineSelectLabel select {
+  appearance: none;
+  background:
+    linear-gradient(45deg, transparent 50%, #6384a8 50%) calc(100% - 18px) 50% / 7px 7px
+      no-repeat,
+    linear-gradient(135deg, #6384a8 50%, transparent 50%) calc(100% - 13px) 50% / 7px 7px
+      no-repeat,
+    rgba(240, 249, 255, 0.58);
+  border: 1px solid rgba(52, 111, 170, 0.18);
+  border-radius: 8px;
+  color: #171412;
+  font: inherit;
+  font-weight: 900;
+  min-height: 48px;
+  outline: 0;
+  padding: 10px 38px 10px 14px;
+  width: 100%;
+}
+
+.routineSelectLabel select:focus-visible {
+  border-color: var(--accent-strong);
+  box-shadow: 0 0 0 4px rgba(52, 111, 170, 0.1);
+}
+
+.routineSelectLabel select:disabled {
+  cursor: not-allowed;
+  opacity: 0.58;
+}
+
 .addedButton {
   background: var(--accent-soft);
   color: #6384a8;
@@ -566,6 +611,14 @@
 .addedButton:hover:not([data-disabled="true"]) {
   background: #dcecf9;
   color: #171412;
+}
+
+.routineStatus {
+  color: #6384a8;
+  font-size: 0.9rem;
+  font-weight: 800;
+  line-height: 1.4;
+  margin: 0;
 }
 
 .analysisSection {

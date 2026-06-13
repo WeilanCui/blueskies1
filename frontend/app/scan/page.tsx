@@ -1,11 +1,19 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
 import { Button } from "../../components/Button";
-import { getCatalogProducts, getMe, type CatalogProduct } from "../../lib/appApi";
+import {
+  addProductToRoutine,
+  getCatalogProducts,
+  getMe,
+  getRoutines,
+  type CatalogProduct,
+  type Routine,
+  type RoutineTimeOfDay,
+} from "../../lib/appApi";
 import styles from "./scan.module.css";
 
 const authFreshMs = 5 * 60 * 1000;
@@ -46,12 +54,77 @@ function formatBytes(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
+function displayRoutineName(routine: Routine): string {
+  if (routine.time_of_day === "custom") {
+    return routine.custom_time_label || routine.name;
+  }
+  if (routine.time_of_day === "am") {
+    return "AM Routine";
+  }
+  if (routine.time_of_day === "pm") {
+    return "PM Routine";
+  }
+  return routine.name;
+}
+
+function inferRoutineStep(category: string): string {
+  const normalized = category.toLowerCase();
+  if (normalized.includes("cleanser")) {
+    return "cleanser";
+  }
+  if (normalized.includes("toner") || normalized.includes("essence")) {
+    return "toner_essence";
+  }
+  if (normalized.includes("spf") || normalized.includes("sunscreen")) {
+    return "spf";
+  }
+  if (normalized.includes("moistur") || normalized.includes("cream")) {
+    return "moisturizer";
+  }
+  if (normalized.includes("mask")) {
+    return "mask";
+  }
+  if (normalized.includes("exfol")) {
+    return "exfoliant";
+  }
+  if (normalized.includes("eye")) {
+    return "eye_care";
+  }
+  return "treatment";
+}
+
+type RoutineTarget = {
+  value: string;
+  label: string;
+  timeOfDay: RoutineTimeOfDay;
+  customTimeLabel?: string;
+  routine?: Routine;
+};
+
+function routineValue(routine: Routine): string {
+  return `routine:${routine.id}`;
+}
+
+function routineHasProduct(routine: Routine | undefined, product: CatalogProduct | null): boolean {
+  if (!routine || !product) {
+    return false;
+  }
+  return routine.items.some(
+    (item) =>
+      item.product_id === product.product_id ||
+      (product.formulation_id !== null && item.formulation_id === product.formulation_id),
+  );
+}
+
 export default function ScanPage() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [routineTarget, setRoutineTarget] = useState("am");
+  const [routineMessage, setRoutineMessage] = useState<string | null>(null);
 
   const meQuery = useQuery({
     queryKey: ["me"],
@@ -64,6 +137,27 @@ export default function ScanPage() {
     queryFn: () => getCatalogProducts(),
     enabled: meQuery.isSuccess,
     staleTime: authFreshMs,
+  });
+  const routinesQuery = useQuery({
+    queryKey: ["routines", "active"],
+    queryFn: () => getRoutines(true),
+    enabled: meQuery.isSuccess,
+  });
+  const addToRoutineMutation = useMutation({
+    mutationFn: addProductToRoutine,
+    onSuccess: (data) => {
+      const routineName = displayRoutineName(data.routine);
+      setRoutineTarget(routineValue(data.routine));
+      setRoutineMessage(
+        data.created ? `Added to ${routineName}.` : `Already in ${routineName}.`,
+      );
+      queryClient.invalidateQueries({ queryKey: ["routines"] });
+    },
+    onError: (error) => {
+      setRoutineMessage(
+        error instanceof Error ? error.message : "Could not add product to routine.",
+      );
+    },
   });
   useEffect(() => {
     if (meQuery.isError) {
@@ -88,6 +182,37 @@ export default function ScanPage() {
   }
 
   const products = productsQuery.data ?? [];
+  const routines = routinesQuery.data ?? [];
+  const routineTargets = useMemo(() => {
+    const amRoutine = routines.find((routine) => routine.time_of_day === "am");
+    const pmRoutine = routines.find((routine) => routine.time_of_day === "pm");
+    const targets: RoutineTarget[] = [
+      {
+        value: amRoutine ? routineValue(amRoutine) : "am",
+        label: "AM Routine",
+        timeOfDay: "am",
+        routine: amRoutine,
+      },
+      {
+        value: pmRoutine ? routineValue(pmRoutine) : "pm",
+        label: "PM Routine",
+        timeOfDay: "pm",
+        routine: pmRoutine,
+      },
+    ];
+    routines
+      .filter((routine) => routine.time_of_day === "custom")
+      .forEach((routine) => {
+        targets.push({
+          value: routineValue(routine),
+          label: displayRoutineName(routine),
+          timeOfDay: "custom",
+          customTimeLabel: routine.custom_time_label,
+          routine,
+        });
+      });
+    return targets;
+  }, [routines]);
   const filteredProducts = useMemo(() => {
     const needle = searchQuery.trim().toLowerCase();
     if (!needle) {
@@ -104,6 +229,39 @@ export default function ScanPage() {
   const selectedAnalysis = selectedProduct
     ? analysisCounts(selectedProduct.ingredients)
     : null;
+  const selectedRoutineTarget =
+    routineTargets.find((target) => target.value === routineTarget) ?? routineTargets[0];
+  const selectedProductAlreadyInRoutine = routineHasProduct(
+    selectedRoutineTarget?.routine,
+    selectedProduct ?? null,
+  );
+
+  useEffect(() => {
+    if (
+      routineTargets.length > 0 &&
+      !routineTargets.some((target) => target.value === routineTarget)
+    ) {
+      setRoutineTarget(routineTargets[0].value);
+    }
+  }, [routineTarget, routineTargets]);
+
+  useEffect(() => {
+    setRoutineMessage(null);
+  }, [selectedProductId]);
+
+  function addSelectedProductToRoutine() {
+    if (!selectedProduct || !selectedRoutineTarget) {
+      return;
+    }
+    addToRoutineMutation.mutate({
+      routine_id: selectedRoutineTarget.routine?.id ?? null,
+      time_of_day: selectedRoutineTarget.timeOfDay,
+      custom_time_label: selectedRoutineTarget.customTimeLabel ?? "",
+      routine_step: inferRoutineStep(selectedProduct.category),
+      product_id: selectedProduct.product_id,
+      formulation_id: selectedProduct.formulation_id,
+    });
+  }
 
   if (meQuery.isLoading || meQuery.isError) {
     return <p className="detail-muted">Loading your session...</p>;
@@ -146,10 +304,46 @@ export default function ScanPage() {
                   <span>{selectedProduct.ingredient_count} ingredients</span>
                 </div>
                 <p>{selectedProduct.description}</p>
-                <Button className={styles.addedButton} type="button" variant="secondary">
-                  <span aria-hidden="true">✓</span>
-                  Added to routine
-                </Button>
+                <div className={styles.routineAddPanel}>
+                  <label className={styles.routineSelectLabel}>
+                    <span>Add to</span>
+                    <select
+                      value={selectedRoutineTarget?.value ?? routineTarget}
+                      disabled={routinesQuery.isLoading || addToRoutineMutation.isPending}
+                      onChange={(event) => {
+                        setRoutineTarget(event.target.value);
+                        setRoutineMessage(null);
+                      }}
+                    >
+                      {routineTargets.map((target) => (
+                        <option value={target.value} key={target.value}>
+                          {target.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <Button
+                    className={styles.addedButton}
+                    type="button"
+                    variant="secondary"
+                    isDisabled={
+                      routinesQuery.isLoading ||
+                      addToRoutineMutation.isPending ||
+                      selectedProductAlreadyInRoutine
+                    }
+                    onPress={addSelectedProductToRoutine}
+                  >
+                    <span aria-hidden="true">✓</span>
+                    {addToRoutineMutation.isPending
+                      ? "Adding..."
+                      : selectedProductAlreadyInRoutine
+                        ? `Already in ${selectedRoutineTarget?.label ?? "routine"}`
+                        : "Add to routine"}
+                  </Button>
+                  {routineMessage ? (
+                    <p className={styles.routineStatus}>{routineMessage}</p>
+                  ) : null}
+                </div>
               </div>
             </article>
 

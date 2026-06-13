@@ -94,6 +94,99 @@ class RoutineApiTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual([routine["name"] for routine in response.data], ["Mine"])
 
+    def test_add_product_creates_active_routine_when_missing(self):
+        response = self.client.post(
+            reverse("routine-add-product"),
+            {
+                "time_of_day": "am",
+                "product_id": self.product.id,
+                "formulation_id": self.formulation.id,
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 201)
+        routine = Routine.objects.get(profile=self.profile, time_of_day="am")
+        item = routine.items.get()
+        self.assertEqual(routine.name, "AM Routine")
+        self.assertEqual(item.position, 1)
+        self.assertEqual(item.product, self.product)
+        self.assertEqual(item.formulation, self.formulation)
+        self.assertEqual(item.routine_step, "treatment")
+        self.assertTrue(response.data["created"])
+
+    def test_add_product_appends_to_existing_routine(self):
+        routine = Routine.objects.create(
+            profile=self.profile,
+            name="PM Routine",
+            time_of_day="pm",
+        )
+        RoutineItem.objects.create(
+            routine=routine,
+            position=1,
+            raw_product_name="Manual cleanser",
+        )
+
+        response = self.client.post(
+            reverse("routine-add-product"),
+            {
+                "routine_id": routine.id,
+                "product_id": self.product.id,
+                "routine_step": "moisturizer",
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 201)
+        item = routine.items.get(position=2)
+        self.assertEqual(item.product, self.product)
+        self.assertEqual(item.routine_step, "moisturizer")
+        self.assertEqual(response.data["routine"]["id"], routine.id)
+
+    def test_add_product_to_routine_is_idempotent_for_same_product(self):
+        routine = Routine.objects.create(
+            profile=self.profile,
+            name="AM Routine",
+            time_of_day="am",
+        )
+        existing_item = RoutineItem.objects.create(
+            routine=routine,
+            position=1,
+            product=self.product,
+        )
+
+        response = self.client.post(
+            reverse("routine-add-product"),
+            {
+                "routine_id": routine.id,
+                "product_id": self.product.id,
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(response.data["created"])
+        self.assertEqual(response.data["item_id"], existing_item.id)
+        self.assertEqual(routine.items.count(), 1)
+
+    def test_add_product_rejects_other_users_routine(self):
+        other_routine = Routine.objects.create(
+            profile=self.other_profile,
+            name="Other PM",
+            time_of_day="pm",
+        )
+
+        response = self.client.post(
+            reverse("routine-add-product"),
+            {
+                "routine_id": other_routine.id,
+                "product_id": self.product.id,
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 400)
+
     def test_today_log_creates_checkin_and_daily_product_uses(self):
         routine = Routine.objects.create(profile=self.profile, name="PM", time_of_day="pm")
         item = RoutineItem.objects.create(
