@@ -71,11 +71,12 @@ function routineIcon(timeOfDay: RoutineTimeOfDay): string {
 
 function itemToPayload(item: RoutineItem): RoutineItemPayload {
   return {
+    id: item.id,
     position: item.position,
     routine_step: item.routine_step,
     custom_step_label: item.custom_step_label,
-    product_id: item.product_id,
-    formulation_id: item.formulation_id,
+    product_id: item.product_id ?? item.product?.id ?? null,
+    formulation_id: item.formulation_id ?? item.formulation?.id ?? null,
     raw_product_name: item.raw_product_name,
     usage_notes: item.usage_notes,
     frequency: item.frequency,
@@ -110,6 +111,24 @@ function productToRoutineItem(product: CatalogProduct, position: number): Routin
   };
 }
 
+function reorderRoutineItems(items: RoutineItem[], fromId: number, toId: number): RoutineItem[] {
+  const fromIndex = items.findIndex((item) => item.id === fromId);
+  const toIndex = items.findIndex((item) => item.id === toId);
+  if (fromIndex === -1 || toIndex === -1 || fromIndex === toIndex) {
+    return items;
+  }
+
+  const next = [...items];
+  const [moved] = next.splice(fromIndex, 1);
+  next.splice(toIndex, 0, moved);
+  return next;
+}
+
+type DragState = {
+  routineId: number;
+  itemId: number;
+};
+
 export default function RoutinePage() {
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -124,6 +143,8 @@ export default function RoutinePage() {
   const [manualProductName, setManualProductName] = useState("");
   const [selectedStep, setSelectedStep] = useState("treatment");
   const [message, setMessage] = useState<string | null>(null);
+  const [dragState, setDragState] = useState<DragState | null>(null);
+  const [dragOverItemId, setDragOverItemId] = useState<number | null>(null);
 
   const meQuery = useQuery({
     queryKey: ["me"],
@@ -189,6 +210,43 @@ export default function RoutinePage() {
       setManualProductName("");
       setSelectedProductId("");
       queryClient.invalidateQueries({ queryKey: ["routines"] });
+    },
+  });
+  const reorderRoutineMutation = useMutation({
+    mutationFn: async (payload: { routine: Routine; items: RoutineItem[] }) => {
+      const items = payload.items.map((item, index) => ({
+        ...itemToPayload(item),
+        position: index + 1,
+      }));
+      return updateRoutine(payload.routine.id, routineToPayload(payload.routine, items));
+    },
+    onMutate: async (payload) => {
+      await queryClient.cancelQueries({ queryKey: ["routines", "active"] });
+      const previous = queryClient.getQueryData<Routine[]>(["routines", "active"]);
+      queryClient.setQueryData<Routine[]>(["routines", "active"], (current) =>
+        current?.map((routine) =>
+          routine.id === payload.routine.id
+            ? {
+              ...routine,
+              items: payload.items.map((item, index) => ({
+                ...item,
+                position: index + 1,
+              })),
+            }
+            : routine,
+        ),
+      );
+      return { previous };
+    },
+    onSuccess: () => {
+      setMessage("Routine order saved.");
+      queryClient.invalidateQueries({ queryKey: ["routines"] });
+    },
+    onError: (_error, _payload, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(["routines", "active"], context.previous);
+      }
+      setMessage("Could not save routine order.");
     },
   });
 
@@ -264,6 +322,19 @@ export default function RoutinePage() {
       return;
     }
     saveRoutineMutation.mutate({ routine: existingRoutine, item });
+  }
+
+  function handleRoutineReorder(routine: Routine, fromId: number, toId: number) {
+    const reordered = reorderRoutineItems(routine.items, fromId, toId);
+    if (reordered === routine.items) {
+      return;
+    }
+    reorderRoutineMutation.mutate({ routine, items: reordered });
+  }
+
+  function clearDragState() {
+    setDragState(null);
+    setDragOverItemId(null);
   }
 
   if (meQuery.isLoading || meQuery.isError) {
@@ -506,18 +577,73 @@ export default function RoutinePage() {
                   </div>
                   <strong>{routine.items.length} products</strong>
                 </div>
-                <div className={styles.routineProductList}>
+                <div className={styles.routineProductList} role="list">
                   {routine.items.length > 0 ? (
-                    routine.items.map((item) => (
-                      <div className={styles.routineProductCard} key={item.id}>
-                        <span>{item.position}</span>
-                        <div>
-                          <strong>{item.display_name}</strong>
-                          <em>{item.product?.brand || item.raw_product_name || item.routine_step}</em>
-                        </div>
-                        <small>{item.routine_step}</small>
-                      </div>
-                    ))
+                    <>
+                      <p className={styles.dragHint}>Drag products to reorder your routine.</p>
+                      {routine.items.map((item, index) => {
+                        const isDragging =
+                          dragState?.routineId === routine.id && dragState.itemId === item.id;
+                        const isDragOver =
+                          dragOverItemId === item.id &&
+                          dragState?.routineId === routine.id &&
+                          dragState.itemId !== item.id;
+
+                        return (
+                          <div
+                            className={[
+                              styles.routineProductCard,
+                              isDragging ? styles.routineProductCardDragging : "",
+                              isDragOver ? styles.routineProductCardDragOver : "",
+                            ]
+                              .filter(Boolean)
+                              .join(" ")}
+                            draggable={!reorderRoutineMutation.isPending}
+                            key={item.id}
+                            role="listitem"
+                            aria-grabbed={isDragging}
+                            onDragStart={(event) => {
+                              event.dataTransfer.effectAllowed = "move";
+                              event.dataTransfer.setData("text/plain", String(item.id));
+                              setDragState({ routineId: routine.id, itemId: item.id });
+                            }}
+                            onDragOver={(event) => {
+                              if (!dragState || dragState.routineId !== routine.id) {
+                                return;
+                              }
+                              event.preventDefault();
+                              event.dataTransfer.dropEffect = "move";
+                              setDragOverItemId(item.id);
+                            }}
+                            onDragLeave={() => {
+                              if (dragOverItemId === item.id) {
+                                setDragOverItemId(null);
+                              }
+                            }}
+                            onDrop={(event) => {
+                              event.preventDefault();
+                              if (!dragState || dragState.routineId !== routine.id) {
+                                clearDragState();
+                                return;
+                              }
+                              handleRoutineReorder(routine, dragState.itemId, item.id);
+                              clearDragState();
+                            }}
+                            onDragEnd={clearDragState}
+                          >
+                            <span className={styles.dragHandle} aria-hidden="true">
+                              ⋮⋮
+                            </span>
+                            <span>{index + 1}</span>
+                            <div>
+                              <strong>{item.display_name}</strong>
+                              <em>{item.product?.brand || item.raw_product_name || item.routine_step}</em>
+                            </div>
+                            <small>{item.routine_step}</small>
+                          </div>
+                        );
+                      })}
+                    </>
                   ) : (
                     <p className={styles.emptyState}>No products in this routine yet.</p>
                   )}

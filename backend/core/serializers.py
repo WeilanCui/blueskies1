@@ -407,6 +407,7 @@ class RoutineItemSerializer(serializers.ModelSerializer):
     product_id = serializers.IntegerField(required=False, allow_null=True)
     formulation_id = serializers.IntegerField(required=False, allow_null=True)
     display_name = serializers.CharField(read_only=True)
+    id = serializers.IntegerField(required=False, allow_null=True)
 
     class Meta:
         model = RoutineItem
@@ -427,7 +428,7 @@ class RoutineItemSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
         ]
-        read_only_fields = ["id", "created_at", "updated_at"]
+        read_only_fields = ["created_at", "updated_at"]
 
     def validate(self, attrs: dict) -> dict:
         attrs = super().validate(attrs)
@@ -468,6 +469,13 @@ class RoutineItemSerializer(serializers.ModelSerializer):
         attrs["usage_notes"] = attrs.get("usage_notes", "").strip()
         attrs["frequency"] = attrs.get("frequency", "").strip()
         attrs["schedule"] = attrs.get("schedule", "").strip()
+
+        item_id = attrs.get("id")
+        routine = self.context.get("routine_instance")
+        if item_id is not None and routine is not None:
+            if not routine.items.filter(pk=item_id).exists():
+                raise serializers.ValidationError({"id": "Routine item not found."})
+
         return attrs
 
 
@@ -511,6 +519,8 @@ class RoutineSerializer(serializers.ModelSerializer):
             )
         attrs["custom_time_label"] = custom_time_label
         attrs["notes"] = attrs.get("notes", "").strip()
+        if self.instance is not None:
+            self.context["routine_instance"] = self.instance
         return attrs
 
     @transaction.atomic
@@ -529,15 +539,54 @@ class RoutineSerializer(serializers.ModelSerializer):
             setattr(instance, field, value)
         instance.save()
         if items is not None:
-            instance.items.all().delete()
-            self._replace_items(instance, items)
+            self._sync_items(instance, items)
         self._deactivate_competing(instance)
         return instance
 
     def _replace_items(self, routine: Routine, items: list[dict]) -> None:
         for index, item in enumerate(items, start=1):
+            item = {**item}
+            item.pop("id", None)
             item.setdefault("position", index)
             RoutineItem.objects.create(routine=routine, **item)
+
+    def _sync_items(self, routine: Routine, items: list[dict]) -> None:
+        """Update routine items in place so reordering preserves item IDs."""
+        kept_ids: list[int] = []
+
+        for offset, existing in enumerate(routine.items.all(), start=1):
+            existing.position = 10_000 + offset
+            existing.save(update_fields=["position"])
+
+        for index, item_data in enumerate(items, start=1):
+            item_data = {**item_data}
+            position = item_data.pop("position", index)
+            item_id = item_data.pop("id", None)
+
+            if item_id is not None:
+                try:
+                    routine_item = routine.items.get(pk=item_id)
+                except RoutineItem.DoesNotExist:
+                    routine_item = None
+            else:
+                routine_item = None
+
+            if routine_item is not None:
+                for field, value in item_data.items():
+                    setattr(routine_item, field, value)
+                routine_item.position = position
+                routine_item.save()
+                kept_ids.append(routine_item.id)
+                continue
+
+            created = RoutineItem.objects.create(
+                routine=routine,
+                position=position,
+                **item_data,
+            )
+            kept_ids.append(created.id)
+
+        routine.items.exclude(pk__in=kept_ids).delete()
 
     def _deactivate_competing(self, routine: Routine) -> None:
         if not routine.is_active:

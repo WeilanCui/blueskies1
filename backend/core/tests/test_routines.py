@@ -66,6 +66,66 @@ class RoutineApiTests(TestCase):
         self.assertEqual(linked_item.formulation, self.formulation)
         self.assertEqual(response.data["items"][0]["display_name"], "Manual Cleanser")
 
+    def test_routine_update_reorders_items_and_preserves_item_ids(self):
+        routine = Routine.objects.create(
+            profile=self.profile,
+            name="AM Routine",
+            time_of_day="am",
+        )
+        first = RoutineItem.objects.create(
+            routine=routine,
+            position=1,
+            routine_step="cleanser",
+            raw_product_name="Gentle Cleanser",
+        )
+        second = RoutineItem.objects.create(
+            routine=routine,
+            position=2,
+            routine_step="moisturizer",
+            product=self.product,
+            formulation=self.formulation,
+        )
+
+        response = self.client.put(
+            reverse("routine-detail", kwargs={"pk": routine.pk}),
+            {
+                "name": routine.name,
+                "time_of_day": routine.time_of_day,
+                "is_active": True,
+                "items": [
+                    {
+                        "id": second.id,
+                        "position": 1,
+                        "routine_step": second.routine_step,
+                        "product_id": self.product.id,
+                        "formulation_id": self.formulation.id,
+                        "raw_product_name": "",
+                    },
+                    {
+                        "id": first.id,
+                        "position": 2,
+                        "routine_step": first.routine_step,
+                        "raw_product_name": first.raw_product_name,
+                    },
+                ],
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            list(routine.items.order_by("position").values_list("id", flat=True)),
+            [second.id, first.id],
+        )
+        self.assertEqual(
+            list(routine.items.order_by("position").values_list("position", flat=True)),
+            [1, 2],
+        )
+        self.assertEqual(
+            [item["id"] for item in response.data["items"]],
+            [second.id, first.id],
+        )
+
     def test_activating_same_timing_deactivates_prior_routine_in_domain_logic(self):
         existing = Routine.objects.create(
             profile=self.profile,

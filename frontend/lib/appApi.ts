@@ -116,6 +116,7 @@ export type Routine = {
 };
 
 export type RoutineItemPayload = {
+  id?: number;
   position: number;
   routine_step: string;
   custom_step_label?: string;
@@ -210,6 +211,22 @@ export type ReactionEvent = {
   notes: string;
   created_at: string;
   updated_at: string;
+};
+
+export type ReactionPayload = {
+  daily_checkin?: number | null;
+  routine?: number | null;
+  routine_item?: number | null;
+  product_id?: number | null;
+  formulation_id?: number | null;
+  title?: string;
+  severity?: ReactionEvent["severity"];
+  status?: ReactionEvent["status"];
+  occurred_on?: string;
+  resolved_on?: string | null;
+  symptoms?: string[];
+  suspected_trigger?: string;
+  notes?: string;
 };
 
 function getErrorMessage(data: unknown, fallback: string): string {
@@ -395,4 +412,29 @@ export function saveTodayCheckIn(payload: TodayCheckInPayload): Promise<DailyChe
 
 export function getReactions(): Promise<ReactionEvent[]> {
   return requestJson<ReactionEvent[]>("/api/reactions", {}, "Could not load reactions.");
+}
+
+export function createReaction(payload: ReactionPayload): Promise<ReactionEvent> {
+  return requestJson<ReactionEvent>(
+    "/api/reactions",
+    {
+      method: "POST",
+      body: JSON.stringify(payload),
+    },
+    "Could not save reaction.",
+  );
+}
+
+export function updateReaction(
+  id: number,
+  payload: ReactionPayload,
+): Promise<ReactionEvent> {
+  return requestJson<ReactionEvent>(
+    `/api/reactions/${id}`,
+    {
+      method: "PATCH",
+      body: JSON.stringify(payload),
+    },
+    "Could not update reaction.",
+  );
 }

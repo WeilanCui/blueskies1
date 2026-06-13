@@ -332,15 +332,48 @@
   gap: 10px;
 }
 
+.dragHint {
+  color: #6384a8;
+  font-size: 0.84rem;
+  font-weight: 800;
+  margin: 0;
+}
+
 .routineProductCard {
   align-items: center;
   background: rgba(240, 249, 255, 0.52);
   border: 1px solid rgba(52, 111, 170, 0.14);
   border-radius: 8px;
+  cursor: grab;
   display: grid;
   gap: 12px;
-  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-columns: auto auto minmax(0, 1fr) auto;
   padding: 14px;
+  touch-action: none;
+  transition: border-color 160ms ease, box-shadow 160ms ease, opacity 160ms ease;
+}
+
+.routineProductCard:active {
+  cursor: grabbing;
+}
+
+.routineProductCardDragging {
+  opacity: 0.45;
+}
+
+.routineProductCardDragOver {
+  border-color: var(--accent-strong);
+  box-shadow: 0 0 0 3px rgba(52, 111, 170, 0.12);
+}
+
+.dragHandle {
+  color: #9bb3cc;
+  cursor: grab;
+  font-size: 0.95rem;
+  font-weight: 900;
+  letter-spacing: -0.08em;
+  line-height: 1;
+  user-select: none;
 }
 
 .routineProductCard > span {
@@ -441,6 +474,11 @@
 
   .routineProductCard {
     grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .routineProductCard > span:nth-child(2),
+  .dragHandle {
+    display: none;
   }
 
   .routineProductCard small {

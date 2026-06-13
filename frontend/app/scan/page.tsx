@@ -2,7 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { Button } from "../../components/Button";
 import {
@@ -125,6 +125,7 @@ export default function ScanPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [routineTarget, setRoutineTarget] = useState("am");
   const [routineMessage, setRoutineMessage] = useState<string | null>(null);
+  const preserveRoutineMessageRef = useRef(false);
 
   const meQuery = useQuery({
     queryKey: ["me"],
@@ -147,6 +148,7 @@ export default function ScanPage() {
     mutationFn: addProductToRoutine,
     onSuccess: (data) => {
       const routineName = displayRoutineName(data.routine);
+      preserveRoutineMessageRef.current = true;
       setRoutineTarget(routineValue(data.routine));
       setRoutineMessage(
         data.created ? `Added to ${routineName}.` : `Already in ${routineName}.`,
@@ -246,8 +248,12 @@ export default function ScanPage() {
   }, [routineTarget, routineTargets]);
 
   useEffect(() => {
+    if (preserveRoutineMessageRef.current) {
+      preserveRoutineMessageRef.current = false;
+      return;
+    }
     setRoutineMessage(null);
-  }, [selectedProductId]);
+  }, [selectedProductId, routineTarget]);
 
   function addSelectedProductToRoutine() {
     if (!selectedProduct || !selectedRoutineTarget) {
