@@ -3,6 +3,7 @@ from decimal import Decimal
 from unittest.mock import Mock, patch
 
 from django.contrib.auth import get_user_model
+from django.core.exceptions import ValidationError
 from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
@@ -27,6 +28,12 @@ class ProfileLocationApiTests(TestCase):
         self.profile = Profile.objects.create(user=self.user)
         self.other_profile = Profile.objects.create(user=self.other_user)
         self.client.force_authenticate(user=self.user)
+
+    def test_location_save_runs_model_validation(self):
+        with self.assertRaises(ValidationError):
+            Location.objects.create(country="US")
+
+        self.assertEqual(Location.objects.count(), 0)
 
     def test_create_profile_location_normalizes_shared_location_and_sets_default(self):
         response = self.client.post(

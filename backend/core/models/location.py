@@ -112,6 +112,7 @@ class Location(models.Model):
         self.region = self.region.strip()
         self.label = self.label.strip()
         self.grid_key = self.build_grid_key()
+        self.full_clean()
         super().save(*args, **kwargs)
 
     def build_grid_key(self) -> str:
