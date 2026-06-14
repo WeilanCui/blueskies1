@@ -17,6 +17,14 @@ from core.models.daily_checkin import (
     RoutineTimeOfDay,
 )
 from core.models.formulation import Formulation, FormulationIngredient
+from core.models.location import (
+    Location,
+    LocationPrecision,
+    LocationSource,
+    ProfileLocation,
+    WeatherSnapshot,
+    WeatherSnapshotSource,
+)
 from core.models.product import Product
 from core.models.reaction import ReactionEvent, ReactionSeverity, ReactionStatus
 from core.models.routine import Routine, RoutineItem
@@ -83,11 +91,15 @@ __all__ = [
     "InteractionType",
     "LiteratureEnrichmentStatus",
     "LiteratureReference",
+    "Location",
+    "LocationPrecision",
+    "LocationSource",
     "PregnancyStatus",
     "Product",
     "Profile",
     "ProfileConstraint",
     "ProfileConstraintKind",
+    "ProfileLocation",
     "ProfileVisibility",
     "PropertyAssertion",
     "PropertyDefinition",
@@ -108,4 +120,6 @@ __all__ = [
     "SourceMetadata",
     "SourceType",
     "ValueType",
+    "WeatherSnapshot",
+    "WeatherSnapshotSource",
 ]

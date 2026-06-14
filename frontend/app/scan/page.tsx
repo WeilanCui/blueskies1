@@ -67,32 +67,6 @@ function displayRoutineName(routine: Routine): string {
   return routine.name;
 }
 
-function inferRoutineStep(category: string): string {
-  const normalized = category.toLowerCase();
-  if (normalized.includes("cleanser")) {
-    return "cleanser";
-  }
-  if (normalized.includes("toner") || normalized.includes("essence")) {
-    return "toner_essence";
-  }
-  if (normalized.includes("spf") || normalized.includes("sunscreen")) {
-    return "spf";
-  }
-  if (normalized.includes("moistur") || normalized.includes("cream")) {
-    return "moisturizer";
-  }
-  if (normalized.includes("mask")) {
-    return "mask";
-  }
-  if (normalized.includes("exfol")) {
-    return "exfoliant";
-  }
-  if (normalized.includes("eye")) {
-    return "eye_care";
-  }
-  return "treatment";
-}
-
 type RoutineTarget = {
   value: string;
   label: string;
@@ -263,7 +237,6 @@ export default function ScanPage() {
       routine_id: selectedRoutineTarget.routine?.id ?? null,
       time_of_day: selectedRoutineTarget.timeOfDay,
       custom_time_label: selectedRoutineTarget.customTimeLabel ?? "",
-      routine_step: inferRoutineStep(selectedProduct.category),
       product_id: selectedProduct.product_id,
       formulation_id: selectedProduct.formulation_id,
     });

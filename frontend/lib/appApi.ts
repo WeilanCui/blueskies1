@@ -156,6 +156,78 @@ export type AddRoutineProductResponse = {
   created: boolean;
 };
 
+export type Location = {
+  id: number;
+  grid_key: string;
+  label: string;
+  display_name: string;
+  city: string;
+  region: string;
+  country: string;
+  postal_code: string;
+  latitude: string | null;
+  longitude: string | null;
+  timezone: string;
+  precision: string;
+  source: string;
+  source_ref: string;
+  created_at: string;
+  updated_at: string;
+};
+
+export type ProfileLocation = {
+  id: number;
+  label: string;
+  is_default: boolean;
+  is_active: boolean;
+  share_weather_context: boolean;
+  source: string;
+  location: Location;
+  created_at: string;
+  updated_at: string;
+};
+
+export type ProfileLocationPayload = {
+  label?: string;
+  is_default?: boolean;
+  is_active?: boolean;
+  share_weather_context?: boolean;
+  source?: string;
+  city?: string;
+  region?: string;
+  country?: string;
+  postal_code?: string;
+  latitude?: string | number | null;
+  longitude?: string | number | null;
+  timezone?: string;
+  precision?: string;
+};
+
+export type WeatherSnapshot = {
+  id: number;
+  location: number;
+  source: string;
+  source_ref: string;
+  observed_at: string;
+  fetched_at: string;
+  expires_at: string;
+  uv_index: string | null;
+  uv_max: string | null;
+  temperature_c: string | null;
+  humidity_percent: number | null;
+  cloud_cover_percent: number | null;
+  air_quality_index: number | null;
+  pollen_index: string | null;
+  raw_payload: Record<string, unknown>;
+  is_fresh: boolean;
+  created_at: string;
+};
+
+export type LocationContext = {
+  profile_location: ProfileLocation | null;
+  weather_snapshot: WeatherSnapshot | null;
+};
+
 export type DailyProductUse = {
   id: number;
   routine: number | null;
@@ -380,6 +452,65 @@ export function addProductToRoutine(
       body: JSON.stringify(payload),
     },
     "Could not add product to routine.",
+  );
+}
+
+export function getProfileLocations(): Promise<ProfileLocation[]> {
+  return requestJson<ProfileLocation[]>(
+    "/api/profile-locations",
+    {},
+    "Could not load profile locations.",
+  );
+}
+
+export function createProfileLocation(
+  payload: ProfileLocationPayload,
+): Promise<ProfileLocation> {
+  return requestJson<ProfileLocation>(
+    "/api/profile-locations",
+    {
+      method: "POST",
+      body: JSON.stringify(payload),
+    },
+    "Could not save location.",
+  );
+}
+
+export function updateProfileLocation(
+  id: number,
+  payload: ProfileLocationPayload,
+): Promise<ProfileLocation> {
+  return requestJson<ProfileLocation>(
+    `/api/profile-locations/${id}`,
+    {
+      method: "PATCH",
+      body: JSON.stringify(payload),
+    },
+    "Could not update location.",
+  );
+}
+
+export function setDefaultProfileLocation(id: number): Promise<ProfileLocation> {
+  return requestJson<ProfileLocation>(
+    `/api/profile-locations/${id}/set-default`,
+    { method: "POST" },
+    "Could not set default location.",
+  );
+}
+
+export function getCurrentLocationContext(): Promise<LocationContext> {
+  return requestJson<LocationContext>(
+    "/api/profile-locations/current-context",
+    {},
+    "Could not load location context.",
+  );
+}
+
+export function refreshProfileLocationWeather(id: number): Promise<LocationContext> {
+  return requestJson<LocationContext>(
+    `/api/profile-locations/${id}/refresh-weather`,
+    { method: "POST" },
+    "Could not refresh weather context.",
   );
 }
 

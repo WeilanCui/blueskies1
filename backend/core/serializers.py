@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 from django.contrib.auth import authenticate, get_user_model
 from django.contrib.auth.password_validation import validate_password
 from django.db import transaction
@@ -19,10 +21,12 @@ from core.models import (
     Formulation,
     FormulationIngredient,
     FitzpatrickSkinType,
+    Location,
     PregnancyStatus,
     Profile,
     ProfileConstraint,
     ProfileConstraintKind,
+    ProfileLocation,
     PropertyAssertion,
     ReactionEvent,
     ReactionSeverity,
@@ -33,8 +37,10 @@ from core.models import (
     RoutineTimeOfDay,
     SkinProfile,
     SkinType,
+    WeatherSnapshot,
 )
 from core.models.product import Product
+from core.services.weather import get_or_create_shared_location
 
 
 User = get_user_model()
@@ -298,6 +304,246 @@ class ContactSubmissionSerializer(serializers.ModelSerializer):
         if not value:
             raise serializers.ValidationError("Feedback is required.")
         return value
+
+
+class LocationSerializer(serializers.ModelSerializer):
+    display_name = serializers.CharField(read_only=True)
+    latitude = serializers.DecimalField(
+        max_digits=9,
+        decimal_places=6,
+        min_value=Decimal("-90"),
+        max_value=Decimal("90"),
+        allow_null=True,
+        read_only=True,
+    )
+    longitude = serializers.DecimalField(
+        max_digits=9,
+        decimal_places=6,
+        min_value=Decimal("-180"),
+        max_value=Decimal("180"),
+        allow_null=True,
+        read_only=True,
+    )
+
+    class Meta:
+        model = Location
+        fields = [
+            "id",
+            "grid_key",
+            "label",
+            "display_name",
+            "city",
+            "region",
+            "country",
+            "postal_code",
+            "latitude",
+            "longitude",
+            "timezone",
+            "precision",
+            "source",
+            "source_ref",
+            "created_at",
+            "updated_at",
+        ]
+        read_only_fields = ["id", "grid_key", "created_at", "updated_at"]
+
+
+class WeatherSnapshotSerializer(serializers.ModelSerializer):
+    is_fresh = serializers.BooleanField(read_only=True)
+    uv_index = serializers.DecimalField(
+        max_digits=4,
+        decimal_places=1,
+        min_value=Decimal("0"),
+        max_value=Decimal("20"),
+        allow_null=True,
+        read_only=True,
+    )
+    uv_max = serializers.DecimalField(
+        max_digits=4,
+        decimal_places=1,
+        min_value=Decimal("0"),
+        max_value=Decimal("20"),
+        allow_null=True,
+        read_only=True,
+    )
+
+    class Meta:
+        model = WeatherSnapshot
+        fields = [
+            "id",
+            "location",
+            "source",
+            "source_ref",
+            "observed_at",
+            "fetched_at",
+            "expires_at",
+            "uv_index",
+            "uv_max",
+            "temperature_c",
+            "humidity_percent",
+            "cloud_cover_percent",
+            "air_quality_index",
+            "pollen_index",
+            "raw_payload",
+            "is_fresh",
+            "created_at",
+        ]
+        read_only_fields = fields
+
+
+class ProfileLocationSerializer(serializers.ModelSerializer):
+    location = LocationSerializer(read_only=True)
+    city = serializers.CharField(required=False, allow_blank=True, write_only=True)
+    region = serializers.CharField(required=False, allow_blank=True, write_only=True)
+    country = serializers.CharField(required=False, allow_blank=True, write_only=True)
+    postal_code = serializers.CharField(required=False, allow_blank=True, write_only=True)
+    latitude = serializers.DecimalField(
+        max_digits=9,
+        decimal_places=6,
+        required=False,
+        allow_null=True,
+        write_only=True,
+    )
+    longitude = serializers.DecimalField(
+        max_digits=9,
+        decimal_places=6,
+        required=False,
+        allow_null=True,
+        write_only=True,
+    )
+    timezone = serializers.CharField(required=False, allow_blank=True, write_only=True)
+    precision = serializers.CharField(required=False, allow_blank=True, write_only=True)
+
+    location_write_fields = {
+        "city",
+        "region",
+        "country",
+        "postal_code",
+        "latitude",
+        "longitude",
+        "timezone",
+        "precision",
+    }
+
+    class Meta:
+        model = ProfileLocation
+        fields = [
+            "id",
+            "label",
+            "is_default",
+            "is_active",
+            "share_weather_context",
+            "source",
+            "location",
+            "city",
+            "region",
+            "country",
+            "postal_code",
+            "latitude",
+            "longitude",
+            "timezone",
+            "precision",
+            "created_at",
+            "updated_at",
+        ]
+        read_only_fields = ["id", "location", "created_at", "updated_at"]
+
+    def validate_label(self, value: str) -> str:
+        return value.strip() or "home"
+
+    def validate_country(self, value: str) -> str:
+        return (value.strip().upper() or "US")[:2]
+
+    def validate(self, attrs: dict) -> dict:
+        attrs = super().validate(attrs)
+        location_attrs = self._location_attrs(attrs)
+        has_latitude = location_attrs.get("latitude") is not None
+        has_longitude = location_attrs.get("longitude") is not None
+        if self.instance is None and not any(
+            [
+                location_attrs.get("postal_code"),
+                location_attrs.get("city"),
+                has_latitude and has_longitude,
+            ]
+        ):
+            raise serializers.ValidationError(
+                "Add a postal code, city, or coordinates for this location."
+            )
+        if has_latitude != has_longitude:
+            raise serializers.ValidationError(
+                "Latitude and longitude must be provided together."
+            )
+        return attrs
+
+    @transaction.atomic
+    def create(self, validated_data: dict) -> ProfileLocation:
+        profile = self.context["profile"]
+        location = self._resolve_location(validated_data)
+        if not validated_data.get("is_default") and not profile.locations.exists():
+            validated_data["is_default"] = True
+        if validated_data.get("is_default"):
+            ProfileLocation.objects.filter(profile=profile, is_default=True).update(
+                is_default=False
+            )
+        profile_location = ProfileLocation.objects.create(
+            profile=profile,
+            location=location,
+            **validated_data,
+        )
+        self._enforce_default(profile_location)
+        return profile_location
+
+    @transaction.atomic
+    def update(self, instance: ProfileLocation, validated_data: dict) -> ProfileLocation:
+        if self._has_location_input(validated_data):
+            instance.location = self._resolve_location(validated_data, instance.location)
+        for field, value in validated_data.items():
+            setattr(instance, field, value)
+        instance.save()
+        self._enforce_default(instance)
+        return instance
+
+    def _location_attrs(self, attrs: dict) -> dict:
+        return {field: attrs.get(field) for field in self.location_write_fields}
+
+    def _has_location_input(self, attrs: dict) -> bool:
+        return any(field in attrs for field in self.location_write_fields)
+
+    def _resolve_location(
+        self,
+        attrs: dict,
+        existing_location: Location | None = None,
+    ) -> Location:
+        location_attrs = {}
+        for field in self.location_write_fields:
+            value = attrs.pop(field, None)
+            if value not in {None, ""}:
+                location_attrs[field] = value
+
+        if existing_location is not None:
+            for field in self.location_write_fields:
+                if field not in location_attrs:
+                    location_attrs[field] = getattr(existing_location, field)
+
+        return get_or_create_shared_location(
+            city=location_attrs.get("city", ""),
+            region=location_attrs.get("region", ""),
+            country=location_attrs.get("country", "US"),
+            postal_code=location_attrs.get("postal_code", ""),
+            latitude=location_attrs.get("latitude"),
+            longitude=location_attrs.get("longitude"),
+            timezone_name=location_attrs.get("timezone", ""),
+            precision=location_attrs.get("precision", "unknown"),
+            source=attrs.get("source", "manual"),
+        )
+
+    def _enforce_default(self, profile_location: ProfileLocation) -> None:
+        if not profile_location.is_default:
+            return
+        ProfileLocation.objects.filter(
+            profile=profile_location.profile,
+            is_default=True,
+        ).exclude(pk=profile_location.pk).update(is_default=False)
 
 
 class ProductSummarySerializer(serializers.ModelSerializer):
@@ -793,15 +1039,15 @@ class RoutineAddProductSerializer(serializers.Serializer):
         formulation: Formulation | None,
         raw_product_name: str,
     ) -> RoutineItem | None:
-        if product is not None:
-            return (
-                routine.items.filter(product=product)
-                .order_by("position", "id")
-                .first()
-            )
         if formulation is not None:
             return (
                 routine.items.filter(formulation=formulation)
+                .order_by("position", "id")
+                .first()
+            )
+        if product is not None:
+            return (
+                routine.items.filter(product=product)
                 .order_by("position", "id")
                 .first()
             )
@@ -1012,15 +1258,17 @@ class ReactionEventSerializer(serializers.ModelSerializer):
         profile = self.context["profile"]
         self._validate_owned_fk(attrs, profile)
 
+        has_product_id = "product_id" in attrs
+        has_formulation_id = "formulation_id" in attrs
         product_id = attrs.pop("product_id", None)
         formulation_id = attrs.pop("formulation_id", None)
         product = None
         formulation = None
-        if product_id is not None:
+        if has_product_id and product_id is not None:
             product = Product.objects.filter(pk=product_id).first()
             if product is None:
                 raise serializers.ValidationError({"product_id": "Product not found."})
-        if formulation_id is not None:
+        if has_formulation_id and formulation_id is not None:
             formulation = Formulation.objects.select_related("product").filter(
                 pk=formulation_id,
             ).first()
@@ -1034,11 +1282,15 @@ class ReactionEventSerializer(serializers.ModelSerializer):
                 )
             product = product or formulation.product
 
-        attrs["product"] = product
-        attrs["formulation"] = formulation
-        attrs["suspected_trigger"] = attrs.get("suspected_trigger", "").strip()
-        attrs["notes"] = attrs.get("notes", "").strip()
-        attrs["symptoms"] = self._clean_unique_list(attrs.get("symptoms", []))
+        if has_product_id or has_formulation_id or self.instance is None:
+            attrs["product"] = product
+            attrs["formulation"] = formulation
+        if "suspected_trigger" in attrs or self.instance is None:
+            attrs["suspected_trigger"] = attrs.get("suspected_trigger", "").strip()
+        if "notes" in attrs or self.instance is None:
+            attrs["notes"] = attrs.get("notes", "").strip()
+        if "symptoms" in attrs or self.instance is None:
+            attrs["symptoms"] = self._clean_unique_list(attrs.get("symptoms", []))
         return attrs
 
     def _validate_owned_fk(self, attrs: dict, profile: Profile) -> None:

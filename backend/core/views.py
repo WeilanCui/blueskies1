@@ -13,7 +13,16 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from literature.ingestion import ingest_formulation, parse_inci_list
-from core.models import Compound, ContactSubmission, DailyCheckIn, Formulation, Profile, ReactionEvent, Routine
+from core.models import (
+    Compound,
+    ContactSubmission,
+    DailyCheckIn,
+    Formulation,
+    Profile,
+    ProfileLocation,
+    ReactionEvent,
+    Routine,
+)
 from core.models.product import Product
 from core.serializers import (
     CompoundSerializer,
@@ -23,16 +32,19 @@ from core.serializers import (
     FormulationSubmitSerializer,
     IntakeSerializer,
     LoginSerializer,
+    ProfileLocationSerializer,
     ReactionEventSerializer,
     RoutineAddProductSerializer,
     RoutineSerializer,
     SignupSerializer,
     TodayCheckInSerializer,
+    WeatherSnapshotSerializer,
     auth_user_payload,
     catalog_slug,
     intake_payload,
     serialize_catalog_product,
 )
+from core.services.weather import get_or_fetch_uv_snapshot
 from core.throttles import (
     AuthRateThrottle,
     ContactRateThrottle,
@@ -306,6 +318,87 @@ class IntakeViewSet(viewsets.ModelViewSet):
         serializer.save()
         profile = Profile.objects.get(user=request.user)
         return Response(intake_payload(profile), status=status_code)
+
+
+class ProfileLocationViewSet(viewsets.ModelViewSet):
+    """Current user's saved locations and cached UV/weather context."""
+
+    serializer_class = ProfileLocationSerializer
+    permission_classes = [IsAuthenticated]
+    http_method_names = ["get", "post", "put", "patch", "delete", "head", "options"]
+
+    def get_queryset(self):
+        profile, _ = Profile.objects.get_or_create(user=self.request.user)
+        return (
+            ProfileLocation.objects.filter(profile=profile, is_active=True)
+            .select_related("location")
+            .order_by("-is_default", "label", "id")
+        )
+
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        profile, _ = Profile.objects.get_or_create(user=self.request.user)
+        context["profile"] = profile
+        return context
+
+    def perform_destroy(self, instance):
+        instance.is_active = False
+        instance.is_default = False
+        instance.save(update_fields=["is_active", "is_default", "updated_at"])
+
+    @action(detail=True, methods=["post"], url_path="set-default")
+    def set_default(self, request, pk=None):
+        profile_location = self.get_object()
+        ProfileLocation.objects.filter(
+            profile=profile_location.profile,
+            is_default=True,
+        ).exclude(pk=profile_location.pk).update(is_default=False)
+        profile_location.is_default = True
+        profile_location.is_active = True
+        profile_location.save(update_fields=["is_default", "is_active", "updated_at"])
+        return Response(self.get_serializer(profile_location).data)
+
+    @action(detail=True, methods=["post"], url_path="refresh-weather")
+    def refresh_weather(self, request, pk=None):
+        profile_location = self.get_object()
+        if not profile_location.share_weather_context:
+            return Response(
+                {"detail": "Weather context sharing is disabled for this location."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        snapshot = get_or_fetch_uv_snapshot(profile_location.location, force=True)
+        return Response(
+            {
+                "profile_location": self.get_serializer(profile_location).data,
+                "weather_snapshot": (
+                    WeatherSnapshotSerializer(snapshot).data if snapshot else None
+                ),
+            }
+        )
+
+    @action(detail=False, methods=["get"], url_path="current-context")
+    def current_context(self, request):
+        profile, _ = Profile.objects.get_or_create(user=request.user)
+        profile_location = (
+            ProfileLocation.objects.filter(profile=profile, is_active=True)
+            .select_related("location")
+            .order_by("-is_default", "id")
+            .first()
+        )
+        if profile_location is None:
+            return Response({"profile_location": None, "weather_snapshot": None})
+
+        snapshot = None
+        if profile_location.share_weather_context:
+            snapshot = get_or_fetch_uv_snapshot(profile_location.location)
+        return Response(
+            {
+                "profile_location": self.get_serializer(profile_location).data,
+                "weather_snapshot": (
+                    WeatherSnapshotSerializer(snapshot).data if snapshot else None
+                ),
+            }
+        )
 
 
 class RoutineViewSet(viewsets.ModelViewSet):
