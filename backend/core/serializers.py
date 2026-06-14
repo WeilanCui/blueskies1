@@ -1039,15 +1039,15 @@ class RoutineAddProductSerializer(serializers.Serializer):
         formulation: Formulation | None,
         raw_product_name: str,
     ) -> RoutineItem | None:
-        if product is not None:
-            return (
-                routine.items.filter(product=product)
-                .order_by("position", "id")
-                .first()
-            )
         if formulation is not None:
             return (
                 routine.items.filter(formulation=formulation)
+                .order_by("position", "id")
+                .first()
+            )
+        if product is not None:
+            return (
+                routine.items.filter(product=product)
                 .order_by("position", "id")
                 .first()
             )

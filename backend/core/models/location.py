@@ -1,4 +1,5 @@
 from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
+from hashlib import sha256
 
 from django.core.exceptions import ValidationError
 from django.core.validators import MaxValueValidator, MinValueValidator
@@ -7,6 +8,10 @@ from django.db.models import Q
 from django.utils import timezone
 
 from core.models.profiles import Profile
+
+
+LOCATION_GRID_KEY_MAX_LENGTH = 160
+LOCATION_GRID_KEY_HASH_LENGTH = 12
 
 
 class LocationPrecision(models.TextChoices):
@@ -49,10 +54,19 @@ def _quantize_coord(value: Decimal | float | str | None, places: str) -> str:
     return str(decimal_value.quantize(Decimal(places), rounding=ROUND_HALF_UP))
 
 
+def _bounded_grid_key(value: str) -> str:
+    if len(value) <= LOCATION_GRID_KEY_MAX_LENGTH:
+        return value
+
+    digest = sha256(value.encode("utf-8")).hexdigest()[:LOCATION_GRID_KEY_HASH_LENGTH]
+    prefix_length = LOCATION_GRID_KEY_MAX_LENGTH - LOCATION_GRID_KEY_HASH_LENGTH - 1
+    return f"{value[:prefix_length]}:{digest}"
+
+
 class Location(models.Model):
     """A shared normalized place used for weather/UV cache reuse."""
 
-    grid_key = models.CharField(max_length=160, unique=True)
+    grid_key = models.CharField(max_length=LOCATION_GRID_KEY_MAX_LENGTH, unique=True)
     label = models.CharField(max_length=128, blank=True)
     city = models.CharField(max_length=128, blank=True)
     region = models.CharField(max_length=128, blank=True)
@@ -129,7 +143,7 @@ class Location(models.Model):
         region = _normalize_text(self.region)
         city = _normalize_text(self.city)
         if city or region:
-            return f"place:{country}:{region}:{city}"
+            return _bounded_grid_key(f"place:{country}:{region}:{city}")
 
         return f"unknown:{country}"
 

@@ -35,6 +35,35 @@ class ProfileLocationApiTests(TestCase):
 
         self.assertEqual(Location.objects.count(), 0)
 
+    def test_long_place_grid_key_is_bounded(self):
+        location = Location.objects.create(
+            city="A" * 128,
+            region="B" * 128,
+            country="US",
+            precision="city",
+        )
+
+        self.assertLessEqual(len(location.grid_key), 160)
+        self.assertTrue(location.grid_key.startswith("place:us:"))
+
+    def test_long_place_grid_key_keeps_hash_suffix_for_uniqueness(self):
+        first = Location.objects.create(
+            city=("Shared Prefix " * 10)[:127] + "A",
+            region=("Very Long Region " * 8)[:128],
+            country="US",
+            precision="city",
+        )
+        second = Location.objects.create(
+            city=("Shared Prefix " * 10)[:127] + "B",
+            region=("Very Long Region " * 8)[:128],
+            country="US",
+            precision="city",
+        )
+
+        self.assertLessEqual(len(first.grid_key), 160)
+        self.assertLessEqual(len(second.grid_key), 160)
+        self.assertNotEqual(first.grid_key, second.grid_key)
+
     def test_create_profile_location_normalizes_shared_location_and_sets_default(self):
         response = self.client.post(
             reverse("profile-location-list"),

@@ -330,7 +330,7 @@ class ProfileLocationViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         profile, _ = Profile.objects.get_or_create(user=self.request.user)
         return (
-            ProfileLocation.objects.filter(profile=profile)
+            ProfileLocation.objects.filter(profile=profile, is_active=True)
             .select_related("location")
             .order_by("-is_default", "label", "id")
         )
