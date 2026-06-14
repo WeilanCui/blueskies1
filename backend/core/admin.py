@@ -18,14 +18,17 @@ from core.models import (
     InteractionAssertion,
     InteractionRule,
     LiteratureReference,
+    Location,
     Profile,
     ProfileConstraint,
+    ProfileLocation,
     PropertyAssertion,
     PropertyDefinition,
     ReactionEvent,
     Routine,
     RoutineItem,
     SkinProfile,
+    WeatherSnapshot,
 )
 from core.models.brand import Brand
 from core.models.product import Product
@@ -400,6 +403,19 @@ class RoutineInline(admin.TabularInline):
     fields = ("name", "time_of_day", "custom_time_label", "is_active", "notes")
 
 
+class ProfileLocationInline(admin.TabularInline):
+    model = ProfileLocation
+    extra = 0
+    fields = (
+        "label",
+        "location",
+        "is_default",
+        "is_active",
+        "share_weather_context",
+        "source",
+    )
+
+
 @admin.register(Profile)
 class ProfileAdmin(admin.ModelAdmin):
     fields = (
@@ -436,7 +452,67 @@ class ProfileAdmin(admin.ModelAdmin):
     list_filter = ("visibility", "timezone", "locale", "created_at", "updated_at")
     search_fields = ("user__username", "user__email", "handle", "display_name")
     date_hierarchy = "created_at"
-    inlines = [SkinProfileInline, ProfileConstraintInline, RoutineInline]
+    inlines = [
+        SkinProfileInline,
+        ProfileConstraintInline,
+        ProfileLocationInline,
+        RoutineInline,
+    ]
+
+
+@admin.register(Location)
+class LocationAdmin(admin.ModelAdmin):
+    list_display = (
+        "display_name",
+        "grid_key",
+        "country",
+        "region",
+        "city",
+        "postal_code",
+        "precision",
+        "updated_at",
+    )
+    list_filter = ("country", "precision", "source", "created_at", "updated_at")
+    search_fields = ("grid_key", "label", "city", "region", "postal_code")
+    readonly_fields = ("grid_key", "created_at", "updated_at")
+
+
+@admin.register(ProfileLocation)
+class ProfileLocationAdmin(admin.ModelAdmin):
+    list_display = (
+        "profile",
+        "label",
+        "location",
+        "is_default",
+        "is_active",
+        "share_weather_context",
+        "updated_at",
+    )
+    list_filter = ("is_default", "is_active", "share_weather_context", "source")
+    search_fields = (
+        "profile__user__username",
+        "profile__user__email",
+        "profile__handle",
+        "label",
+        "location__grid_key",
+        "location__city",
+        "location__postal_code",
+    )
+
+
+@admin.register(WeatherSnapshot)
+class WeatherSnapshotAdmin(admin.ModelAdmin):
+    list_display = (
+        "location",
+        "source",
+        "observed_at",
+        "uv_index",
+        "uv_max",
+        "expires_at",
+    )
+    list_filter = ("source", "observed_at", "expires_at", "created_at")
+    search_fields = ("location__grid_key", "location__city", "location__postal_code")
+    readonly_fields = ("created_at",)
 
 
 @admin.register(Routine)

@@ -137,6 +137,13 @@ SKINCARE_API_BASE = env(
     default="https://skincare-api.herokuapp.com",
 )
 
+EPA_UV_API_BASE = env(
+    "EPA_UV_API_BASE",
+    default="https://data.epa.gov/efservice",
+)
+EPA_UV_CACHE_MINUTES = env.int("EPA_UV_CACHE_MINUTES", default=180)
+EPA_UV_REQUEST_TIMEOUT_SECONDS = env.int("EPA_UV_REQUEST_TIMEOUT_SECONDS", default=8)
+
 OPENAI_API_KEY = env("OPENAI_API_KEY", default="")
 OPENAI_MODEL = env("OPENAI_MODEL", default="gpt-4o-mini")
 LITERATURE_EXTRACTOR = env("LITERATURE_EXTRACTOR", default="auto")

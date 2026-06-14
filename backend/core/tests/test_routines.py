@@ -326,3 +326,31 @@ class RoutineApiTests(TestCase):
         self.assertEqual(reaction.routine_item, item)
         self.assertEqual(reaction.product, self.product)
         self.assertEqual(reaction.symptoms, ["peeling"])
+
+    def test_reaction_patch_preserves_existing_context_fields(self):
+        reaction = ReactionEvent.objects.create(
+            profile=self.profile,
+            title="Mild peeling",
+            severity="mild",
+            status="active",
+            product=self.product,
+            formulation=self.formulation,
+            suspected_trigger="Retinol",
+            symptoms=["peeling"],
+            notes="Started yesterday.",
+        )
+
+        response = self.client.patch(
+            reverse("reaction-detail", args=[reaction.id]),
+            {"status": "resolved"},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 200)
+        reaction.refresh_from_db()
+        self.assertEqual(reaction.status, "resolved")
+        self.assertEqual(reaction.product, self.product)
+        self.assertEqual(reaction.formulation, self.formulation)
+        self.assertEqual(reaction.suspected_trigger, "Retinol")
+        self.assertEqual(reaction.symptoms, ["peeling"])
+        self.assertEqual(reaction.notes, "Started yesterday.")
