@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 from dataclasses import dataclass, field
 
-from django.db import transaction
+from django.db import IntegrityError, transaction
 
 from literature.enrichment.compound_bootstrap import apply_entity_classification
 from literature.ingestion import inci_client
@@ -66,15 +66,9 @@ def ingest_product_by_barcode(barcode: str) -> BarcodeScanResult:
         HttpError: for upstream API errors other than 404.
     """
     # Cache-first: return existing formulation if already ingested.
-    existing = Formulation.objects.filter(barcode=barcode).first()
+    existing = _get_barcode_formulation(barcode)
     if existing is not None:
-        return BarcodeScanResult(
-            formulation_id=existing.pk,
-            product_id=existing.product_id,
-            barcode=barcode,
-            ingredient_count=existing.ingredients.count(),
-            created=False,
-        )
+        return _barcode_scan_result(existing, barcode=barcode, created=False)
 
     product_data = inci_client.get_product(barcode)
     if product_data is None:
@@ -82,63 +76,58 @@ def ingest_product_by_barcode(barcode: str) -> BarcodeScanResult:
 
     errors: list[str] = []
 
-    with transaction.atomic():
-        # Upsert brand.
-        brand_obj = Brand.get_or_create_by_name(product_data.brand) if product_data.brand else None
+    try:
+        with transaction.atomic():
+            # Re-check inside the write transaction for requests that completed while
+            # this scan was waiting on the upstream product lookup.
+            existing = _get_barcode_formulation(barcode)
+            if existing is not None:
+                return _barcode_scan_result(existing, barcode=barcode, created=False)
 
-        # Upsert product: match by (brand, name iexact); else create.
-        product_name = product_data.name.strip() or "Unnamed product"
-        product_obj = Product.objects.filter(
-            brand=brand_obj,
-            name__iexact=product_name,
-        ).first()
-        if product_obj is None:
-            product_obj = Product.objects.create(
-                brand=brand_obj,
-                name=product_name,
-                display_name=product_name,
-                category=product_data.category,
-                image_url=product_data.image_url,
+            product_obj = _get_or_create_inci_product(product_data, barcode=barcode)
+
+            # Create Formulation.
+            formulation = Formulation.objects.create(
+                product=product_obj,
+                barcode=barcode,
+                raw_inci_text=product_data.ingredients_text,
+                made_in=product_data.country,
                 source="inciapi",
                 source_ref=f"inciapi:barcode:{barcode}",
+                enrichment_status=EnrichmentStatus.PENDING,
+                inci_analysis=product_data.analysis if product_data.analysis else None,
             )
 
-        # Create Formulation.
-        formulation = Formulation.objects.create(
-            product=product_obj,
-            barcode=barcode,
-            raw_inci_text=product_data.ingredients_text,
-            made_in=product_data.country,
-            source="inciapi",
-            source_ref=f"inciapi:barcode:{barcode}",
-            enrichment_status=EnrichmentStatus.PENDING,
-            inci_analysis=product_data.analysis if product_data.analysis else None,
-        )
+            # Create FormulationIngredient rows for each INCI name.
+            inci_names = product_data.inci_list
+            # Fall back to parsing the raw text if inci_list is empty.
+            if not inci_names and product_data.ingredients_text:
+                inci_names = parse_inci_list(product_data.ingredients_text)
 
-        # Create FormulationIngredient rows for each INCI name.
-        inci_names = product_data.inci_list
-        # Fall back to parsing the raw text if inci_list is empty.
-        if not inci_names and product_data.ingredients_text:
-            inci_names = parse_inci_list(product_data.ingredients_text)
-
-        for position, inci_name in enumerate(inci_names, start=1):
-            name = inci_name.strip()
-            if not name:
-                continue
-            try:
-                compound, parse_status = resolve_compound(name)
-            except Exception as exc:  # noqa: BLE001
-                logger.warning("Could not resolve compound %r: %s", name, exc)
-                compound = None
-                parse_status = "unmatched"
-                errors.append(f"compound:{name}:{exc}")
-            FormulationIngredient.objects.create(
-                formulation=formulation,
-                position=position,
-                raw_text=name,
-                compound=compound,
-                parse_status=parse_status,
-            )
+            for position, inci_name in enumerate(inci_names, start=1):
+                name = inci_name.strip()
+                if not name:
+                    continue
+                try:
+                    compound, parse_status = resolve_compound(name)
+                except Exception as exc:  # noqa: BLE001
+                    logger.warning("Could not resolve compound %r: %s", name, exc)
+                    compound = None
+                    parse_status = "unmatched"
+                    errors.append(f"compound:{name}:{exc}")
+                FormulationIngredient.objects.create(
+                    formulation=formulation,
+                    position=position,
+                    raw_text=name,
+                    compound=compound,
+                    parse_status=parse_status,
+                )
+    except IntegrityError:
+        existing = _get_barcode_formulation(barcode)
+        if existing is None:
+            raise
+        logger.info("Barcode %s was created by a concurrent scan", barcode)
+        return _barcode_scan_result(existing, barcode=barcode, created=False)
 
     # After the transaction commits, enqueue async enrichment.
     from core.tasks import enrich_formulation_ingredients  # avoid circular import
@@ -151,6 +140,68 @@ def ingest_product_by_barcode(barcode: str) -> BarcodeScanResult:
         ingredient_count=len(inci_names),
         created=True,
         errors=errors,
+    )
+
+
+def _get_barcode_formulation(barcode: str) -> Formulation | None:
+    return Formulation.objects.filter(barcode=barcode).first()
+
+
+def _get_or_create_brand(name: str) -> Brand | None:
+    cleaned = name.strip()
+    if not cleaned:
+        return None
+
+    try:
+        with transaction.atomic():
+            return Brand.get_or_create_by_name(cleaned)
+    except IntegrityError:
+        return Brand.objects.filter(name__iexact=cleaned).first()
+
+
+def _get_or_create_inci_product(product_data: InciProduct, *, barcode: str) -> Product:
+    brand_obj = _get_or_create_brand(product_data.brand)
+    product_name = product_data.name.strip() or "Unnamed product"
+    product_obj = Product.objects.filter(
+        brand=brand_obj,
+        name__iexact=product_name,
+    ).first()
+    if product_obj is not None:
+        return product_obj
+
+    try:
+        with transaction.atomic():
+            return Product.objects.create(
+                brand=brand_obj,
+                name=product_name,
+                display_name=product_name,
+                category=product_data.category,
+                image_url=product_data.image_url,
+                source="inciapi",
+                source_ref=f"inciapi:barcode:{barcode}",
+            )
+    except IntegrityError:
+        product_obj = Product.objects.filter(
+            brand=brand_obj,
+            name__iexact=product_name,
+        ).first()
+        if product_obj is None:
+            raise
+        return product_obj
+
+
+def _barcode_scan_result(
+    formulation: Formulation,
+    *,
+    barcode: str,
+    created: bool,
+) -> BarcodeScanResult:
+    return BarcodeScanResult(
+        formulation_id=formulation.pk,
+        product_id=formulation.product_id,
+        barcode=barcode,
+        ingredient_count=formulation.ingredients.count(),
+        created=created,
     )
 
 

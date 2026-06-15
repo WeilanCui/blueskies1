@@ -1,3 +1,4 @@
+import hashlib
 import logging
 
 from celery import shared_task
@@ -86,8 +87,13 @@ def _load_or_create_formulation(
     raw_inci_text: str = "",
     brand: str = "",
 ):
-    from literature.ingestion.formulation_ingest import create_formulation
+    from literature.ingestion.formulation_ingest import (
+        _get_or_create_product,
+        create_formulation,
+        parse_inci_list,
+    )
     from core.models import Formulation
+    from django.db import transaction
 
     if formulation_id is not None:
         formulation = (
@@ -101,8 +107,61 @@ def _load_or_create_formulation(
     if not product_name.strip() or not raw_inci_text.strip():
         return None, False
 
-    formulation = create_formulation(product_name, raw_inci_text, brand=brand)
+    source_ref = _formulation_task_source_ref(
+        product_name,
+        raw_inci_text,
+        brand=brand,
+        ingredient_names=parse_inci_list(raw_inci_text),
+    )
+    existing = (
+        Formulation.objects.prefetch_related("ingredients")
+        .filter(source_ref=source_ref)
+        .first()
+    )
+    if existing is not None:
+        return existing, False
+
+    with transaction.atomic():
+        product = _get_or_create_product(product_name, brand=brand)
+        ProductModel = type(product)
+        ProductModel.objects.select_for_update().get(pk=product.pk)
+        existing = (
+            Formulation.objects.prefetch_related("ingredients")
+            .filter(source_ref=source_ref)
+            .first()
+        )
+        if existing is not None:
+            return existing, False
+
+        formulation = create_formulation(product_name, raw_inci_text, brand=brand)
+        formulation.source_ref = source_ref
+        formulation.save(update_fields=["source_ref", "updated_at"])
     return formulation, True
+
+
+def _formulation_task_source_ref(
+    product_name: str,
+    raw_inci_text: str,
+    *,
+    brand: str = "",
+    ingredient_names: list[str] | None = None,
+) -> str:
+    ingredients = ingredient_names if ingredient_names is not None else []
+    normalized_ingredients = ",".join(
+        " ".join(name.upper().split()) for name in ingredients
+    )
+    if not normalized_ingredients:
+        normalized_ingredients = " ".join(raw_inci_text.upper().split())
+    payload = "|".join(
+        [
+            "task_formulation",
+            " ".join(brand.upper().split()),
+            " ".join((product_name.strip() or "Unnamed product").upper().split()),
+            normalized_ingredients,
+        ]
+    )
+    digest = hashlib.sha256(payload.encode("utf-8")).hexdigest()
+    return f"task:formulation:{digest}"
 
 
 @shared_task
@@ -143,8 +202,11 @@ def enrich_formulation_ingredients(
     error_count = 0
     for fi in formulation.ingredients.all():
         try:
-            ingest_inci_ingredient(fi.raw_text, asserted_by="barcode_scan")
-            success_count += 1
+            result = ingest_inci_ingredient(fi.raw_text, asserted_by="barcode_scan")
+            if result.errors:
+                error_count+=1
+            else:
+                success_count += 1
         except Exception as exc:  # noqa: BLE001
             logger.warning(
                 "enrich_formulation_ingredients: failed for %r (formulation=%s): %s",

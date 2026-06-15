@@ -84,7 +84,7 @@ def get_ingredient(inci_name: str) -> InciIngredient | None:
     try:
         data = _get(f"/ingredients/{quoted}")
     except HttpError as exc:
-        if "404" in str(exc):
+        if exc.status_code == 404:
             logger.info("INCI ingredient not found: %r", inci_name)
             return None
         raise
@@ -100,7 +100,7 @@ def get_product(barcode: str) -> InciProduct | None:
     try:
         data = _get(f"/products/{quoted}")
     except HttpError as exc:
-        if "404" in str(exc):
+        if exc.status_code == 404:
             logger.info("INCI product not found for barcode: %r", barcode)
             return None
         raise

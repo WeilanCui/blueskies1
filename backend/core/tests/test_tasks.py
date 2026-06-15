@@ -13,6 +13,8 @@ class EnrichFormulationIngredientsTaskTests(TestCase):
 
     @mock.patch("literature.ingestion.inci_ingest.ingest_inci_ingredient")
     def test_creates_formulation_when_payload_is_provided(self, mock_ingest):
+        mock_ingest.return_value.errors = []
+
         result = enrich_formulation_ingredients(
             999,
             product_name="Barrier Cream",
@@ -36,6 +38,30 @@ class EnrichFormulationIngredientsTaskTests(TestCase):
             ),
             ["Water", "Glycerin"],
         )
+
+    @mock.patch("literature.ingestion.inci_ingest.ingest_inci_ingredient")
+    def test_reuses_formulation_for_same_payload_on_retry(self, mock_ingest):
+        mock_ingest.return_value.errors = []
+
+        first = enrich_formulation_ingredients(
+            999,
+            product_name="Barrier Cream",
+            raw_inci_text="Water, Glycerin",
+            brand="Blueskies",
+        )
+        second = enrich_formulation_ingredients(
+            999,
+            product_name="Barrier Cream",
+            raw_inci_text="Water, Glycerin",
+            brand="Blueskies",
+        )
+
+        self.assertTrue(first["created"])
+        self.assertFalse(second["created"])
+        self.assertEqual(second["formulation_id"], first["formulation_id"])
+        self.assertEqual(Formulation.objects.count(), 1)
+        self.assertEqual(FormulationIngredient.objects.count(), 2)
+        self.assertEqual(mock_ingest.call_count, 4)
 
     def test_missing_formulation_without_payload_returns_clear_error(self):
         result = enrich_formulation_ingredients(999)

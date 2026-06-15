@@ -88,6 +88,13 @@ type RoutineTarget = {
   routine?: Routine;
 };
 
+type UploadPurpose = "barcode" | "product" | "skin";
+
+type BarcodeLookup = {
+  barcode: string;
+  requestId: number;
+};
+
 function routineValue(routine: Routine): string {
   return `routine:${routine.id}`;
 }
@@ -196,6 +203,7 @@ export default function ScanPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [selectedFilePurpose, setSelectedFilePurpose] = useState<UploadPurpose | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -207,6 +215,7 @@ export default function ScanPage() {
   const [decodeError, setDecodeError] = useState<string | null>(null);
   const [manualBarcode, setManualBarcode] = useState("");
   const [scanResult, setScanResult] = useState<BarcodeScanResponse | null>(null);
+  const latestScanRequestRef = useRef(0);
 
   const meQuery = useQuery({
     queryKey: ["me"],
@@ -244,12 +253,18 @@ export default function ScanPage() {
   });
 
   const scanMutation = useMutation({
-    mutationFn: scanBarcode,
-    onSuccess: (data) => {
+    mutationFn: ({ barcode }: BarcodeLookup) => scanBarcode(barcode),
+    onSuccess: (data, variables) => {
+      if (variables.requestId !== latestScanRequestRef.current) {
+        return;
+      }
       setScanResult(data);
       setDecodeError(null);
     },
-    onError: (error) => {
+    onError: (error, variables) => {
+      if (variables.requestId !== latestScanRequestRef.current) {
+        return;
+      }
       const message = error instanceof Error ? error.message : "Could not look up that barcode.";
       if (message.includes("not found") || message.toLowerCase().includes("404")) {
         setDecodeError("No product found for that barcode.");
@@ -281,9 +296,14 @@ export default function ScanPage() {
     return () => URL.revokeObjectURL(objectUrl);
   }, [selectedFile]);
 
-  // Decode barcode whenever a new file is selected
+  // Decode barcode only for barcode-specific uploads.
   useEffect(() => {
     if (!selectedFile) {
+      return;
+    }
+    if (selectedFilePurpose !== "barcode") {
+      setDecodeError(null);
+      setScanResult(null);
       return;
     }
 
@@ -299,7 +319,7 @@ export default function ScanPage() {
         const reader = new BrowserMultiFormatReader();
         const result = await reader.decodeFromImageUrl(objectUrl);
         if (!cancelled) {
-          scanMutation.mutate(result.getText());
+          startBarcodeLookup(result.getText());
         }
       } catch {
         if (!cancelled) {
@@ -319,21 +339,33 @@ export default function ScanPage() {
     };
     // scanMutation is stable; eslint would false-positive here
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedFile]);
+  }, [selectedFile, selectedFilePurpose]);
 
-  function selectImage(event: React.ChangeEvent<HTMLInputElement>) {
+  function selectImage(event: React.ChangeEvent<HTMLInputElement>, purpose: UploadPurpose) {
     const file = event.target.files?.[0] ?? null;
+    latestScanRequestRef.current += 1;
     setSelectedFile(file);
+    setSelectedFilePurpose(file ? purpose : null);
+    setDecodeError(null);
+    if (purpose !== "barcode") {
+      setScanResult(null);
+    }
     event.target.value = "";
+  }
+
+  function startBarcodeLookup(barcode: string) {
+    const requestId = latestScanRequestRef.current + 1;
+    latestScanRequestRef.current = requestId;
+    setDecodeError(null);
+    setScanResult(null);
+    scanMutation.mutate({ barcode, requestId });
   }
 
   function submitManualBarcode(event: React.FormEvent) {
     event.preventDefault();
     const trimmed = manualBarcode.trim();
     if (!trimmed) return;
-    setDecodeError(null);
-    setScanResult(null);
-    scanMutation.mutate(trimmed);
+    startBarcodeLookup(trimmed);
   }
 
   const products = productsQuery.data ?? [];
@@ -432,8 +464,10 @@ export default function ScanPage() {
         <FormulationDetail
           formulation={scanResult.formulation}
           onDismiss={() => {
+            latestScanRequestRef.current += 1;
             setScanResult(null);
             setSelectedFile(null);
+            setSelectedFilePurpose(null);
             setDecodeError(null);
           }}
         />
@@ -581,7 +615,7 @@ export default function ScanPage() {
                   accept="image/*"
                   capture="environment"
                   className={styles.fileInput}
-                  onChange={selectImage}
+                  onChange={(event) => selectImage(event, "barcode")}
                   type="file"
                 />
               </label>
@@ -641,7 +675,7 @@ export default function ScanPage() {
                     accept="image/*"
                     capture="environment"
                     className={styles.fileInput}
-                    onChange={selectImage}
+                    onChange={(event) => selectImage(event, "barcode")}
                     type="file"
                   />
                 </label>
@@ -650,7 +684,7 @@ export default function ScanPage() {
                   <input
                     accept="image/*"
                     className={styles.fileInput}
-                    onChange={selectImage}
+                    onChange={(event) => selectImage(event, "barcode")}
                     type="file"
                   />
                 </label>
@@ -713,7 +747,7 @@ export default function ScanPage() {
                 <input
                   accept="image/*"
                   className={styles.fileInput}
-                  onChange={selectImage}
+                  onChange={(event) => selectImage(event, "product")}
                   type="file"
                 />
               </label>
@@ -722,7 +756,7 @@ export default function ScanPage() {
                 <input
                   accept="image/*"
                   className={styles.fileInput}
-                  onChange={selectImage}
+                  onChange={(event) => selectImage(event, "skin")}
                   type="file"
                 />
               </label>

@@ -3,6 +3,7 @@
 from unittest import mock
 
 from django.contrib.auth import get_user_model
+from django.db import IntegrityError
 from django.test import TestCase
 from django.urls import reverse
 from rest_framework.test import APIClient
@@ -117,6 +118,34 @@ class IngestProductByBarcodeTests(TestCase):
             result = ingest_product_by_barcode(_FAKE_PRODUCT.barcode)
 
         mock_task.delay.assert_called_once_with(result.formulation_id)
+
+    def test_concurrent_barcode_insert_returns_cached_result(self):
+        product = Product.objects.create(name="Super Serum")
+        winner = Formulation.objects.create(
+            product=product,
+            barcode=_FAKE_PRODUCT.barcode,
+            raw_inci_text=_FAKE_PRODUCT.ingredients_text,
+        )
+
+        with (
+            _mock_get_product(),
+            _mock_enrich_delay() as mock_task,
+            mock.patch(
+                "literature.ingestion.formulation_ingest._get_barcode_formulation",
+                side_effect=[None, None, winner],
+            ),
+            mock.patch.object(
+                Formulation.objects,
+                "create",
+                side_effect=IntegrityError("duplicate barcode"),
+            ),
+        ):
+            result = ingest_product_by_barcode(_FAKE_PRODUCT.barcode)
+
+        self.assertFalse(result.created)
+        self.assertEqual(result.formulation_id, winner.pk)
+        self.assertEqual(result.product_id, winner.product_id)
+        mock_task.delay.assert_not_called()
 
 
 # ---------------------------------------------------------------------------

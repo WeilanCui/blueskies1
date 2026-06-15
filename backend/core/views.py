@@ -81,7 +81,7 @@ class ScanBarcodeView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
-        barcode = (request.data.get("barcode") or "").strip()
+        barcode = str(request.data.get("barcode") or "").strip()
         if not barcode:
             return Response(
                 {"detail": "barcode is required."},
