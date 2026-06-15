@@ -1,15 +1,26 @@
 "use client";
 
+import { ArrowPathIcon, MapPinIcon } from "@heroicons/react/24/outline";
 import Link from "next/link";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 
 import { Button } from "../../components/Button";
-import { getIntake, getMe } from "../../lib/appApi";
+import {
+  createProfileLocation,
+  getCurrentLocationContext,
+  getIntake,
+  getMe,
+  refreshProfileLocationWeather,
+  type LocationContext,
+  type ProfileLocation,
+} from "../../lib/appApi";
 import styles from "./home.module.css";
 
 const authFreshMs = 5 * 60 * 1000;
+const locationContextQueryKey = ["location-context"] as const;
+const signalTotal = 8;
 
 const skinTypeLabels: Record<string, string> = {
   combination: "Combination",
@@ -40,8 +51,100 @@ function formatToken(value: string): string {
     .replace(/\b\w/g, (character) => character.toUpperCase());
 }
 
+function formatLocation(profileLocation: ProfileLocation): string {
+  const location = profileLocation.location;
+  return (
+    location.display_name ||
+    [location.city, location.region, location.postal_code].filter(Boolean).join(", ") ||
+    profileLocation.label
+  );
+}
+
+function numericSnapshotValue(value: string | null | undefined): number | null {
+  if (!value) {
+    return null;
+  }
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function formatUvValue(value: number | null): string {
+  if (value === null) {
+    return "--";
+  }
+  return Number.isInteger(value) ? String(value) : value.toFixed(1);
+}
+
+function getUvRisk(value: number | null): {
+  label: string;
+  className: string;
+} {
+  if (value === null) {
+    return { label: "Awaiting UV", className: styles.uvUnavailable };
+  }
+  if (value < 3) {
+    return { label: "Low UV", className: styles.uvLow };
+  }
+  if (value < 6) {
+    return { label: "Moderate UV", className: styles.uvModerate };
+  }
+  if (value < 8) {
+    return { label: "High UV", className: styles.uvHigh };
+  }
+  if (value < 11) {
+    return { label: "Very high UV", className: styles.uvVeryHigh };
+  }
+  return { label: "Extreme UV", className: styles.uvExtreme };
+}
+
+function formatDateTime(value: string | null | undefined): string {
+  if (!value) {
+    return "Not available";
+  }
+  const date = new Date(value);
+  if (Number.isNaN(date.valueOf())) {
+    return "Not available";
+  }
+  return new Intl.DateTimeFormat(undefined, {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  }).format(date);
+}
+
+function formatTemperature(value: string | null | undefined): string | null {
+  const celsius = numericSnapshotValue(value);
+  if (celsius === null) {
+    return null;
+  }
+  const fahrenheit = Math.round((celsius * 9) / 5 + 32);
+  return `${fahrenheit} F / ${celsius.toFixed(1)} C`;
+}
+
+function formatPercent(value: number | null | undefined): string | null {
+  if (value === null || value === undefined) {
+    return null;
+  }
+  return `${value}%`;
+}
+
+function weatherSourceLabel(source: string | undefined): string {
+  const labels: Record<string, string> = {
+    epa_uv: "EPA UV",
+    weather_api: "Weather API",
+    manual: "Manual",
+  };
+  return source ? labels[source] || formatToken(source) : "Weather";
+}
+
 export default function HomePage() {
   const router = useRouter();
+  const queryClient = useQueryClient();
+  const [locationLabel, setLocationLabel] = useState("Home");
+  const [postalCode, setPostalCode] = useState("");
+  const [city, setCity] = useState("");
+  const [region, setRegion] = useState("");
 
   const meQuery = useQuery({
     queryKey: ["me"],
@@ -54,6 +157,46 @@ export default function HomePage() {
     queryFn: getIntake,
     enabled: meQuery.isSuccess,
     retry: false,
+  });
+  const locationContextQuery = useQuery({
+    queryKey: locationContextQueryKey,
+    queryFn: getCurrentLocationContext,
+    enabled: meQuery.isSuccess,
+    retry: false,
+    staleTime: 15 * 60 * 1000,
+  });
+  const refreshWeatherMutation = useMutation({
+    mutationFn: refreshProfileLocationWeather,
+    onSuccess: (data) => {
+      queryClient.setQueryData<LocationContext>(locationContextQueryKey, data);
+    },
+  });
+  const saveLocationMutation = useMutation({
+    mutationFn: async (): Promise<LocationContext> => {
+      const profileLocation = await createProfileLocation({
+        label: locationLabel.trim() || "Home",
+        postal_code: postalCode.trim(),
+        city: city.trim(),
+        region: region.trim().toUpperCase(),
+        country: "US",
+        precision: "postal_code",
+        is_default: true,
+        share_weather_context: true,
+        source: "manual",
+      });
+      try {
+        return await refreshProfileLocationWeather(profileLocation.id);
+      } catch {
+        return { profile_location: profileLocation, weather_snapshot: null };
+      }
+    },
+    onSuccess: (data) => {
+      queryClient.setQueryData<LocationContext>(locationContextQueryKey, data);
+      setLocationLabel("Home");
+      setPostalCode("");
+      setCity("");
+      setRegion("");
+    },
   });
   useEffect(() => {
     if (meQuery.isError) {
@@ -68,6 +211,37 @@ export default function HomePage() {
   const user = meQuery.data.user;
   const skinProfile = intakeQuery.data?.skin_profile;
   const sensitivities = intakeQuery.data?.sensitivities ?? [];
+  const locationContext = locationContextQuery.data;
+  const profileLocation = locationContext?.profile_location ?? null;
+  const weatherSnapshot = locationContext?.weather_snapshot ?? null;
+  const uvValue = numericSnapshotValue(
+    weatherSnapshot?.uv_index ?? weatherSnapshot?.uv_max,
+  );
+  const uvRisk = getUvRisk(uvValue);
+  const weatherStats = [
+    {
+      label: "Observed",
+      value: formatDateTime(weatherSnapshot?.observed_at),
+    },
+    {
+      label: "UV max",
+      value: formatUvValue(
+        numericSnapshotValue(weatherSnapshot?.uv_max ?? weatherSnapshot?.uv_index),
+      ),
+    },
+    {
+      label: "Temperature",
+      value: formatTemperature(weatherSnapshot?.temperature_c),
+    },
+    {
+      label: "Humidity",
+      value: formatPercent(weatherSnapshot?.humidity_percent),
+    },
+    {
+      label: "Cloud cover",
+      value: formatPercent(weatherSnapshot?.cloud_cover_percent),
+    },
+  ].filter((item) => item.value !== null);
   const firstName = displayName(user.display_name, user.username).split(" ")[0];
   const primaryConcerns = skinProfile?.primary_concerns ?? [];
   const goals = skinProfile?.goals ?? [];
@@ -80,6 +254,8 @@ export default function HomePage() {
     primaryConcerns.length > 0,
     goals.length > 0,
     sensitivities.length > 0,
+    profileLocation,
+    weatherSnapshot,
   ].filter(Boolean).length;
   const profileVitals = [
     {
@@ -118,6 +294,15 @@ export default function HomePage() {
       action: "Browse",
     },
   ];
+  const canSaveLocation = postalCode.trim().length > 0 && !saveLocationMutation.isPending;
+
+  function submitLocation(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!canSaveLocation) {
+      return;
+    }
+    saveLocationMutation.mutate();
+  }
 
   return (
     <>
@@ -137,10 +322,12 @@ export default function HomePage() {
           <div className={styles.profileSignalCard}>
             <div className={styles.signalHeader}>
               <span>Personal context</span>
-              <strong>{signalCount}/6 signals</strong>
+              <strong>
+                {signalCount}/{signalTotal} signals
+              </strong>
             </div>
             <div className={styles.signalTrack} aria-hidden="true">
-              {Array.from({ length: 6 }, (_, index) => (
+              {Array.from({ length: signalTotal }, (_, index) => (
                 <span
                   className={
                     index < signalCount
@@ -217,6 +404,135 @@ export default function HomePage() {
           </div>
 
           <aside className={styles.sideColumn}>
+            <section className={styles.weatherPanel}>
+              <div className={styles.panelHeader}>
+                <div>
+                  <span>Location context</span>
+                  <h2>UV and weather</h2>
+                </div>
+                {profileLocation && (
+                  <Button
+                    className={styles.refreshButton}
+                    type="button"
+                    variant="ghost"
+                    isDisabled={refreshWeatherMutation.isPending}
+                    onPress={() => refreshWeatherMutation.mutate(profileLocation.id)}
+                  >
+                    <ArrowPathIcon className={styles.buttonIcon} aria-hidden="true" />
+                    {refreshWeatherMutation.isPending ? "Refreshing" : "Refresh"}
+                  </Button>
+                )}
+              </div>
+
+              {locationContextQuery.isLoading ? (
+                <p className={styles.weatherNote}>Loading location context...</p>
+              ) : locationContextQuery.isError ? (
+                <p className={styles.weatherError}>Could not load location context.</p>
+              ) : profileLocation ? (
+                <>
+                  <div className={styles.weatherHero}>
+                    <div className={[styles.uvDial, uvRisk.className].join(" ")}>
+                      <span>UV</span>
+                      <strong>{formatUvValue(uvValue)}</strong>
+                    </div>
+                    <div className={styles.weatherSummary}>
+                      <span>
+                        <MapPinIcon className={styles.inlineIcon} aria-hidden="true" />
+                        {formatLocation(profileLocation)}
+                      </span>
+                      <strong>{uvRisk.label}</strong>
+                      <p>
+                        {weatherSnapshot
+                          ? `Updated ${formatDateTime(weatherSnapshot.fetched_at)} from ${weatherSourceLabel(weatherSnapshot.source)}.`
+                          : profileLocation.share_weather_context
+                            ? "UV data will appear after refresh for supported ZIP codes."
+                            : "Weather sharing is off for this location."}
+                      </p>
+                    </div>
+                  </div>
+
+                  {weatherSnapshot && (
+                    <div className={styles.weatherMetaGrid}>
+                      {weatherStats.map((item) => (
+                        <div className={styles.weatherMetaItem} key={item.label}>
+                          <span>{item.label}</span>
+                          <strong>{item.value}</strong>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {refreshWeatherMutation.isError && (
+                    <p className={styles.weatherError}>
+                      {refreshWeatherMutation.error instanceof Error
+                        ? refreshWeatherMutation.error.message
+                        : "Could not refresh weather context."}
+                    </p>
+                  )}
+                </>
+              ) : (
+                <form className={styles.locationForm} onSubmit={submitLocation}>
+                  <p className={styles.weatherNote}>
+                    Save a ZIP code to connect UV index to your skin dashboard.
+                  </p>
+                  <label>
+                    <span>Location label</span>
+                    <input
+                      type="text"
+                      value={locationLabel}
+                      onChange={(event) => setLocationLabel(event.target.value)}
+                      placeholder="Home"
+                    />
+                  </label>
+                  <label>
+                    <span>ZIP code</span>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      value={postalCode}
+                      onChange={(event) => setPostalCode(event.target.value)}
+                      placeholder="10001"
+                    />
+                  </label>
+                  <div className={styles.locationFormGrid}>
+                    <label>
+                      <span>City</span>
+                      <input
+                        type="text"
+                        value={city}
+                        onChange={(event) => setCity(event.target.value)}
+                        placeholder="New York"
+                      />
+                    </label>
+                    <label>
+                      <span>State</span>
+                      <input
+                        type="text"
+                        value={region}
+                        onChange={(event) => setRegion(event.target.value)}
+                        placeholder="NY"
+                        maxLength={32}
+                      />
+                    </label>
+                  </div>
+                  <Button
+                    className={styles.locationSubmitButton}
+                    type="submit"
+                    isDisabled={!canSaveLocation}
+                  >
+                    {saveLocationMutation.isPending ? "Saving..." : "Save location"}
+                  </Button>
+                  {saveLocationMutation.isError && (
+                    <p className={styles.weatherError}>
+                      {saveLocationMutation.error instanceof Error
+                        ? saveLocationMutation.error.message
+                        : "Could not save location."}
+                    </p>
+                  )}
+                </form>
+              )}
+            </section>
+
             <section className={styles.profilePanel}>
               <div className={styles.panelHeader}>
                 <div>

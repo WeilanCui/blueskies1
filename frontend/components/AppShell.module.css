@@ -12,6 +12,10 @@
   padding: 18px 16px 112px;
 }
 
+.shell > * {
+  min-width: 0;
+}
+
 @media (min-width: 760px) {
   .shell {
     gap: 8px;

@@ -9,6 +9,7 @@
 .welcomePanel,
 .scanCard,
 .timelinePanel,
+.weatherPanel,
 .profilePanel,
 .regimenPanel,
 .notesPanel,
@@ -69,6 +70,7 @@
 .profileSignalCard p,
 .scanCopy p,
 .timelineItem p,
+.weatherSummary p,
 .nextCard p,
 .notesPanel p {
   color: #52616a;
@@ -88,7 +90,7 @@
 .signalTrack {
   display: grid;
   gap: 5px;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
+  grid-template-columns: repeat(8, minmax(0, 1fr));
 }
 
 .signalSegment {
@@ -199,6 +201,7 @@
 }
 
 .timelinePanel,
+.weatherPanel,
 .profilePanel,
 .regimenPanel,
 .notesPanel {
@@ -233,6 +236,195 @@
   font-weight: 900;
   padding: 5px 8px;
   text-transform: uppercase;
+}
+
+.refreshButton {
+  flex: 0 0 auto;
+  gap: 6px;
+  min-height: 34px;
+  padding-inline: 10px;
+}
+
+.buttonIcon,
+.inlineIcon {
+  flex: 0 0 auto;
+  height: 16px;
+  width: 16px;
+}
+
+.weatherHero {
+  align-items: center;
+  background:
+    linear-gradient(135deg, rgba(255, 251, 235, 0.9), rgba(240, 249, 255, 0.92)),
+    #f8fafb;
+  border: 1px solid #e5ecef;
+  border-radius: 8px;
+  display: grid;
+  gap: 12px;
+  grid-template-columns: 82px minmax(0, 1fr);
+  min-height: 108px;
+  padding: 12px;
+}
+
+.uvDial {
+  align-items: center;
+  border: 1px solid rgba(23, 20, 18, 0.08);
+  border-radius: 999px;
+  display: grid;
+  height: 76px;
+  justify-items: center;
+  padding: 10px;
+  width: 76px;
+}
+
+.uvDial span {
+  color: rgba(23, 20, 18, 0.66);
+  font-size: 0.68rem;
+  font-weight: 900;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.uvDial strong {
+  color: #171412;
+  font-size: 1.9rem;
+  line-height: 1;
+}
+
+.uvUnavailable {
+  background: #eef4f6;
+}
+
+.uvLow {
+  background: #d9f99d;
+}
+
+.uvModerate {
+  background: #fde68a;
+}
+
+.uvHigh {
+  background: #fdba74;
+}
+
+.uvVeryHigh {
+  background: #fca5a5;
+}
+
+.uvExtreme {
+  background: #e9d5ff;
+}
+
+.weatherSummary {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+}
+
+.weatherSummary > span {
+  align-items: center;
+  color: #66737c;
+  display: flex;
+  font-size: 0.82rem;
+  font-weight: 800;
+  gap: 5px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.weatherSummary > span :global(svg) {
+  color: var(--accent-strong);
+}
+
+.weatherSummary strong {
+  color: #171412;
+  font-size: 1.18rem;
+  line-height: 1.1;
+}
+
+.weatherMetaGrid {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.weatherMetaItem {
+  background: #f8fafb;
+  border: 1px solid #e5ecef;
+  border-radius: 8px;
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  padding: 10px;
+}
+
+.weatherMetaItem span,
+.locationForm label span {
+  color: #66737c;
+  font-size: 0.76rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.weatherMetaItem strong {
+  color: #171412;
+  font-size: 0.92rem;
+  overflow-wrap: anywhere;
+}
+
+.weatherNote,
+.weatherError {
+  font-size: 0.9rem;
+  line-height: 1.45;
+  margin: 0;
+}
+
+.weatherNote {
+  color: #52616a;
+}
+
+.weatherError {
+  color: #9f1239;
+  font-weight: 800;
+}
+
+.locationForm {
+  display: grid;
+  gap: 10px;
+}
+
+.locationForm label {
+  display: grid;
+  gap: 5px;
+}
+
+.locationForm input {
+  background: #ffffff;
+  border: 1px solid #d8e3e9;
+  border-radius: 8px;
+  color: #171412;
+  font: inherit;
+  min-height: 42px;
+  padding: 9px 10px;
+  width: 100%;
+}
+
+.locationForm input:focus {
+  border-color: var(--accent-strong);
+  outline: 2px solid rgba(52, 111, 170, 0.15);
+  outline-offset: 1px;
+}
+
+.locationFormGrid {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: minmax(0, 1fr) minmax(76px, 0.42fr);
+}
+
+.locationSubmitButton {
+  justify-content: center;
+  min-height: 42px;
+  width: 100%;
 }
 
 .timelineList,
