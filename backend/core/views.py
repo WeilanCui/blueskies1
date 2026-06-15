@@ -13,6 +13,8 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from literature.ingestion import ingest_formulation, parse_inci_list
+from literature.ingestion.formulation_ingest import ingest_product_by_barcode
+from literature.ingestion.http import HttpError
 from core.models import (
     Compound,
     ContactSubmission,
@@ -70,6 +72,48 @@ class HealthCheckView(APIView):
                 "service": "django",
                 "database": "connected",
             }
+        )
+
+
+class ScanBarcodeView(APIView):
+    """POST a barcode to fetch, persist, and return the matching product formulation."""
+
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        barcode = (request.data.get("barcode") or "").strip()
+        if not barcode:
+            return Response(
+                {"detail": "barcode is required."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            result = ingest_product_by_barcode(barcode)
+        except ValueError as exc:
+            return Response(
+                {"detail": str(exc)},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        except HttpError as exc:
+            return Response(
+                {"detail": f"INCI API error: {exc}"},
+                status=status.HTTP_502_BAD_GATEWAY,
+            )
+
+        formulation = get_object_or_404(
+            Formulation.objects.select_related("product__brand").prefetch_related(
+                "ingredients__compound"
+            ),
+            pk=result.formulation_id,
+        )
+        return Response(
+            {
+                "created": result.created,
+                "barcode": result.barcode,
+                "formulation": FormulationSerializer(formulation).data,
+            },
+            status=status.HTTP_201_CREATED if result.created else status.HTTP_200_OK,
         )
 
 

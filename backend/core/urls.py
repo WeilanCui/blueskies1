@@ -12,6 +12,7 @@ from .views import (
     ProfileLocationViewSet,
     ReactionEventViewSet,
     RoutineViewSet,
+    ScanBarcodeView,
     SessionAuthViewSet,
 )
 
@@ -29,6 +30,7 @@ router.register("reactions", ReactionEventViewSet, basename="reaction")
 
 urlpatterns = [
     path("health/", HealthCheckView.as_view(), name="health-check"),
+    path("products/scan-barcode/", ScanBarcodeView.as_view(), name="product-scan-barcode"),
     path(
         "intake/",
         IntakeViewSet.as_view({"get": "list", "post": "create", "put": "update"}),

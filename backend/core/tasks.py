@@ -1,4 +1,8 @@
+import logging
+
 from celery import shared_task
+
+logger = logging.getLogger(__name__)
 
 
 @shared_task
@@ -72,6 +76,62 @@ def enrich_literature_task(
         "compound_id": None,
         "enriched": total_enriched,
         "extractor": extractor.name,
+    }
+
+
+@shared_task
+def enrich_formulation_ingredients(formulation_id: int) -> dict:
+    """Best-effort INCI enrichment for every ingredient on a barcode-scanned formulation.
+
+    Iterates FormulationIngredient rows, calls ingest_inci_ingredient for each,
+    then sets the formulation's enrichment_status to PARTIAL (some may have enriched)
+    or keeps PENDING if nothing succeeded.
+    """
+    from literature.ingestion.inci_ingest import ingest_inci_ingredient
+    from core.models import Formulation, EnrichmentStatus
+
+    try:
+        formulation = (
+            Formulation.objects.prefetch_related("ingredients")
+            .get(pk=formulation_id)
+        )
+    except Formulation.DoesNotExist:
+        logger.error("enrich_formulation_ingredients: formulation %s not found", formulation_id)
+        return {"formulation_id": formulation_id, "error": "not found"}
+
+    success_count = 0
+    error_count = 0
+    for fi in formulation.ingredients.all():
+        try:
+            ingest_inci_ingredient(fi.raw_text, asserted_by="barcode_scan")
+            success_count += 1
+        except Exception as exc:  # noqa: BLE001
+            logger.warning(
+                "enrich_formulation_ingredients: failed for %r (formulation=%s): %s",
+                fi.raw_text,
+                formulation_id,
+                exc,
+            )
+            error_count += 1
+
+    # Update formulation enrichment_status based on outcome.
+    if success_count > 0:
+        new_status = (
+            EnrichmentStatus.PARTIAL
+            if error_count > 0
+            else EnrichmentStatus.PARTIAL  # full per-ingredient enrichment runs separately
+        )
+    else:
+        new_status = EnrichmentStatus.PENDING
+
+    formulation.enrichment_status = new_status
+    formulation.save(update_fields=["enrichment_status", "updated_at"])
+
+    return {
+        "formulation_id": formulation_id,
+        "success_count": success_count,
+        "error_count": error_count,
+        "enrichment_status": new_status,
     }
 
 

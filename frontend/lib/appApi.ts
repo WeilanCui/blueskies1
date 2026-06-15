@@ -569,3 +569,46 @@ export function updateReaction(
     "Could not update reaction.",
   );
 }
+
+export type FormulationIngredient = {
+  id: number;
+  name: string;
+  role: string;
+  note: string;
+  is_key_active: boolean;
+  parse_status: string;
+  position: number;
+};
+
+export type FormulationProduct = {
+  id: number;
+  brand: string;
+  name: string;
+  category: string;
+};
+
+export type Formulation = {
+  id: number;
+  product: FormulationProduct;
+  barcode: string;
+  raw_inci_text: string;
+  enrichment_status: string;
+  ingredients: FormulationIngredient[];
+};
+
+export type BarcodeScanResponse = {
+  created: boolean;
+  barcode: string;
+  formulation: Formulation;
+};
+
+export function scanBarcode(barcode: string): Promise<BarcodeScanResponse> {
+  return requestJson<BarcodeScanResponse>(
+    "/api/products/scan-barcode",
+    {
+      method: "POST",
+      body: JSON.stringify({ barcode }),
+    },
+    "Could not look up that barcode.",
+  );
+}

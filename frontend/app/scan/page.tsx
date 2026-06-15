@@ -10,7 +10,10 @@ import {
   getCatalogProducts,
   getMe,
   getRoutines,
+  scanBarcode,
+  type BarcodeScanResponse,
   type CatalogProduct,
+  type Formulation,
   type Routine,
   type RoutineTimeOfDay,
 } from "../../lib/appApi";
@@ -31,6 +34,16 @@ function categorySwatch(category: string): string {
 }
 
 function analysisCounts(ingredients: CatalogProduct["ingredients"]) {
+  const beneficial = ingredients.filter(
+    (ingredient) => ingredient.is_key_active || ingredient.note.trim(),
+  ).length;
+  const caution = ingredients.filter(
+    (ingredient) => ingredient.parse_status === "unmatched",
+  ).length;
+  return { beneficial, caution };
+}
+
+function formulationAnalysisCounts(ingredients: Formulation["ingredients"]) {
   const beneficial = ingredients.filter(
     (ingredient) => ingredient.is_key_active || ingredient.note.trim(),
   ).length;
@@ -90,6 +103,95 @@ function routineHasProduct(routine: Routine | undefined, product: CatalogProduct
   );
 }
 
+// ── Barcode scan result panel ─────────────────────────────────────────────────
+
+function FormulationDetail({
+  formulation,
+  onDismiss,
+}: {
+  formulation: Formulation;
+  onDismiss: () => void;
+}) {
+  const analysis = formulationAnalysisCounts(formulation.ingredients);
+  const { product } = formulation;
+
+  return (
+    <section className={styles.productDetail}>
+      <button
+        className={styles.backButton}
+        type="button"
+        onClick={onDismiss}
+      >
+        <span aria-hidden="true" />
+        Back
+      </button>
+
+      <article className={styles.detailHeroCard}>
+        <div
+          className={[
+            styles.detailImage,
+            styles[`productImage${categorySwatch(product.category)}`],
+          ].join(" ")}
+          aria-hidden="true"
+        >
+          <span>{product.category}</span>
+        </div>
+        <div className={styles.detailBody}>
+          <div className={styles.detailTitleRow}>
+            <div>
+              <span>{product.brand}</span>
+              <h1>{product.name}</h1>
+            </div>
+            <strong>{product.category}</strong>
+          </div>
+          <div className={styles.detailMeta}>
+            <span>{formatEnrichmentStatus(formulation.enrichment_status)}</span>
+            <span>{formulation.ingredients.length} ingredients</span>
+            <span>Barcode: {formulation.barcode}</span>
+          </div>
+        </div>
+      </article>
+
+      <section className={styles.analysisSection}>
+        <h2>Ingredient Analysis</h2>
+        {(analysis.beneficial > 0 || analysis.caution > 0) ? (
+          <div className={styles.analysisSummary}>
+            {analysis.beneficial > 0 ? (
+              <span className={styles.beneficialBadge}>
+                {analysis.beneficial} beneficial
+              </span>
+            ) : null}
+            {analysis.caution > 0 ? (
+              <span className={styles.cautionBadge}>
+                {analysis.caution} caution
+              </span>
+            ) : null}
+          </div>
+        ) : null}
+        <div className={styles.ingredientList}>
+          {formulation.ingredients.map((ingredient, index) => (
+            <article
+              className={styles.ingredientCard}
+              key={`${ingredient.name}-${index}`}
+            >
+              <span className={styles.shieldIcon} aria-hidden="true" />
+              <div>
+                <div className={styles.ingredientTitleRow}>
+                  <h3>{ingredient.name}</h3>
+                  <strong>{ingredient.role}</strong>
+                </div>
+                {ingredient.note ? <p>{ingredient.note}</p> : null}
+              </div>
+            </article>
+          ))}
+        </div>
+      </section>
+    </section>
+  );
+}
+
+// ── Main page ─────────────────────────────────────────────────────────────────
+
 export default function ScanPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -100,6 +202,11 @@ export default function ScanPage() {
   const [routineTarget, setRoutineTarget] = useState("am");
   const [routineMessage, setRoutineMessage] = useState<string | null>(null);
   const preserveRoutineMessageRef = useRef(false);
+
+  // Barcode scan state
+  const [decodeError, setDecodeError] = useState<string | null>(null);
+  const [manualBarcode, setManualBarcode] = useState("");
+  const [scanResult, setScanResult] = useState<BarcodeScanResponse | null>(null);
 
   const meQuery = useQuery({
     queryKey: ["me"],
@@ -135,6 +242,29 @@ export default function ScanPage() {
       );
     },
   });
+
+  const scanMutation = useMutation({
+    mutationFn: scanBarcode,
+    onSuccess: (data) => {
+      setScanResult(data);
+      setDecodeError(null);
+    },
+    onError: (error) => {
+      const message = error instanceof Error ? error.message : "Could not look up that barcode.";
+      if (message.includes("not found") || message.toLowerCase().includes("404")) {
+        setDecodeError("No product found for that barcode.");
+      } else if (
+        message.toLowerCase().includes("inci api") ||
+        message.toLowerCase().includes("502") ||
+        message.toLowerCase().includes("reach")
+      ) {
+        setDecodeError("Couldn't reach the product database — try again.");
+      } else {
+        setDecodeError(message);
+      }
+    },
+  });
+
   useEffect(() => {
     if (meQuery.isError) {
       router.replace("/login");
@@ -151,10 +281,59 @@ export default function ScanPage() {
     return () => URL.revokeObjectURL(objectUrl);
   }, [selectedFile]);
 
+  // Decode barcode whenever a new file is selected
+  useEffect(() => {
+    if (!selectedFile) {
+      return;
+    }
+
+    let cancelled = false;
+    const objectUrl = URL.createObjectURL(selectedFile);
+
+    async function decode() {
+      setDecodeError(null);
+      setScanResult(null);
+
+      try {
+        const { BrowserMultiFormatReader } = await import("@zxing/library");
+        const reader = new BrowserMultiFormatReader();
+        const result = await reader.decodeFromImageUrl(objectUrl);
+        if (!cancelled) {
+          scanMutation.mutate(result.getText());
+        }
+      } catch {
+        if (!cancelled) {
+          setDecodeError(
+            "Couldn't read a barcode — try a clearer, closer photo or enter it manually.",
+          );
+        }
+      } finally {
+        URL.revokeObjectURL(objectUrl);
+      }
+    }
+
+    void decode();
+
+    return () => {
+      cancelled = true;
+    };
+    // scanMutation is stable; eslint would false-positive here
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedFile]);
+
   function selectImage(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0] ?? null;
     setSelectedFile(file);
     event.target.value = "";
+  }
+
+  function submitManualBarcode(event: React.FormEvent) {
+    event.preventDefault();
+    const trimmed = manualBarcode.trim();
+    if (!trimmed) return;
+    setDecodeError(null);
+    setScanResult(null);
+    scanMutation.mutate(trimmed);
   }
 
   const products = productsQuery.data ?? [];
@@ -244,6 +423,22 @@ export default function ScanPage() {
 
   if (meQuery.isLoading || meQuery.isError) {
     return <p className="detail-muted">Loading your session...</p>;
+  }
+
+  // Show barcode scan result
+  if (scanResult) {
+    return (
+      <div className={styles.scanLayout}>
+        <FormulationDetail
+          formulation={scanResult.formulation}
+          onDismiss={() => {
+            setScanResult(null);
+            setSelectedFile(null);
+            setDecodeError(null);
+          }}
+        />
+      </div>
+    );
   }
 
   return (
@@ -392,7 +587,20 @@ export default function ScanPage() {
               </label>
             </section>
 
-            {selectedFile && (
+            {/* Barcode decode / scan status */}
+            {scanMutation.isPending && (
+              <section className={styles.uploadPanel}>
+                <div className={styles.uploadPreview}>
+                  {previewUrl ? <img alt="Selected scan preview" src={previewUrl} /> : null}
+                </div>
+                <div>
+                  <strong>Looking up barcode…</strong>
+                  <p>Decoding and fetching ingredient data.</p>
+                </div>
+              </section>
+            )}
+
+            {!scanMutation.isPending && selectedFile && !scanResult && (
               <section className={styles.uploadPanel}>
                 <div className={styles.uploadPreview}>
                   {previewUrl ? <img alt="Selected scan preview" src={previewUrl} /> : null}
@@ -400,13 +608,60 @@ export default function ScanPage() {
                 <div>
                   <strong>{selectedFile.name}</strong>
                   <span>{formatBytes(selectedFile.size)}</span>
-                  <p>
-                    This preview stays on your device in this pass. No image is
-                    sent to the backend yet.
-                  </p>
+                  {decodeError ? (
+                    <p style={{ color: "#b45309" }}>{decodeError}</p>
+                  ) : null}
                 </div>
               </section>
             )}
+
+            {/* Manual barcode entry fallback */}
+            <section className={styles.scanPanel}>
+              <form className={styles.scanActions} onSubmit={submitManualBarcode}>
+                <label className={styles.searchField} style={{ borderRadius: 8, minHeight: 48 }}>
+                  <span className={styles.searchIcon} aria-hidden="true" />
+                  <input
+                    type="text"
+                    placeholder="Enter barcode manually…"
+                    value={manualBarcode}
+                    onChange={(e) => setManualBarcode(e.target.value)}
+                    disabled={scanMutation.isPending}
+                  />
+                </label>
+                <button
+                  type="submit"
+                  className={styles.fileAction}
+                  disabled={scanMutation.isPending || !manualBarcode.trim()}
+                >
+                  {scanMutation.isPending ? "Looking up…" : "Look up barcode"}
+                </button>
+                <label className={styles.fileAction}>
+                  Take another photo
+                  <input
+                    accept="image/*"
+                    capture="environment"
+                    className={styles.fileInput}
+                    onChange={selectImage}
+                    type="file"
+                  />
+                </label>
+                <label className={[styles.fileAction, styles.fileActionSecondary].join(" ")}>
+                  Upload photo
+                  <input
+                    accept="image/*"
+                    className={styles.fileInput}
+                    onChange={selectImage}
+                    type="file"
+                  />
+                </label>
+                {decodeError && !selectedFile ? (
+                  <p className={styles.scanNote} style={{ color: "#b45309" }}>{decodeError}</p>
+                ) : null}
+                <p className={styles.scanNote}>
+                  Scan a product barcode to fetch its INCI ingredient list.
+                </p>
+              </form>
+            </section>
 
             <section className={styles.productList} aria-label="Product catalog">
               {productsQuery.isLoading ? (
@@ -471,34 +726,6 @@ export default function ScanPage() {
                   type="file"
                 />
               </label>
-            </section>
-
-            <section className={styles.scanPanel}>
-              <div className={styles.scanActions}>
-                <label className={styles.fileAction}>
-                  Take another photo
-                  <input
-                    accept="image/*"
-                    capture="environment"
-                    className={styles.fileInput}
-                    onChange={selectImage}
-                    type="file"
-                  />
-                </label>
-                <label className={[styles.fileAction, styles.fileActionSecondary].join(" ")}>
-                  Upload photo
-                  <input
-                    accept="image/*"
-                    className={styles.fileInput}
-                    onChange={selectImage}
-                    type="file"
-                  />
-                </label>
-                <p className={styles.scanNote}>
-                  Product lookup is connected to the catalog. Image scan upload stays
-                  on your device for now.
-                </p>
-              </div>
             </section>
           </>
         )}
