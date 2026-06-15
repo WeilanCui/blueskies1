@@ -354,6 +354,12 @@ export function inferProductModule(
   ) {
     return "sunscreen";
   }
+  if (text.includes("eye")) {
+    return "eye";
+  }
+  if (text.includes("lip")) {
+    return "lip";
+  }
   if (
     text.includes("moistur") ||
     text.includes("cream") ||
@@ -361,12 +367,6 @@ export function inferProductModule(
     text.includes("balm")
   ) {
     return "moisturizer";
-  }
-  if (text.includes("eye")) {
-    return "eye";
-  }
-  if (text.includes("lip")) {
-    return "lip";
   }
   if (
     text.includes("retinol") ||
