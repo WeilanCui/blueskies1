@@ -31,6 +31,10 @@ class RateLimiter:
 class HttpError(Exception):
     """Raised when an external request ultimately fails."""
 
+    def __init__(self, message: str, *, status_code: int | None = None) -> None:
+        super().__init__(message)
+        self.status_code = status_code
+
 
 def request_json(
     url: str,
@@ -94,7 +98,10 @@ def _request(kind, url, *, params, headers, limiter, timeout, max_retries, backo
             continue
 
         if response.status_code in (429, 500, 502, 503, 504):
-            last_exc = HttpError(f"{response.status_code} from {url}")
+            last_exc = HttpError(
+                f"{response.status_code} from {url}",
+                status_code=response.status_code,
+            )
             logger.warning(
                 "Retryable status %s (attempt %s) for %s",
                 response.status_code,
@@ -105,9 +112,19 @@ def _request(kind, url, *, params, headers, limiter, timeout, max_retries, backo
             continue
 
         if response.status_code == 404:
-            raise HttpError(f"404 Not Found: {url}")
+            raise HttpError(f"404 Not Found: {url}", status_code=404)
 
-        response.raise_for_status()
+        try:
+            response.raise_for_status()
+        except requests.HTTPError as exc:
+            raise HttpError(
+                f"{response.status_code} from {url}",
+                status_code=response.status_code,
+            ) from exc
         return response.json() if kind == "json" else response.text
 
-    raise HttpError(f"Failed after {max_retries} attempts: {url}") from last_exc
+    status_code = last_exc.status_code if isinstance(last_exc, HttpError) else None
+    raise HttpError(
+        f"Failed after {max_retries} attempts: {url}",
+        status_code=status_code,
+    ) from last_exc

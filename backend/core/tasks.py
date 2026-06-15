@@ -1,4 +1,9 @@
+import hashlib
+import logging
+
 from celery import shared_task
+
+logger = logging.getLogger(__name__)
 
 
 @shared_task
@@ -72,6 +77,164 @@ def enrich_literature_task(
         "compound_id": None,
         "enriched": total_enriched,
         "extractor": extractor.name,
+    }
+
+
+def _load_or_create_formulation(
+    formulation_id: int | None,
+    *,
+    product_name: str = "",
+    raw_inci_text: str = "",
+    brand: str = "",
+):
+    from literature.ingestion.formulation_ingest import (
+        _get_or_create_product,
+        create_formulation,
+        parse_inci_list,
+    )
+    from core.models import Formulation
+    from django.db import transaction
+
+    if formulation_id is not None:
+        formulation = (
+            Formulation.objects.prefetch_related("ingredients")
+            .filter(pk=formulation_id)
+            .first()
+        )
+        if formulation is not None:
+            return formulation, False
+
+    if not product_name.strip() or not raw_inci_text.strip():
+        return None, False
+
+    source_ref = _formulation_task_source_ref(
+        product_name,
+        raw_inci_text,
+        brand=brand,
+        ingredient_names=parse_inci_list(raw_inci_text),
+    )
+    existing = (
+        Formulation.objects.prefetch_related("ingredients")
+        .filter(source_ref=source_ref)
+        .first()
+    )
+    if existing is not None:
+        return existing, False
+
+    with transaction.atomic():
+        product = _get_or_create_product(product_name, brand=brand)
+        ProductModel = type(product)
+        ProductModel.objects.select_for_update().get(pk=product.pk)
+        existing = (
+            Formulation.objects.prefetch_related("ingredients")
+            .filter(source_ref=source_ref)
+            .first()
+        )
+        if existing is not None:
+            return existing, False
+
+        formulation = create_formulation(product_name, raw_inci_text, brand=brand)
+        formulation.source_ref = source_ref
+        formulation.save(update_fields=["source_ref", "updated_at"])
+    return formulation, True
+
+
+def _formulation_task_source_ref(
+    product_name: str,
+    raw_inci_text: str,
+    *,
+    brand: str = "",
+    ingredient_names: list[str] | None = None,
+) -> str:
+    ingredients = ingredient_names if ingredient_names is not None else []
+    normalized_ingredients = ",".join(
+        " ".join(name.upper().split()) for name in ingredients
+    )
+    if not normalized_ingredients:
+        normalized_ingredients = " ".join(raw_inci_text.upper().split())
+    payload = "|".join(
+        [
+            "task_formulation",
+            " ".join(brand.upper().split()),
+            " ".join((product_name.strip() or "Unnamed product").upper().split()),
+            normalized_ingredients,
+        ]
+    )
+    digest = hashlib.sha256(payload.encode("utf-8")).hexdigest()
+    return f"task:formulation:{digest}"
+
+
+@shared_task
+def enrich_formulation_ingredients(
+    formulation_id: int | None = None,
+    *,
+    product_name: str = "",
+    raw_inci_text: str = "",
+    brand: str = "",
+) -> dict:
+    """Best-effort INCI enrichment for every ingredient on a barcode-scanned formulation.
+
+    Iterates FormulationIngredient rows, calls ingest_inci_ingredient for each,
+    then sets the formulation's enrichment_status to PARTIAL (some may have enriched)
+    or keeps PENDING if nothing succeeded.
+    """
+    from literature.ingestion.inci_ingest import ingest_inci_ingredient
+    from core.models import EnrichmentStatus
+
+    formulation, created = _load_or_create_formulation(
+        formulation_id,
+        product_name=product_name,
+        raw_inci_text=raw_inci_text,
+        brand=brand,
+    )
+    if formulation is None:
+        logger.error(
+            "enrich_formulation_ingredients: formulation %s not found and no creation payload provided",
+            formulation_id,
+        )
+        return {
+            "formulation_id": formulation_id,
+            "created": False,
+            "error": "not found; product_name and raw_inci_text are required to create",
+        }
+
+    success_count = 0
+    error_count = 0
+    for fi in formulation.ingredients.all():
+        try:
+            result = ingest_inci_ingredient(fi.raw_text, asserted_by="barcode_scan")
+            if result.errors:
+                error_count+=1
+            else:
+                success_count += 1
+        except Exception as exc:  # noqa: BLE001
+            logger.warning(
+                "enrich_formulation_ingredients: failed for %r (formulation=%s): %s",
+                fi.raw_text,
+                formulation_id,
+                exc,
+            )
+            error_count += 1
+
+    # Update formulation enrichment_status based on outcome.
+    if success_count > 0:
+        new_status = (
+            EnrichmentStatus.PARTIAL
+            if error_count > 0
+            else EnrichmentStatus.PARTIAL  # full per-ingredient enrichment runs separately
+        )
+    else:
+        new_status = EnrichmentStatus.PENDING
+
+    formulation.enrichment_status = new_status
+    formulation.save(update_fields=["enrichment_status", "updated_at"])
+
+    return {
+        "formulation_id": formulation.pk,
+        "created": created,
+        "success_count": success_count,
+        "error_count": error_count,
+        "enrichment_status": new_status,
     }
 
 

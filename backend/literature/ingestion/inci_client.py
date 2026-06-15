@@ -14,7 +14,21 @@ logger = logging.getLogger(__name__)
 
 _LIMITER = RateLimiter(min_interval=0.2)
 
-# Future: get_product(barcode) -> InciProduct; analyze(inci_list) -> analysis payload.
+
+@dataclass
+class InciProduct:
+    """Typed record for a product fetched from the INCI API /products/{barcode} endpoint."""
+
+    barcode: str
+    name: str
+    brand: str
+    category: str
+    country: str
+    image_url: str
+    ingredients_text: str
+    inci_list: list[str] = field(default_factory=list)
+    analysis: dict = field(default_factory=dict)
+    raw: dict = field(default_factory=dict)
 
 
 @dataclass
@@ -70,7 +84,7 @@ def get_ingredient(inci_name: str) -> InciIngredient | None:
     try:
         data = _get(f"/ingredients/{quoted}")
     except HttpError as exc:
-        if "404" in str(exc):
+        if exc.status_code == 404:
             logger.info("INCI ingredient not found: %r", inci_name)
             return None
         raise
@@ -78,6 +92,51 @@ def get_ingredient(inci_name: str) -> InciIngredient | None:
     if not ingredient:
         return None
     return parse_ingredient(ingredient)
+
+
+def get_product(barcode: str) -> InciProduct | None:
+    """Fetch a single product by barcode. Returns None if not found (HTTP 404)."""
+    quoted = quote(barcode, safe="")
+    try:
+        data = _get(f"/products/{quoted}")
+    except HttpError as exc:
+        if exc.status_code == 404:
+            logger.info("INCI product not found for barcode: %r", barcode)
+            return None
+        raise
+    product = data.get("product")
+    if not product:
+        return None
+    return parse_product(product)
+
+
+def parse_product(data: dict) -> InciProduct:
+    """Map a raw INCI API product dict to a typed record."""
+    details = data.get("details") or {}
+    inci_list = list(details.get("inci") or [])
+    analysis = dict(details.get("analysis") or {})
+
+    image_urls = data.get("imageUrls") or []
+    image_url = image_urls[0] if image_urls else ""
+
+    categories = data.get("category") or []
+    if isinstance(categories, list):
+        category = ", ".join(str(c) for c in categories if c)[:128]
+    else:
+        category = str(categories)[:128]
+
+    return InciProduct(
+        barcode=data.get("barcode", "") or "",
+        name=data.get("name", "") or "",
+        brand=data.get("brand", "") or "",
+        category=category,
+        country=data.get("country", "") or "",
+        image_url=image_url,
+        ingredients_text=data.get("ingredients", "") or "",
+        inci_list=inci_list,
+        analysis=analysis,
+        raw=data,
+    )
 
 
 def parse_ingredient(data: dict) -> InciIngredient:

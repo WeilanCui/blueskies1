@@ -6,6 +6,7 @@ from django.test import SimpleTestCase, TestCase
 
 from literature.enrichment.provenance import assert_property
 from literature.ingestion import inci_client, ingest_inci_ingredient
+from literature.ingestion.http import HttpError
 from literature.ingestion.inci_client import InciIngredient, parse_ingredient
 from literature.ingestion.inci_ingest import map_ingredient
 from core.models import (
@@ -107,6 +108,37 @@ class InciMappingTests(SimpleTestCase):
             ["anti_acne", "brightening"],
         )
         self.assertEqual(claims["functional_class"].value_json, ["humectant"])
+
+
+class InciClientErrorTests(SimpleTestCase):
+    def test_get_product_returns_none_for_structured_404(self):
+        with mock.patch.object(
+            inci_client,
+            "_get",
+            side_effect=HttpError("404 Not Found: /products/123", status_code=404),
+        ):
+            self.assertIsNone(inci_client.get_product("123"))
+
+    def test_get_product_reraises_non_404_even_when_barcode_contains_404(self):
+        with mock.patch.object(
+            inci_client,
+            "_get",
+            side_effect=HttpError(
+                "500 from /products/sku-404-oops",
+                status_code=500,
+            ),
+        ):
+            with self.assertRaises(HttpError):
+                inci_client.get_product("sku-404-oops")
+
+    def test_get_ingredient_reraises_unstructured_error_with_404_text(self):
+        with mock.patch.object(
+            inci_client,
+            "_get",
+            side_effect=HttpError("upstream error for 404-like ingredient"),
+        ):
+            with self.assertRaises(HttpError):
+                inci_client.get_ingredient("404-like ingredient")
 
 
 class InciIngestOrchestratorTests(TestCase):

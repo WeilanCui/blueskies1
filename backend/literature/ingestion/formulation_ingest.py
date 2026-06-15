@@ -5,7 +5,10 @@ from __future__ import annotations
 import logging
 from dataclasses import dataclass, field
 
+from django.db import IntegrityError, transaction
+
 from literature.enrichment.compound_bootstrap import apply_entity_classification
+from literature.ingestion import inci_client
 from literature.ingestion.inci_ingest import ingest_inci_ingredient
 from literature.ingestion.ingest import ingest_compound
 from core.models import (
@@ -40,6 +43,166 @@ class FormulationIngestResult:
     ingredient_count: int
     enrichment_status: str = EnrichmentStatus.PENDING
     ingredients: list[IngredientIngestResult] = field(default_factory=list)
+
+
+@dataclass
+class BarcodeScanResult:
+    formulation_id: int
+    product_id: int
+    barcode: str
+    ingredient_count: int
+    created: bool
+    errors: list[str] = field(default_factory=list)
+
+
+def ingest_product_by_barcode(barcode: str) -> BarcodeScanResult:
+    """Fetch a product from the INCI API by barcode and persist it.
+
+    Cache-first: if a Formulation with this barcode already exists it is
+    returned immediately (created=False) without calling the API.
+
+    Raises:
+        ValueError: if the barcode is not found in the INCI API (HTTP 404).
+        HttpError: for upstream API errors other than 404.
+    """
+    # Cache-first: return existing formulation if already ingested.
+    existing = _get_barcode_formulation(barcode)
+    if existing is not None:
+        return _barcode_scan_result(existing, barcode=barcode, created=False)
+
+    product_data = inci_client.get_product(barcode)
+    if product_data is None:
+        raise ValueError(f"Barcode {barcode} not found")
+
+    errors: list[str] = []
+
+    try:
+        with transaction.atomic():
+            # Re-check inside the write transaction for requests that completed while
+            # this scan was waiting on the upstream product lookup.
+            existing = _get_barcode_formulation(barcode)
+            if existing is not None:
+                return _barcode_scan_result(existing, barcode=barcode, created=False)
+
+            product_obj = _get_or_create_inci_product(product_data, barcode=barcode)
+
+            # Create Formulation.
+            formulation = Formulation.objects.create(
+                product=product_obj,
+                barcode=barcode,
+                raw_inci_text=product_data.ingredients_text,
+                made_in=product_data.country,
+                source="inciapi",
+                source_ref=f"inciapi:barcode:{barcode}",
+                enrichment_status=EnrichmentStatus.PENDING,
+                inci_analysis=product_data.analysis if product_data.analysis else None,
+            )
+
+            # Create FormulationIngredient rows for each INCI name.
+            inci_names = product_data.inci_list
+            # Fall back to parsing the raw text if inci_list is empty.
+            if not inci_names and product_data.ingredients_text:
+                inci_names = parse_inci_list(product_data.ingredients_text)
+
+            for position, inci_name in enumerate(inci_names, start=1):
+                name = inci_name.strip()
+                if not name:
+                    continue
+                try:
+                    compound, parse_status = resolve_compound(name)
+                except Exception as exc:  # noqa: BLE001
+                    logger.warning("Could not resolve compound %r: %s", name, exc)
+                    compound = None
+                    parse_status = "unmatched"
+                    errors.append(f"compound:{name}:{exc}")
+                FormulationIngredient.objects.create(
+                    formulation=formulation,
+                    position=position,
+                    raw_text=name,
+                    compound=compound,
+                    parse_status=parse_status,
+                )
+    except IntegrityError:
+        existing = _get_barcode_formulation(barcode)
+        if existing is None:
+            raise
+        logger.info("Barcode %s was created by a concurrent scan", barcode)
+        return _barcode_scan_result(existing, barcode=barcode, created=False)
+
+    # After the transaction commits, enqueue async enrichment.
+    from core.tasks import enrich_formulation_ingredients  # avoid circular import
+    enrich_formulation_ingredients.delay(formulation.pk)
+
+    return BarcodeScanResult(
+        formulation_id=formulation.pk,
+        product_id=product_obj.pk,
+        barcode=barcode,
+        ingredient_count=len(inci_names),
+        created=True,
+        errors=errors,
+    )
+
+
+def _get_barcode_formulation(barcode: str) -> Formulation | None:
+    return Formulation.objects.filter(barcode=barcode).first()
+
+
+def _get_or_create_brand(name: str) -> Brand | None:
+    cleaned = name.strip()
+    if not cleaned:
+        return None
+
+    try:
+        with transaction.atomic():
+            return Brand.get_or_create_by_name(cleaned)
+    except IntegrityError:
+        return Brand.objects.filter(name__iexact=cleaned).first()
+
+
+def _get_or_create_inci_product(product_data: InciProduct, *, barcode: str) -> Product:
+    brand_obj = _get_or_create_brand(product_data.brand)
+    product_name = product_data.name.strip() or "Unnamed product"
+    product_obj = Product.objects.filter(
+        brand=brand_obj,
+        name__iexact=product_name,
+    ).first()
+    if product_obj is not None:
+        return product_obj
+
+    try:
+        with transaction.atomic():
+            return Product.objects.create(
+                brand=brand_obj,
+                name=product_name,
+                display_name=product_name,
+                category=product_data.category,
+                image_url=product_data.image_url,
+                source="inciapi",
+                source_ref=f"inciapi:barcode:{barcode}",
+            )
+    except IntegrityError:
+        product_obj = Product.objects.filter(
+            brand=brand_obj,
+            name__iexact=product_name,
+        ).first()
+        if product_obj is None:
+            raise
+        return product_obj
+
+
+def _barcode_scan_result(
+    formulation: Formulation,
+    *,
+    barcode: str,
+    created: bool,
+) -> BarcodeScanResult:
+    return BarcodeScanResult(
+        formulation_id=formulation.pk,
+        product_id=formulation.product_id,
+        barcode=barcode,
+        ingredient_count=formulation.ingredients.count(),
+        created=created,
+    )
 
 
 def parse_inci_list(text: str) -> list[str]:
