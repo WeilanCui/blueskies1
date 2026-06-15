@@ -79,8 +79,40 @@ def enrich_literature_task(
     }
 
 
+def _load_or_create_formulation(
+    formulation_id: int | None,
+    *,
+    product_name: str = "",
+    raw_inci_text: str = "",
+    brand: str = "",
+):
+    from literature.ingestion.formulation_ingest import create_formulation
+    from core.models import Formulation
+
+    if formulation_id is not None:
+        formulation = (
+            Formulation.objects.prefetch_related("ingredients")
+            .filter(pk=formulation_id)
+            .first()
+        )
+        if formulation is not None:
+            return formulation, False
+
+    if not product_name.strip() or not raw_inci_text.strip():
+        return None, False
+
+    formulation = create_formulation(product_name, raw_inci_text, brand=brand)
+    return formulation, True
+
+
 @shared_task
-def enrich_formulation_ingredients(formulation_id: int) -> dict:
+def enrich_formulation_ingredients(
+    formulation_id: int | None = None,
+    *,
+    product_name: str = "",
+    raw_inci_text: str = "",
+    brand: str = "",
+) -> dict:
     """Best-effort INCI enrichment for every ingredient on a barcode-scanned formulation.
 
     Iterates FormulationIngredient rows, calls ingest_inci_ingredient for each,
@@ -88,16 +120,24 @@ def enrich_formulation_ingredients(formulation_id: int) -> dict:
     or keeps PENDING if nothing succeeded.
     """
     from literature.ingestion.inci_ingest import ingest_inci_ingredient
-    from core.models import Formulation, EnrichmentStatus
+    from core.models import EnrichmentStatus
 
-    try:
-        formulation = (
-            Formulation.objects.prefetch_related("ingredients")
-            .get(pk=formulation_id)
+    formulation, created = _load_or_create_formulation(
+        formulation_id,
+        product_name=product_name,
+        raw_inci_text=raw_inci_text,
+        brand=brand,
+    )
+    if formulation is None:
+        logger.error(
+            "enrich_formulation_ingredients: formulation %s not found and no creation payload provided",
+            formulation_id,
         )
-    except Formulation.DoesNotExist:
-        logger.error("enrich_formulation_ingredients: formulation %s not found", formulation_id)
-        return {"formulation_id": formulation_id, "error": "not found"}
+        return {
+            "formulation_id": formulation_id,
+            "created": False,
+            "error": "not found; product_name and raw_inci_text are required to create",
+        }
 
     success_count = 0
     error_count = 0
@@ -128,7 +168,8 @@ def enrich_formulation_ingredients(formulation_id: int) -> dict:
     formulation.save(update_fields=["enrichment_status", "updated_at"])
 
     return {
-        "formulation_id": formulation_id,
+        "formulation_id": formulation.pk,
+        "created": created,
         "success_count": success_count,
         "error_count": error_count,
         "enrichment_status": new_status,
