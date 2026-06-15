@@ -60,6 +60,9 @@ Start the full stack:
 docker compose up --build
 ```
 
+The frontend container installs its npm dependencies before starting, so rebuilt
+images and reused compose volumes stay in sync with `frontend/package-lock.json`.
+
 Open:
 
 - Frontend: http://localhost:3000
@@ -69,6 +72,7 @@ You can also run the frontend directly:
 
 ```bash
 cd frontend
+npm install
 npm run dev
 ```
 

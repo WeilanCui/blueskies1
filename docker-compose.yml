@@ -102,7 +102,7 @@ services:
   frontend:
     build:
       context: ./frontend
-    command: npm run dev -- --hostname 0.0.0.0
+    command: ["sh", "scripts/docker-dev.sh"]
     environment:
       NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-http://localhost:8000}
       SERVER_API_BASE_URL: ${SERVER_API_BASE_URL:-http://backend:8000}
