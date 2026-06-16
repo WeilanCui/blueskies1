@@ -18,6 +18,7 @@ from core.models import (
     InteractionAssertion,
     InteractionRule,
     LiteratureReference,
+    LiteratureDiscoveryTarget,
     Location,
     Profile,
     ProfileConstraint,
@@ -302,6 +303,28 @@ class CompoundLiteratureInline(admin.TabularInline):
         "role_in_paper",
         "relationship_degree",
         "confidence",
+    )
+
+
+@admin.register(LiteratureDiscoveryTarget)
+class LiteratureDiscoveryTargetAdmin(admin.ModelAdmin):
+    list_display = (
+        "compound",
+        "reason",
+        "status",
+        "priority",
+        "attempt_count",
+        "triggered_by",
+        "last_run_at",
+        "created_at",
+    )
+    list_filter = ("status", "reason", "triggered_by")
+    search_fields = ("compound__canonical_inci", "source_ref", "last_error")
+    readonly_fields = (
+        "created_at",
+        "updated_at",
+        "last_run_at",
+        "completed_at",
     )
 
 

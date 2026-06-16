@@ -256,7 +256,25 @@ def resolve_compound(name: str) -> tuple[Compound, str]:
         canonical_inci=canonical,
         display_name=name.strip(),
     )
-    apply_entity_classification(compound, asserted_by="formulation_ingest")
+    classification = apply_entity_classification(
+        compound,
+        asserted_by="formulation_ingest",
+    )
+    from core.models import EntityType
+    from core.models.literature_discovery_target import DiscoveryReason
+    from literature.discovery import enqueue_literature_discovery_for_compound
+
+    reason = (
+        DiscoveryReason.NEW_MIXTURE
+        if classification.entity_type == EntityType.MIXTURE
+        else DiscoveryReason.NEW_COMPOUND
+    )
+    enqueue_literature_discovery_for_compound(
+        compound,
+        reason,
+        triggered_by="formulation_ingest",
+        source_ref=f"resolve_compound:{canonical}",
+    )
     return compound, "unmatched"
 
 

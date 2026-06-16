@@ -44,6 +44,11 @@ from core.models.literature import (
     RelevanceCategory,
     RoleInPaper,
 )
+from core.models.literature_discovery_target import (
+    DiscoveryReason,
+    DiscoveryTargetStatus,
+    LiteratureDiscoveryTarget,
+)
 from core.models.properties import (
     GlossaryTerm,
     PropertyAssertion,
@@ -80,6 +85,8 @@ __all__ = [
     "ConstraintSeverity",
     "DailyCheckIn",
     "DailyProductUse",
+    "DiscoveryReason",
+    "DiscoveryTargetStatus",
     "EntityType",
     "EnrichmentStatus",
     "FitzpatrickSkinType",
@@ -90,6 +97,7 @@ __all__ = [
     "InteractionRule",
     "InteractionType",
     "LiteratureEnrichmentStatus",
+    "LiteratureDiscoveryTarget",
     "LiteratureReference",
     "Location",
     "LocationPrecision",

@@ -80,6 +80,27 @@ def enrich_literature_task(
     }
 
 
+@shared_task
+def daily_literature_discovery_task(
+    *,
+    compound_limit: int = 25,
+    backfill_limit: int = 0,
+    max_articles: int = 5,
+    max_related: int = 3,
+    enrich: bool = False,
+) -> dict:
+    """Celery wrapper for compound-level literature discovery queue drain."""
+    from literature.discovery import LiteratureDiscoveryRunner
+
+    return LiteratureDiscoveryRunner(
+        compound_limit=compound_limit,
+        backfill_limit=backfill_limit,
+        max_articles=max_articles,
+        max_related=max_related,
+        enrich=enrich,
+    ).run()
+
+
 def _load_or_create_formulation(
     formulation_id: int | None,
     *,

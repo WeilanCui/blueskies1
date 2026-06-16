@@ -299,11 +299,27 @@ def map_ingredient(ingredient: InciIngredient) -> list[PropertyClaim]:
 
 def _get_or_create_compound(name: str) -> Compound:
     canonical = " ".join(name.upper().split())
-    compound, _ = Compound.objects.get_or_create(
+    compound, created = Compound.objects.get_or_create(
         canonical_inci=canonical,
         defaults={"display_name": name.strip()},
     )
-    apply_entity_classification(compound, asserted_by="ingest_inci")
+    classification = apply_entity_classification(compound, asserted_by="ingest_inci")
+    if created:
+        from core.models import EntityType
+        from core.models.literature_discovery_target import DiscoveryReason
+        from literature.discovery import enqueue_literature_discovery_for_compound
+
+        reason = (
+            DiscoveryReason.NEW_MIXTURE
+            if classification.entity_type == EntityType.MIXTURE
+            else DiscoveryReason.NEW_COMPOUND
+        )
+        enqueue_literature_discovery_for_compound(
+            compound,
+            reason,
+            triggered_by="ingest_inci",
+            source_ref=f"get_or_create_compound:{canonical}",
+        )
     return compound
 
 

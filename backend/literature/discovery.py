@@ -1,0 +1,266 @@
+"""Reusable literature discovery orchestration for scheduled jobs and callers."""
+
+from __future__ import annotations
+
+import logging
+from dataclasses import dataclass
+from typing import Any, Callable
+
+from django.db import IntegrityError, transaction
+from django.db.models import Exists, OuterRef, Q
+from django.utils import timezone
+
+from core.models import Compound, CompoundLiterature, EnrichmentStatus
+from core.models.literature_discovery_target import (
+    ACTIVE_DISCOVERY_STATUSES,
+    DEFAULT_MAX_DISCOVERY_ATTEMPTS,
+    DiscoveryReason,
+    DiscoveryTargetStatus,
+    LiteratureDiscoveryTarget,
+)
+
+logger = logging.getLogger(__name__)
+
+DEFAULT_EXCLUDED_CANONICAL_INCI = ("AQUA", "WATER")
+
+
+def enqueue_literature_discovery_for_compound(
+    compound: Compound,
+    reason: str,
+    *,
+    priority: int = 0,
+    source_ref: str = "",
+    triggered_by: str = "",
+) -> tuple[LiteratureDiscoveryTarget, bool]:
+    """Queue compound-level literature discovery; idempotent while pending/running."""
+    existing = LiteratureDiscoveryTarget.objects.filter(
+        compound=compound,
+        status__in=ACTIVE_DISCOVERY_STATUSES,
+    ).first()
+    if existing is not None:
+        return existing, False
+
+    try:
+        target = LiteratureDiscoveryTarget.objects.create(
+            compound=compound,
+            reason=reason,
+            status=DiscoveryTargetStatus.PENDING,
+            priority=priority,
+            source_ref=source_ref,
+            triggered_by=triggered_by,
+        )
+    except IntegrityError:
+        existing = LiteratureDiscoveryTarget.objects.filter(
+            compound=compound,
+            status__in=ACTIVE_DISCOVERY_STATUSES,
+        ).first()
+        if existing is not None:
+            return existing, False
+        raise
+    return target, True
+
+
+def candidate_compounds_for_literature(
+    *,
+    limit: int,
+    exclude_compound_ids: set[int] | None = None,
+    exclude_canonical_inci: tuple[str, ...] = DEFAULT_EXCLUDED_CANONICAL_INCI,
+):
+    """Backfill: compounds that still need a literature search."""
+    if limit <= 0:
+        return Compound.objects.none()
+
+    literature_links = CompoundLiterature.objects.filter(compound_id=OuterRef("pk"))
+    active_targets = LiteratureDiscoveryTarget.objects.filter(
+        compound_id=OuterRef("pk"),
+        status__in=ACTIVE_DISCOVERY_STATUSES,
+    )
+    candidates = (
+        Compound.objects.annotate(
+            has_literature=Exists(literature_links),
+            has_active_target=Exists(active_targets),
+        )
+        .filter(
+            Q(
+                enrichment_status__in=[
+                    EnrichmentStatus.PENDING,
+                    EnrichmentStatus.NEEDS_REVIEW,
+                ]
+            )
+            | Q(has_literature=False)
+        )
+        .filter(has_active_target=False)
+        .exclude(canonical_inci__in=exclude_canonical_inci)
+        .order_by("updated_at", "id")
+    )
+    if exclude_compound_ids:
+        candidates = candidates.exclude(pk__in=exclude_compound_ids)
+    return candidates[:limit]
+
+
+def summarize_compound_result(compound: Compound, name: str, result: Any) -> dict:
+    """Stable summary shape for compound discovery results."""
+    return {
+        "compound_id": compound.pk,
+        "name": name,
+        "articles_linked": result.articles_linked,
+        "related_compounds": result.related_compounds,
+        "errors": result.errors,
+    }
+
+
+@dataclass
+class LiteratureDiscoveryRunner:
+    """Drain compound discovery queue sequentially, then optional backfill."""
+
+    compound_limit: int = 25
+    backfill_limit: int = 0
+    max_articles: int = 5
+    max_related: int = 3
+    enrich: bool = False
+    max_attempts: int = DEFAULT_MAX_DISCOVERY_ATTEMPTS
+    ingest_compound_func: Callable[..., Any] | None = None
+
+    def __post_init__(self) -> None:
+        if self.ingest_compound_func is None:
+            from literature.ingestion import ingest_compound
+
+            self.ingest_compound_func = ingest_compound
+
+    def run(self) -> dict:
+        queue_results: list[dict] = []
+        backfill_results: list[dict] = []
+        errors: list[str] = []
+        processed_compound_ids: set[int] = set()
+
+        targets = list(self._pending_targets()[: self.compound_limit])
+        for target in targets:
+            try:
+                queue_results.append(self.process_target(target))
+                processed_compound_ids.add(target.compound_id)
+            except Exception as exc:  # noqa: BLE001 - keep the daily crawl moving
+                logger.exception(
+                    "Literature discovery failed for target %s",
+                    target.pk,
+                )
+                errors.append(f"target:{target.pk}:{exc}")
+
+        remaining = max(0, self.compound_limit - len(queue_results))
+        backfill_cap = min(remaining, self.backfill_limit)
+        if backfill_cap > 0:
+            compounds = candidate_compounds_for_literature(
+                limit=backfill_cap,
+                exclude_compound_ids=processed_compound_ids,
+            )
+            for compound in compounds:
+                try:
+                    backfill_results.append(self.process_compound(compound))
+                except Exception as exc:  # noqa: BLE001
+                    logger.exception(
+                        "Literature discovery backfill failed for compound %s",
+                        compound.pk,
+                    )
+                    errors.append(f"compound:{compound.pk}:{exc}")
+
+        return {
+            "targets_processed": len(queue_results),
+            "backfill_processed": len(backfill_results),
+            "compounds_processed": len(queue_results) + len(backfill_results),
+            "targets": queue_results,
+            "backfill": backfill_results,
+            "errors": errors,
+        }
+
+    def _pending_targets(self):
+        return LiteratureDiscoveryTarget.objects.filter(
+            status=DiscoveryTargetStatus.PENDING,
+        ).select_related("compound")
+
+    @transaction.atomic
+    def process_target(self, target: LiteratureDiscoveryTarget) -> dict:
+        locked = (
+            LiteratureDiscoveryTarget.objects.select_for_update()
+            .filter(pk=target.pk, status=DiscoveryTargetStatus.PENDING)
+            .select_related("compound")
+            .first()
+        )
+        if locked is None:
+            compound = target.compound
+            return {
+                "target_id": target.pk,
+                "compound_id": compound.pk,
+                "skipped": True,
+            }
+
+        now = timezone.now()
+        locked.status = DiscoveryTargetStatus.RUNNING
+        locked.last_run_at = now
+        locked.save(update_fields=["status", "last_run_at", "updated_at"])
+
+        compound = locked.compound
+        search_name = compound.display_name or compound.canonical_inci
+        try:
+            result = self.ingest_compound_func(
+                search_name,
+                with_pubmed=True,
+                max_articles=self.max_articles,
+                max_related=self.max_related,
+                enrich=self.enrich,
+                asserted_by="literature_discovery_runner",
+            )
+        except Exception as exc:
+            self._mark_target_failure(locked, exc)
+            raise
+
+        if result.errors:
+            self._mark_target_failure(locked, "; ".join(result.errors))
+            summary = summarize_compound_result(compound, search_name, result)
+            summary["target_id"] = locked.pk
+            return summary
+
+        locked.status = DiscoveryTargetStatus.COMPLETED
+        locked.completed_at = timezone.now()
+        locked.last_error = ""
+        locked.save(
+            update_fields=["status", "completed_at", "last_error", "updated_at"]
+        )
+        summary = summarize_compound_result(compound, search_name, result)
+        summary["target_id"] = locked.pk
+        return summary
+
+    def _mark_target_failure(
+        self,
+        target: LiteratureDiscoveryTarget,
+        exc: BaseException | str,
+    ) -> None:
+        message = str(exc)
+        target.attempt_count += 1
+        target.last_error = message[:2000]
+        if target.attempt_count >= self.max_attempts:
+            target.status = DiscoveryTargetStatus.SKIPPED
+        else:
+            target.status = DiscoveryTargetStatus.PENDING
+        target.save(
+            update_fields=[
+                "status",
+                "attempt_count",
+                "last_error",
+                "updated_at",
+            ]
+        )
+
+    def process_compound(self, compound: Compound) -> dict:
+        search_name = compound.display_name or compound.canonical_inci
+        result = self.ingest_compound_func(
+            search_name,
+            with_pubmed=True,
+            max_articles=self.max_articles,
+            max_related=self.max_related,
+            enrich=self.enrich,
+            asserted_by="literature_discovery_backfill",
+        )
+        return summarize_compound_result(compound, search_name, result)
+
+
+# Backwards-compatible alias for callers/tests migrating to LiteratureDiscoveryRunner.
+DailyLiteratureDiscovery = LiteratureDiscoveryRunner
