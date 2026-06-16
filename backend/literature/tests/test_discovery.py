@@ -8,14 +8,17 @@ from core.models import (
     DiscoveryReason,
     DiscoveryTargetStatus,
     EnrichmentStatus,
+    Formulation,
+    FormulationIngredient,
     LiteratureDiscoveryTarget,
+    PRODUCT_FORMULATION_DISCOVERY_PRIORITY,
 )
 from literature.discovery import (
     LiteratureDiscoveryRunner,
     candidate_compounds_for_literature,
     enqueue_literature_discovery_for_compound,
 )
-from literature.ingestion.formulation_ingest import resolve_compound
+from literature.ingestion.formulation_ingest import create_formulation, resolve_compound
 from literature.seeds.loader import upsert_property_definitions
 
 
@@ -23,15 +26,55 @@ class EnqueueLiteratureDiscoveryTests(TestCase):
     def setUp(self):
         upsert_property_definitions()
 
-    def test_resolve_compound_enqueues_new_compound(self):
-        compound, status = resolve_compound("Phenoxyethanol")
+    def test_resolve_compound_enqueues_new_compound_from_product(self):
+        compound, status = resolve_compound("Phenoxyethanol", from_product=True)
 
         self.assertEqual(status, "unmatched")
         target = LiteratureDiscoveryTarget.objects.get(compound=compound)
         self.assertEqual(target.status, DiscoveryTargetStatus.PENDING)
         self.assertEqual(target.reason, DiscoveryReason.NEW_COMPOUND)
+        self.assertEqual(target.priority, PRODUCT_FORMULATION_DISCOVERY_PRIORITY)
+        self.assertEqual(target.triggered_by, "formulation_ingest")
 
-    def test_reenqueue_while_pending_is_idempotent(self):
+    def test_resolve_compound_without_product_context_does_not_enqueue(self):
+        compound, status = resolve_compound("Phenoxyethanol")
+
+        self.assertEqual(status, "unmatched")
+        self.assertFalse(
+            LiteratureDiscoveryTarget.objects.filter(compound=compound).exists()
+        )
+
+    def test_resolve_compound_bumps_priority_for_existing_compound(self):
+        compound = Compound.objects.create(
+            canonical_inci="GLYCERIN",
+            display_name="Glycerin",
+        )
+        low_priority = LiteratureDiscoveryTarget.objects.create(
+            compound=compound,
+            reason=DiscoveryReason.NEW_COMPOUND,
+            priority=0,
+            triggered_by="ingest_compound",
+        )
+
+        resolve_compound("Glycerin", from_product=True)
+
+        low_priority.refresh_from_db()
+        self.assertEqual(low_priority.priority, PRODUCT_FORMULATION_DISCOVERY_PRIORITY)
+        self.assertEqual(low_priority.triggered_by, "formulation_ingest")
+        self.assertEqual(LiteratureDiscoveryTarget.objects.count(), 1)
+
+    def test_create_formulation_enqueues_all_ingredients(self):
+        create_formulation("Test Serum", "Water, Retinol", brand="Blueskies")
+
+        targets = LiteratureDiscoveryTarget.objects.filter(
+            triggered_by="formulation_ingest",
+        )
+        self.assertEqual(targets.count(), 2)
+        self.assertTrue(
+            all(t.priority == PRODUCT_FORMULATION_DISCOVERY_PRIORITY for t in targets)
+        )
+
+    def test_reenqueue_while_pending_bumps_priority(self):
         compound = Compound.objects.create(
             canonical_inci="RETINOL",
             display_name="Retinol",
@@ -40,16 +83,20 @@ class EnqueueLiteratureDiscoveryTests(TestCase):
         first, created_first = enqueue_literature_discovery_for_compound(
             compound,
             DiscoveryReason.NEW_COMPOUND,
+            triggered_by="ingest_compound",
         )
         second, created_second = enqueue_literature_discovery_for_compound(
             compound,
-            DiscoveryReason.RETRY,
+            DiscoveryReason.NEW_COMPOUND,
+            triggered_by="formulation_ingest",
         )
 
         self.assertTrue(created_first)
         self.assertFalse(created_second)
         self.assertEqual(first.pk, second.pk)
         self.assertEqual(LiteratureDiscoveryTarget.objects.count(), 1)
+        second.refresh_from_db()
+        self.assertEqual(second.priority, PRODUCT_FORMULATION_DISCOVERY_PRIORITY)
 
 
 class LiteratureDiscoveryRunnerTests(TestCase):
@@ -139,3 +186,34 @@ class LiteratureDiscoveryRunnerTests(TestCase):
         candidates = list(candidate_compounds_for_literature(limit=10))
 
         self.assertEqual(candidates, [backfill])
+
+    def test_candidate_compounds_prefers_formulation_ingredients(self):
+        orphan = Compound.objects.create(
+            canonical_inci="ORPHANINE",
+            display_name="Orphanine",
+            enrichment_status=EnrichmentStatus.PENDING,
+        )
+        on_product = Compound.objects.create(
+            canonical_inci="SERUMIDE",
+            display_name="Serumide",
+            enrichment_status=EnrichmentStatus.PENDING,
+        )
+        from core.models import Product
+        from core.models.brand import Brand
+
+        brand = Brand.objects.create(name="Test Brand")
+        product_obj = Product.objects.create(brand=brand, name="Test Serum")
+        formulation = Formulation.objects.create(
+            product=product_obj,
+            raw_inci_text="Serumide",
+        )
+        FormulationIngredient.objects.create(
+            formulation=formulation,
+            position=1,
+            raw_text="Serumide",
+            compound=on_product,
+        )
+
+        candidates = list(candidate_compounds_for_literature(limit=2))
+
+        self.assertEqual([c.pk for c in candidates], [on_product.pk, orphan.pk])

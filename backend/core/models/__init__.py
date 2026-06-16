@@ -47,7 +47,9 @@ from core.models.literature import (
 from core.models.literature_discovery_target import (
     DiscoveryReason,
     DiscoveryTargetStatus,
+    DEFAULT_DISCOVERY_PRIORITY,
     LiteratureDiscoveryTarget,
+    PRODUCT_FORMULATION_DISCOVERY_PRIORITY,
 )
 from core.models.properties import (
     GlossaryTerm,
@@ -87,6 +89,8 @@ __all__ = [
     "DailyProductUse",
     "DiscoveryReason",
     "DiscoveryTargetStatus",
+    "DEFAULT_DISCOVERY_PRIORITY",
+    "PRODUCT_FORMULATION_DISCOVERY_PRIORITY",
     "EntityType",
     "EnrichmentStatus",
     "FitzpatrickSkinType",

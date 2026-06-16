@@ -109,7 +109,7 @@ def ingest_product_by_barcode(barcode: str) -> BarcodeScanResult:
                 if not name:
                     continue
                 try:
-                    compound, parse_status = resolve_compound(name)
+                    compound, parse_status = resolve_compound(name, from_product=True)
                 except Exception as exc:  # noqa: BLE001
                     logger.warning("Could not resolve compound %r: %s", name, exc)
                     compound = None
@@ -236,12 +236,17 @@ def _normalize_ingredient_token(token: str) -> str:
     return token
 
 
-def resolve_compound(name: str) -> tuple[Compound, str]:
+def resolve_compound(name: str, *, from_product: bool = False) -> tuple[Compound, str]:
     """Match an ingredient to an existing compound or create a new one."""
     canonical = " ".join(name.upper().split())
 
     compound = Compound.objects.filter(canonical_inci=canonical).first()
     if compound:
+        if from_product:
+            _queue_literature_discovery_for_resolved_compound(
+                compound,
+                canonical=canonical,
+            )
         return compound, "matched"
 
     alias = (
@@ -250,6 +255,11 @@ def resolve_compound(name: str) -> tuple[Compound, str]:
         .first()
     )
     if alias:
+        if from_product:
+            _queue_literature_discovery_for_resolved_compound(
+                alias.compound,
+                canonical=canonical,
+            )
         return alias.compound, "matched"
 
     compound = Compound.objects.create(
@@ -260,22 +270,39 @@ def resolve_compound(name: str) -> tuple[Compound, str]:
         compound,
         asserted_by="formulation_ingest",
     )
-    from core.models import EntityType
+    if from_product:
+        from core.models import EntityType
+        from core.models.literature_discovery_target import DiscoveryReason
+        from literature.discovery import enqueue_literature_discovery_for_compound
+
+        reason = (
+            DiscoveryReason.NEW_MIXTURE
+            if classification.entity_type == EntityType.MIXTURE
+            else DiscoveryReason.NEW_COMPOUND
+        )
+        enqueue_literature_discovery_for_compound(
+            compound,
+            reason,
+            triggered_by="formulation_ingest",
+            source_ref=f"resolve_compound:{canonical}",
+        )
+    return compound, "unmatched"
+
+
+def _queue_literature_discovery_for_resolved_compound(
+    compound: Compound,
+    *,
+    canonical: str,
+) -> None:
     from core.models.literature_discovery_target import DiscoveryReason
     from literature.discovery import enqueue_literature_discovery_for_compound
 
-    reason = (
-        DiscoveryReason.NEW_MIXTURE
-        if classification.entity_type == EntityType.MIXTURE
-        else DiscoveryReason.NEW_COMPOUND
-    )
     enqueue_literature_discovery_for_compound(
         compound,
-        reason,
+        DiscoveryReason.NEW_COMPOUND,
         triggered_by="formulation_ingest",
         source_ref=f"resolve_compound:{canonical}",
     )
-    return compound, "unmatched"
 
 
 def create_formulation(
@@ -295,7 +322,7 @@ def create_formulation(
     )
 
     for position, name in enumerate(ingredient_names, start=1):
-        compound, parse_status = resolve_compound(name)
+        compound, parse_status = resolve_compound(name, from_product=True)
         FormulationIngredient.objects.create(
             formulation=formulation,
             position=position,
@@ -391,7 +418,7 @@ def _ingest_ingredient(
     )
 
     if compound is None:
-        compound, parse_status = resolve_compound(name)
+        compound, parse_status = resolve_compound(name, from_product=True)
         row.compound = compound
         row.parse_status = parse_status
         row.save(update_fields=["compound", "parse_status"])

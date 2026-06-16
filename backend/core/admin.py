@@ -81,6 +81,7 @@ class CompoundAdmin(admin.ModelAdmin):
         "enrichment_status",
         "structure_resolvable",
     )
+    readonly_fields = ('created_at','updated_at') 
     search_fields = ("canonical_inci", "display_name", "primary_cas")
     list_filter = ("entity_type", "enrichment_status")
     inlines = [

@@ -26,6 +26,9 @@ ACTIVE_DISCOVERY_STATUSES = (
 
 DEFAULT_MAX_DISCOVERY_ATTEMPTS = 3
 
+DEFAULT_DISCOVERY_PRIORITY = 0
+PRODUCT_FORMULATION_DISCOVERY_PRIORITY = 10
+
 
 class LiteratureDiscoveryTarget(models.Model):
     """Queued ingredient-level literature discovery work for a compound."""

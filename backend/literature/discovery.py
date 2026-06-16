@@ -10,34 +10,66 @@ from django.db import IntegrityError, transaction
 from django.db.models import Exists, OuterRef, Q
 from django.utils import timezone
 
-from core.models import Compound, CompoundLiterature, EnrichmentStatus
+from core.models import Compound, CompoundLiterature, EnrichmentStatus, FormulationIngredient
 from core.models.literature_discovery_target import (
     ACTIVE_DISCOVERY_STATUSES,
+    DEFAULT_DISCOVERY_PRIORITY,
     DEFAULT_MAX_DISCOVERY_ATTEMPTS,
     DiscoveryReason,
     DiscoveryTargetStatus,
     LiteratureDiscoveryTarget,
+    PRODUCT_FORMULATION_DISCOVERY_PRIORITY,
 )
 
 logger = logging.getLogger(__name__)
 
 DEFAULT_EXCLUDED_CANONICAL_INCI = ("AQUA", "WATER")
 
+PRODUCT_DISCOVERY_TRIGGERED_BY = frozenset(
+    {
+        "formulation_ingest",
+        "barcode_scan",
+    }
+)
+
+
+def discovery_priority_for_triggered_by(triggered_by: str) -> int:
+    if triggered_by in PRODUCT_DISCOVERY_TRIGGERED_BY:
+        return PRODUCT_FORMULATION_DISCOVERY_PRIORITY
+    return DEFAULT_DISCOVERY_PRIORITY
+
 
 def enqueue_literature_discovery_for_compound(
     compound: Compound,
     reason: str,
     *,
-    priority: int = 0,
+    priority: int | None = None,
     source_ref: str = "",
     triggered_by: str = "",
 ) -> tuple[LiteratureDiscoveryTarget, bool]:
     """Queue compound-level literature discovery; idempotent while pending/running."""
+    if priority is None:
+        priority = discovery_priority_for_triggered_by(triggered_by)
+
     existing = LiteratureDiscoveryTarget.objects.filter(
         compound=compound,
         status__in=ACTIVE_DISCOVERY_STATUSES,
     ).first()
     if existing is not None:
+        updates: dict[str, object] = {}
+        if priority > existing.priority:
+            updates["priority"] = priority
+        if triggered_by and (
+            not existing.triggered_by
+            or triggered_by in PRODUCT_DISCOVERY_TRIGGERED_BY
+        ):
+            updates["triggered_by"] = triggered_by
+        if source_ref:
+            updates["source_ref"] = source_ref
+        if updates:
+            for field, value in updates.items():
+                setattr(existing, field, value)
+            existing.save(update_fields=[*updates.keys(), "updated_at"])
         return existing, False
 
     try:
@@ -55,7 +87,13 @@ def enqueue_literature_discovery_for_compound(
             status__in=ACTIVE_DISCOVERY_STATUSES,
         ).first()
         if existing is not None:
-            return existing, False
+            return enqueue_literature_discovery_for_compound(
+                compound,
+                reason,
+                priority=priority,
+                source_ref=source_ref,
+                triggered_by=triggered_by,
+            )
         raise
     return target, True
 
@@ -75,10 +113,12 @@ def candidate_compounds_for_literature(
         compound_id=OuterRef("pk"),
         status__in=ACTIVE_DISCOVERY_STATUSES,
     )
+    on_formulation = FormulationIngredient.objects.filter(compound_id=OuterRef("pk"))
     candidates = (
         Compound.objects.annotate(
             has_literature=Exists(literature_links),
             has_active_target=Exists(active_targets),
+            on_formulation=Exists(on_formulation),
         )
         .filter(
             Q(
@@ -91,7 +131,7 @@ def candidate_compounds_for_literature(
         )
         .filter(has_active_target=False)
         .exclude(canonical_inci__in=exclude_canonical_inci)
-        .order_by("updated_at", "id")
+        .order_by("-on_formulation", "updated_at", "id")
     )
     if exclude_compound_ids:
         candidates = candidates.exclude(pk__in=exclude_compound_ids)
