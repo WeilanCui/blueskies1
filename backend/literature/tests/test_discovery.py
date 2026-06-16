@@ -74,6 +74,18 @@ class EnqueueLiteratureDiscoveryTests(TestCase):
             all(t.priority == PRODUCT_FORMULATION_DISCOVERY_PRIORITY for t in targets)
         )
 
+    def test_resolve_compound_skips_queue_when_disabled(self):
+        compound, status = resolve_compound(
+            "Phenoxyethanol",
+            from_product=True,
+            queue_discovery=False,
+        )
+
+        self.assertEqual(status, "unmatched")
+        self.assertFalse(
+            LiteratureDiscoveryTarget.objects.filter(compound=compound).exists()
+        )
+
     def test_reenqueue_while_pending_bumps_priority(self):
         compound = Compound.objects.create(
             canonical_inci="RETINOL",
@@ -161,6 +173,41 @@ class LiteratureDiscoveryRunnerTests(TestCase):
         self.assertEqual(target.attempt_count, 3)
         self.assertEqual(target.status, DiscoveryTargetStatus.SKIPPED)
         self.assertIn("429", target.last_error)
+
+    def test_runner_records_failures_when_ingest_raises(self):
+        compound = Compound.objects.create(
+            canonical_inci="RETINOL",
+            display_name="Retinol",
+        )
+        target = LiteratureDiscoveryTarget.objects.create(
+            compound=compound,
+            reason=DiscoveryReason.NEW_COMPOUND,
+        )
+
+        def ingest(name, **kwargs):
+            raise RuntimeError("pubchem timeout")
+
+        runner = LiteratureDiscoveryRunner(
+            compound_limit=5,
+            max_attempts=3,
+            ingest_compound_func=ingest,
+        )
+
+        with self.assertRaises(RuntimeError):
+            runner.process_target(target)
+
+        target.refresh_from_db()
+        self.assertEqual(target.attempt_count, 1)
+        self.assertEqual(target.status, DiscoveryTargetStatus.PENDING)
+        self.assertIn("pubchem timeout", target.last_error)
+
+        for _ in range(2):
+            with self.assertRaises(RuntimeError):
+                runner.process_target(target)
+
+        target.refresh_from_db()
+        self.assertEqual(target.attempt_count, 3)
+        self.assertEqual(target.status, DiscoveryTargetStatus.SKIPPED)
 
     def test_candidate_compounds_excludes_active_queue_targets(self):
         queued = Compound.objects.create(

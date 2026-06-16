@@ -216,15 +216,9 @@ class LiteratureDiscoveryRunner:
             status=DiscoveryTargetStatus.PENDING,
         ).select_related("compound")
 
-    @transaction.atomic
     def process_target(self, target: LiteratureDiscoveryTarget) -> dict:
-        locked = (
-            LiteratureDiscoveryTarget.objects.select_for_update()
-            .filter(pk=target.pk, status=DiscoveryTargetStatus.PENDING)
-            .select_related("compound")
-            .first()
-        )
-        if locked is None:
+        claimed = self._claim_target(target)
+        if claimed is None:
             compound = target.compound
             return {
                 "target_id": target.pk,
@@ -232,13 +226,7 @@ class LiteratureDiscoveryRunner:
                 "skipped": True,
             }
 
-        now = timezone.now()
-        locked.status = DiscoveryTargetStatus.RUNNING
-        locked.last_run_at = now
-        locked.save(update_fields=["status", "last_run_at", "updated_at"])
-
-        compound = locked.compound
-        search_name = compound.display_name or compound.canonical_inci
+        target_id, compound, search_name = claimed
         try:
             result = self.ingest_compound_func(
                 search_name,
@@ -249,44 +237,88 @@ class LiteratureDiscoveryRunner:
                 asserted_by="literature_discovery_runner",
             )
         except Exception as exc:
-            self._mark_target_failure(locked, exc)
+            self._record_target_failure(target_id, exc)
             raise
 
         if result.errors:
-            self._mark_target_failure(locked, "; ".join(result.errors))
+            self._record_target_failure(target_id, "; ".join(result.errors))
             summary = summarize_compound_result(compound, search_name, result)
-            summary["target_id"] = locked.pk
+            summary["target_id"] = target_id
             return summary
 
-        locked.status = DiscoveryTargetStatus.COMPLETED
-        locked.completed_at = timezone.now()
-        locked.last_error = ""
-        locked.save(
-            update_fields=["status", "completed_at", "last_error", "updated_at"]
-        )
+        self._record_target_success(target_id)
         summary = summarize_compound_result(compound, search_name, result)
-        summary["target_id"] = locked.pk
+        summary["target_id"] = target_id
         return summary
 
-    def _mark_target_failure(
+    @transaction.atomic
+    def _claim_target(
         self,
         target: LiteratureDiscoveryTarget,
+    ) -> tuple[int, Compound, str] | None:
+        locked = (
+            LiteratureDiscoveryTarget.objects.select_for_update()
+            .filter(pk=target.pk, status=DiscoveryTargetStatus.PENDING)
+            .select_related("compound")
+            .first()
+        )
+        if locked is None:
+            return None
+
+        now = timezone.now()
+        locked.status = DiscoveryTargetStatus.RUNNING
+        locked.last_run_at = now
+        locked.save(update_fields=["status", "last_run_at", "updated_at"])
+
+        compound = locked.compound
+        search_name = compound.display_name or compound.canonical_inci
+        return locked.pk, compound, search_name
+
+    @transaction.atomic
+    def _record_target_failure(
+        self,
+        target_id: int,
         exc: BaseException | str,
     ) -> None:
+        locked = (
+            LiteratureDiscoveryTarget.objects.select_for_update()
+            .filter(pk=target_id, status=DiscoveryTargetStatus.RUNNING)
+            .first()
+        )
+        if locked is None:
+            return
+
         message = str(exc)
-        target.attempt_count += 1
-        target.last_error = message[:2000]
-        if target.attempt_count >= self.max_attempts:
-            target.status = DiscoveryTargetStatus.SKIPPED
+        locked.attempt_count += 1
+        locked.last_error = message[:2000]
+        if locked.attempt_count >= self.max_attempts:
+            locked.status = DiscoveryTargetStatus.SKIPPED
         else:
-            target.status = DiscoveryTargetStatus.PENDING
-        target.save(
+            locked.status = DiscoveryTargetStatus.PENDING
+        locked.save(
             update_fields=[
                 "status",
                 "attempt_count",
                 "last_error",
                 "updated_at",
             ]
+        )
+
+    @transaction.atomic
+    def _record_target_success(self, target_id: int) -> None:
+        locked = (
+            LiteratureDiscoveryTarget.objects.select_for_update()
+            .filter(pk=target_id, status=DiscoveryTargetStatus.RUNNING)
+            .first()
+        )
+        if locked is None:
+            return
+
+        locked.status = DiscoveryTargetStatus.COMPLETED
+        locked.completed_at = timezone.now()
+        locked.last_error = ""
+        locked.save(
+            update_fields=["status", "completed_at", "last_error", "updated_at"]
         )
 
     def process_compound(self, compound: Compound) -> dict:

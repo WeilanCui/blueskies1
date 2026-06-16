@@ -131,7 +131,7 @@ def _get_or_create_compound(name: str) -> Compound:
             compound,
             reason,
             triggered_by="ingest_compound",
-            source_ref=f"get_or_create_compound:{canonical}",
+            source_ref=f"get_or_create_compound:{compound.pk}-{canonical}",
         )
     return compound
 

@@ -93,10 +93,15 @@ def ingest_inci_ingredient(
     name: str,
     *,
     asserted_by: str = "ingest_inci",
+    queue_discovery: bool = True,
 ) -> InciIngestResult:
     """Fetch an ingredient from the INCI API and persist mapped properties."""
     result = InciIngestResult(name=name)
-    compound = _get_or_create_compound(name, asserted_by=asserted_by)
+    compound = _get_or_create_compound(
+        name,
+        asserted_by=asserted_by,
+        queue_discovery=queue_discovery,
+    )
     result.compound_id = compound.pk
 
     ingredient = _safe_fetch(name, result)
@@ -297,7 +302,12 @@ def map_ingredient(ingredient: InciIngredient) -> list[PropertyClaim]:
     return claims
 
 
-def _get_or_create_compound(name: str, *, asserted_by: str = "ingest_inci") -> Compound:
+def _get_or_create_compound(
+    name: str,
+    *,
+    asserted_by: str = "ingest_inci",
+    queue_discovery: bool = True,
+) -> Compound:
     canonical = " ".join(name.upper().split())
     compound, created = Compound.objects.get_or_create(
         canonical_inci=canonical,
@@ -312,7 +322,7 @@ def _get_or_create_compound(name: str, *, asserted_by: str = "ingest_inci") -> C
     )
 
     from_product = asserted_by in PRODUCT_DISCOVERY_TRIGGERED_BY
-    if created or from_product:
+    if queue_discovery and (created or from_product):
         reason = (
             DiscoveryReason.NEW_MIXTURE
             if classification.entity_type == EntityType.MIXTURE
