@@ -1,6 +1,8 @@
+from io import StringIO
 from types import SimpleNamespace
 from unittest import mock
 
+from django.core.management import call_command
 from django.test import TestCase
 
 from core.models import (
@@ -425,6 +427,10 @@ class LiteratureDiscoveryRunnerTests(TestCase):
         self.assertEqual(result["targets_processed"], 0)
         self.assertEqual(result["backfill_processed"], 1)
         self.assertEqual(processed, ["Panthenol"])
+        target = LiteratureDiscoveryTarget.objects.get(compound=compound)
+        self.assertEqual(target.status, DiscoveryTargetStatus.COMPLETED)
+        self.assertEqual(target.source_ref, f"literature_backfill:{compound.pk}")
+        self.assertEqual(target.triggered_by, "formulation_ingest")
 
     def test_enqueue_pending_compounds_for_literature(self):
         from literature.discovery import enqueue_pending_compounds_for_literature
@@ -578,3 +584,52 @@ class LiteratureDiscoveryRunnerTests(TestCase):
         candidates = list(candidate_compounds_for_literature(limit=2))
 
         self.assertEqual([c.pk for c in candidates], [on_product.pk, orphan.pk])
+
+
+class LiteratureDiscoveryCommandTests(TestCase):
+    def setUp(self):
+        upsert_property_definitions()
+
+    @mock.patch("literature.ingestion.ingest_compound")
+    def test_command_dispatches_events_and_executes_targets(self, mock_ingest):
+        mock_ingest.return_value = SimpleNamespace(
+            articles_linked=1,
+            related_compounds=[],
+            errors=[],
+        )
+        compound = Compound.objects.create(
+            canonical_inci="RETINOL",
+            display_name="Retinol",
+        )
+        event, _ = emit_literature_discovery_event(
+            LiteratureDiscoveryEventType.COMPOUND_CREATED_FROM_FORMULATION,
+            compound=compound,
+            reason=DiscoveryReason.NEW_COMPOUND,
+            triggered_by="formulation_ingest",
+            source_ref="test:command",
+        )
+
+        self.assertEqual(event.status, LiteratureDiscoveryEventStatus.PENDING)
+        self.assertFalse(LiteratureDiscoveryTarget.objects.exists())
+
+        out = StringIO()
+        call_command(
+            "literature_discovery",
+            limit=5,
+            no_backfill=True,
+            stdout=out,
+        )
+
+        event.refresh_from_db()
+        target = LiteratureDiscoveryTarget.objects.get(compound=compound)
+        self.assertEqual(event.status, LiteratureDiscoveryEventStatus.PROCESSED)
+        self.assertEqual(target.status, DiscoveryTargetStatus.COMPLETED)
+        mock_ingest.assert_called_once_with(
+            "Retinol",
+            with_pubmed=True,
+            max_articles=5,
+            max_related=3,
+            enrich=False,
+            asserted_by="literature_discovery_runner",
+        )
+        self.assertIn("1 events dispatched", out.getvalue())

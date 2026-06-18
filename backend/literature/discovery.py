@@ -686,7 +686,24 @@ class LiteratureDiscoveryRunner:
             )
             for compound in compounds:
                 try:
-                    backfill_results.append(self.process_compound(compound))
+                    priority = (
+                        PRODUCT_FORMULATION_DISCOVERY_PRIORITY
+                        if self.backfill_formulation_only
+                        else DEFAULT_DISCOVERY_PRIORITY
+                    )
+                    triggered_by = (
+                        "formulation_ingest"
+                        if self.backfill_formulation_only
+                        else "literature_backfill"
+                    )
+                    target, _ = enqueue_literature_discovery_for_compound(
+                        compound,
+                        DiscoveryReason.NEW_COMPOUND,
+                        priority=priority,
+                        triggered_by=triggered_by,
+                        source_ref=f"literature_backfill:{compound.pk}",
+                    )
+                    backfill_results.append(self.process_target(target))
                 except Exception as exc:  # noqa: BLE001
                     logger.exception(
                         "Literature discovery backfill failed for compound %s",

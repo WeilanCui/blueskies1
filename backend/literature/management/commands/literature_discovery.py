@@ -3,6 +3,7 @@ from django.core.management.base import BaseCommand
 from literature.discovery import (
     LiteratureDiscoveryRunner,
     candidate_compounds_for_literature,
+    dispatch_pending_literature_discovery_events,
     enqueue_pending_compounds_for_literature,
 )
 
@@ -29,6 +30,12 @@ class Command(BaseCommand):
             "--enqueue-only",
             action="store_true",
             help="Only enqueue pending compounds; do not run ingestion.",
+        )
+        parser.add_argument(
+            "--event-limit",
+            type=int,
+            default=100,
+            help="Max pending discovery events to dispatch before ingestion.",
         )
         parser.add_argument(
             "--no-backfill",
@@ -76,6 +83,10 @@ class Command(BaseCommand):
         if options["enqueue_only"]:
             return
 
+        event_result = dispatch_pending_literature_discovery_events(
+            limit=options["event_limit"],
+        )
+
         backfill_limit = 0 if options["no_backfill"] else None
         runner = LiteratureDiscoveryRunner(
             compound_limit=limit,
@@ -93,8 +104,14 @@ class Command(BaseCommand):
                 f"Processed {result['compounds_processed']} compounds "
                 f"({result['targets_processed']} from queue, "
                 f"{result['backfill_processed']} backfill, "
-                f"{result['stale_targets_requeued']} stale requeued)."
+                f"{result['stale_targets_requeued']} stale requeued, "
+                f"{event_result['events_processed']} events dispatched)."
             )
         )
+        for event in event_result["events"]:
+            if event.get("error"):
+                self.stdout.write(
+                    self.style.WARNING(f"event:{event['event_id']}:{event['error']}")
+                )
         for err in result["errors"]:
             self.stdout.write(self.style.WARNING(err))
