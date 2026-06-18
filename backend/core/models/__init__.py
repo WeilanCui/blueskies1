@@ -48,7 +48,11 @@ from core.models.literature_discovery_target import (
     DiscoveryReason,
     DiscoveryTargetStatus,
     DEFAULT_DISCOVERY_PRIORITY,
+    LiteratureDiscoveryEvent,
+    LiteratureDiscoveryEventStatus,
+    LiteratureDiscoveryEventType,
     LiteratureDiscoveryTarget,
+    LiteratureDiscoveryTargetType,
     PRODUCT_FORMULATION_DISCOVERY_PRIORITY,
 )
 from core.models.properties import (
@@ -101,7 +105,11 @@ __all__ = [
     "InteractionRule",
     "InteractionType",
     "LiteratureEnrichmentStatus",
+    "LiteratureDiscoveryEvent",
+    "LiteratureDiscoveryEventStatus",
+    "LiteratureDiscoveryEventType",
     "LiteratureDiscoveryTarget",
+    "LiteratureDiscoveryTargetType",
     "LiteratureReference",
     "Location",
     "LocationPrecision",

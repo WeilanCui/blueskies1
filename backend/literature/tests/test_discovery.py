@@ -8,14 +8,20 @@ from core.models import (
     DiscoveryReason,
     DiscoveryTargetStatus,
     EnrichmentStatus,
+    LiteratureDiscoveryEvent,
+    LiteratureDiscoveryEventStatus,
+    LiteratureDiscoveryEventType,
     Formulation,
     FormulationIngredient,
     LiteratureDiscoveryTarget,
+    LiteratureDiscoveryTargetType,
     PRODUCT_FORMULATION_DISCOVERY_PRIORITY,
 )
 from literature.discovery import (
     LiteratureDiscoveryRunner,
     candidate_compounds_for_literature,
+    dispatch_pending_literature_discovery_events,
+    emit_literature_discovery_event,
     enqueue_literature_discovery_for_compound,
 )
 from literature.ingestion.formulation_ingest import create_formulation, resolve_compound
@@ -27,10 +33,19 @@ class EnqueueLiteratureDiscoveryTests(TestCase):
         upsert_property_definitions()
 
     def test_resolve_compound_enqueues_new_compound_from_product(self):
-        compound, status = resolve_compound("Phenoxyethanol", from_product=True)
+        with self.captureOnCommitCallbacks(execute=True):
+            compound, status = resolve_compound("Phenoxyethanol", from_product=True)
 
         self.assertEqual(status, "unmatched")
+        event = LiteratureDiscoveryEvent.objects.get(compound=compound)
+        self.assertEqual(
+            event.event_type,
+            LiteratureDiscoveryEventType.COMPOUND_CREATED_FROM_FORMULATION,
+        )
+        self.assertEqual(event.status, LiteratureDiscoveryEventStatus.PROCESSED)
         target = LiteratureDiscoveryTarget.objects.get(compound=compound)
+        self.assertEqual(target.target_type, LiteratureDiscoveryTargetType.COMPOUND)
+        self.assertEqual(target.search_label, "Phenoxyethanol")
         self.assertEqual(target.status, DiscoveryTargetStatus.PENDING)
         self.assertEqual(target.reason, DiscoveryReason.NEW_COMPOUND)
         self.assertEqual(target.priority, PRODUCT_FORMULATION_DISCOVERY_PRIORITY)
@@ -56,7 +71,8 @@ class EnqueueLiteratureDiscoveryTests(TestCase):
             triggered_by="ingest_compound",
         )
 
-        resolve_compound("Glycerin", from_product=True)
+        with self.captureOnCommitCallbacks(execute=True):
+            resolve_compound("Glycerin", from_product=True)
 
         low_priority.refresh_from_db()
         self.assertEqual(low_priority.priority, PRODUCT_FORMULATION_DISCOVERY_PRIORITY)
@@ -64,7 +80,8 @@ class EnqueueLiteratureDiscoveryTests(TestCase):
         self.assertEqual(LiteratureDiscoveryTarget.objects.count(), 1)
 
     def test_create_formulation_enqueues_all_ingredients(self):
-        create_formulation("Test Serum", "Water, Retinol", brand="Blueskies")
+        with self.captureOnCommitCallbacks(execute=True):
+            create_formulation("Test Serum", "Water, Retinol", brand="Blueskies")
 
         targets = LiteratureDiscoveryTarget.objects.filter(
             triggered_by="formulation_ingest",
@@ -73,6 +90,7 @@ class EnqueueLiteratureDiscoveryTests(TestCase):
         self.assertTrue(
             all(t.priority == PRODUCT_FORMULATION_DISCOVERY_PRIORITY for t in targets)
         )
+        self.assertEqual(LiteratureDiscoveryEvent.objects.count(), 2)
 
     def test_resolve_compound_skips_queue_when_disabled(self):
         compound, status = resolve_compound(
@@ -85,6 +103,7 @@ class EnqueueLiteratureDiscoveryTests(TestCase):
         self.assertFalse(
             LiteratureDiscoveryTarget.objects.filter(compound=compound).exists()
         )
+        self.assertFalse(LiteratureDiscoveryEvent.objects.exists())
 
     def test_reenqueue_while_pending_bumps_priority(self):
         compound = Compound.objects.create(
@@ -109,6 +128,49 @@ class EnqueueLiteratureDiscoveryTests(TestCase):
         self.assertEqual(LiteratureDiscoveryTarget.objects.count(), 1)
         second.refresh_from_db()
         self.assertEqual(second.priority, PRODUCT_FORMULATION_DISCOVERY_PRIORITY)
+
+    def test_pending_event_dispatch_creates_work_item(self):
+        compound = Compound.objects.create(
+            canonical_inci="RETINOL",
+            display_name="Retinol",
+        )
+
+        event, created = emit_literature_discovery_event(
+            LiteratureDiscoveryEventType.COMPOUND_CREATED_FROM_FORMULATION,
+            compound=compound,
+            reason=DiscoveryReason.NEW_COMPOUND,
+            triggered_by="formulation_ingest",
+            source_ref="test:event",
+        )
+
+        self.assertTrue(created)
+        self.assertEqual(event.status, LiteratureDiscoveryEventStatus.PENDING)
+        self.assertFalse(LiteratureDiscoveryTarget.objects.exists())
+
+        result = dispatch_pending_literature_discovery_events(limit=10)
+
+        event.refresh_from_db()
+        target = LiteratureDiscoveryTarget.objects.get(compound=compound)
+        self.assertEqual(result["events_processed"], 1)
+        self.assertEqual(result["targets_created"], 1)
+        self.assertEqual(event.status, LiteratureDiscoveryEventStatus.PROCESSED)
+        self.assertEqual(target.target_type, LiteratureDiscoveryTargetType.COMPOUND)
+        self.assertEqual(target.search_label, "Retinol")
+
+    def test_mixture_compound_event_creates_compound_work_item(self):
+        with self.captureOnCommitCallbacks(execute=True):
+            compound, status = resolve_compound("Retinol Complex", from_product=True)
+
+        self.assertEqual(status, "unmatched")
+        self.assertEqual(compound.entity_type, "mixture")
+        event = LiteratureDiscoveryEvent.objects.get(compound=compound)
+        target = LiteratureDiscoveryTarget.objects.get(compound=compound)
+        self.assertEqual(
+            event.event_type,
+            LiteratureDiscoveryEventType.MIXTURE_CREATED_FROM_FORMULATION,
+        )
+        self.assertEqual(target.target_type, LiteratureDiscoveryTargetType.COMPOUND)
+        self.assertEqual(target.reason, DiscoveryReason.NEW_MIXTURE)
 
 
 class LiteratureDiscoveryRunnerTests(TestCase):
@@ -285,6 +347,40 @@ class LiteratureDiscoveryRunnerTests(TestCase):
         self.assertEqual(result["targets_processed"], 1)
         target.refresh_from_db()
         self.assertEqual(target.status, DiscoveryTargetStatus.COMPLETED)
+
+    def test_runner_skips_formulation_targets_until_processor_exists(self):
+        from core.models import Product
+        from core.models.brand import Brand
+
+        brand = Brand.objects.create(name="Test Brand")
+        product_obj = Product.objects.create(brand=brand, name="Test Serum")
+        formulation = Formulation.objects.create(
+            product=product_obj,
+            raw_inci_text="Water, Glycerin",
+        )
+        target = LiteratureDiscoveryTarget.objects.create(
+            target_type=LiteratureDiscoveryTargetType.FORMULATION,
+            formulation=formulation,
+            reason=DiscoveryReason.NEW_COMPOUND,
+            triggered_by="formulation_ingest",
+            priority=PRODUCT_FORMULATION_DISCOVERY_PRIORITY,
+        )
+
+        runner = LiteratureDiscoveryRunner(
+            compound_limit=5,
+            ingest_compound_func=lambda name, **kwargs: SimpleNamespace(
+                articles_linked=0,
+                related_compounds=[],
+                errors=[],
+            ),
+        )
+        result = runner.run()
+
+        target.refresh_from_db()
+        self.assertEqual(result["targets_processed"], 1)
+        self.assertEqual(result["compounds_processed"], 0)
+        self.assertEqual(target.status, DiscoveryTargetStatus.SKIPPED)
+        self.assertIn("No literature discovery processor", target.last_error)
 
     def test_runner_backfills_pending_formulation_compounds_when_queue_empty(self):
         from core.models import Product

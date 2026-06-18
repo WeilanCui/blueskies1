@@ -279,14 +279,14 @@ def resolve_compound(
     if should_queue:
         from core.models import EntityType
         from core.models.literature_discovery_target import DiscoveryReason
-        from literature.discovery import enqueue_literature_discovery_for_compound
+        from literature.discovery import emit_literature_discovery_for_compound
 
         reason = (
             DiscoveryReason.NEW_MIXTURE
             if classification.entity_type == EntityType.MIXTURE
             else DiscoveryReason.NEW_COMPOUND
         )
-        enqueue_literature_discovery_for_compound(
+        emit_literature_discovery_for_compound(
             compound,
             reason,
             triggered_by="formulation_ingest",
@@ -301,9 +301,9 @@ def _queue_literature_discovery_for_resolved_compound(
     canonical: str,
 ) -> None:
     from core.models.literature_discovery_target import DiscoveryReason
-    from literature.discovery import enqueue_literature_discovery_for_compound
+    from literature.discovery import emit_literature_discovery_for_compound
 
-    enqueue_literature_discovery_for_compound(
+    emit_literature_discovery_for_compound(
         compound,
         DiscoveryReason.NEW_COMPOUND,
         triggered_by="formulation_ingest",

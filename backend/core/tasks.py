@@ -85,22 +85,29 @@ def daily_literature_discovery_task(
     *,
     compound_limit: int = 25,
     backfill_limit: int | None = -1,
+    event_limit: int = 100,
     max_articles: int = 5,
     max_related: int = 3,
     enrich: bool = False,
 ) -> dict:
-    """Celery wrapper for compound-level literature discovery queue drain."""
-    from literature.discovery import LiteratureDiscoveryRunner
+    """Celery wrapper for discovery event dispatch and work-item queue drain."""
+    from literature.discovery import (
+        LiteratureDiscoveryRunner,
+        dispatch_pending_literature_discovery_events,
+    )
 
     effective_backfill = None if backfill_limit is None or backfill_limit < 0 else backfill_limit
+    event_result = dispatch_pending_literature_discovery_events(limit=event_limit)
 
-    return LiteratureDiscoveryRunner(
+    result = LiteratureDiscoveryRunner(
         compound_limit=compound_limit,
         backfill_limit=effective_backfill,
         max_articles=max_articles,
         max_related=max_related,
         enrich=enrich,
     ).run()
+    result["events"] = event_result
+    return result
 
 
 def _load_or_create_formulation(

@@ -318,7 +318,7 @@ def _get_or_create_compound(
     from core.models.literature_discovery_target import DiscoveryReason
     from literature.discovery import (
         PRODUCT_DISCOVERY_TRIGGERED_BY,
-        enqueue_literature_discovery_for_compound,
+        emit_literature_discovery_for_compound,
     )
 
     from_product = asserted_by in PRODUCT_DISCOVERY_TRIGGERED_BY
@@ -328,7 +328,7 @@ def _get_or_create_compound(
             if classification.entity_type == EntityType.MIXTURE
             else DiscoveryReason.NEW_COMPOUND
         )
-        enqueue_literature_discovery_for_compound(
+        emit_literature_discovery_for_compound(
             compound,
             reason,
             triggered_by=asserted_by,
