@@ -77,6 +77,55 @@ class AuthApiTests(TestCase):
 
         self.assertEqual(response.status_code, 400)
 
+    def test_me_patch_updates_display_name(self):
+        user = get_user_model().objects.create_user(
+            username="display-user",
+            email="display-user@example.com",
+            password="strong-test-pass-123",
+        )
+        Profile.objects.create(user=user, display_name="Old Name")
+        self.client.force_authenticate(user=user)
+
+        response = self.client.patch(
+            reverse("auth-me"),
+            {"display_name": "New Name"},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["user"]["display_name"], "New Name")
+        self.assertEqual(
+            self.client.get(reverse("auth-me")).data["user"]["display_name"],
+            "New Name",
+        )
+
+    def test_me_patch_requires_authentication(self):
+        response = self.client.patch(
+            reverse("auth-me"),
+            {"display_name": "New Name"},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 401)
+
+    def test_me_patch_rejects_long_display_name(self):
+        user = get_user_model().objects.create_user(
+            username="long-name-user",
+            email="long-name-user@example.com",
+            password="strong-test-pass-123",
+        )
+        Profile.objects.create(user=user, display_name="Old Name")
+        self.client.force_authenticate(user=user)
+
+        response = self.client.patch(
+            reverse("auth-me"),
+            {"display_name": "N" * 129},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(Profile.objects.get(user=user).display_name, "Old Name")
+
     def test_login_sets_csrf_cookie_for_session_authenticated_writes(self):
         user = get_user_model().objects.create_user(
             username="csrf-user",

@@ -10,6 +10,10 @@ export type AuthResponse = {
   user: AuthUser;
 };
 
+export type UpdateMePayload = {
+  display_name: string;
+};
+
 export type SignupPayload = {
   email: string;
   password: string;
@@ -343,6 +347,17 @@ async function requestJson<T>(
 
 export function getMe(): Promise<AuthResponse> {
   return requestJson<AuthResponse>("/api/auth/me", {}, "Please log in.");
+}
+
+export function updateMe(payload: UpdateMePayload): Promise<AuthResponse> {
+  return requestJson<AuthResponse>(
+    "/api/auth/me",
+    {
+      method: "PATCH",
+      body: JSON.stringify(payload),
+    },
+    "Could not update your profile.",
+  );
 }
 
 export function signup(payload: SignupPayload): Promise<AuthResponse> {
