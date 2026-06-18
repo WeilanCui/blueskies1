@@ -13,6 +13,7 @@ type AppFrameProps = {
 
 const appRoutes: Array<{ prefix: string; active: AppTabNavActive }> = [
   { prefix: "/home", active: "home" },
+  { prefix: "/profile", active: "home" },
   { prefix: "/scan", active: "scan" },
   { prefix: "/routine", active: "routine" },
   { prefix: "/reactions", active: "reactions" },
