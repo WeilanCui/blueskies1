@@ -69,6 +69,7 @@ def ingest_compound(
     max_articles: int = 10,
     max_related: int = 5,
     with_pubmed: bool = True,
+    create_related_compounds: bool = False,
     enrich: bool = False,
     extractor: str | None = None,
     asserted_by: str = "ingest_compound",
@@ -92,6 +93,7 @@ def ingest_compound(
             max_degree=max_degree,
             max_articles=max_articles,
             max_related=max_related,
+            create_related_compounds=create_related_compounds,
             asserted_by=asserted_by,
         )
 
@@ -113,7 +115,10 @@ def _get_or_create_compound(name: str) -> Compound:
         canonical_inci=canonical,
         defaults={"display_name": name.strip()},
     )
-    apply_entity_classification(compound, asserted_by="ingest_compound")
+    apply_entity_classification(
+        compound,
+        asserted_by="ingest_compound",
+    )
     return compound
 
 
@@ -176,15 +181,21 @@ def _ingest_literature(
     max_degree: int,
     max_articles: int,
     max_related: int,
+    create_related_compounds: bool,
     asserted_by: str,
 ) -> None:
     articles = _safe_search(name, max_articles, result)
-    related_names: list[str] = []
 
     for article in articles:
         reference = _upsert_reference(article)
         _link_literature(compound, reference, article, name, degree=0)
         result.articles_linked += 1
+
+    if not create_related_compounds:
+        return
+
+    related_names: list[str] = []
+    for article in articles:
         related_names.extend(article.substances)
 
     # Build degree-1 co-mention relationships from substances.

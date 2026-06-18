@@ -1,6 +1,7 @@
 from pathlib import Path
 
 import environ
+from celery.schedules import crontab
 from django.core.exceptions import ImproperlyConfigured
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -153,3 +154,20 @@ CELERY_RESULT_BACKEND = env("CELERY_RESULT_BACKEND", default="redis://redis:6379
 CELERY_ACCEPT_CONTENT = ["json"]
 CELERY_TASK_SERIALIZER = "json"
 CELERY_RESULT_SERIALIZER = "json"
+CELERY_BEAT_SCHEDULE = {
+    "daily-literature-discovery": {
+        "task": "core.tasks.daily_literature_discovery_task",
+        "schedule": crontab(
+            minute=env.int("LITERATURE_DAILY_MINUTE", default=15),
+            hour=env.int("LITERATURE_DAILY_HOUR", default=3),
+        ),
+        "kwargs": {
+            "compound_limit": env.int("LITERATURE_DAILY_COMPOUND_LIMIT", default=25),
+            "backfill_limit": env.int("LITERATURE_DAILY_BACKFILL_LIMIT", default=-1),
+            "event_limit": env.int("LITERATURE_DAILY_EVENT_LIMIT", default=100),
+            "max_articles": env.int("LITERATURE_DAILY_MAX_ARTICLES", default=5),
+            "max_related": env.int("LITERATURE_DAILY_MAX_RELATED", default=3),
+            "enrich": env.bool("LITERATURE_DAILY_ENRICH", default=False),
+        },
+    },
+}

@@ -235,7 +235,11 @@ class IngestOrchestratorTests(TestCase):
         ), mock.patch.object(
             pubmed_client, "efetch", return_value=[article]
         ):
-            result = ingest_compound("1,2-Hexanediol", max_degree=1)
+            result = ingest_compound(
+                "1,2-Hexanediol",
+                max_degree=1,
+                create_related_compounds=True,
+            )
 
         compound = Compound.objects.get(canonical_inci="1,2-HEXANEDIOL")
         reference = LiteratureReference.objects.get(pmid="39203006")
@@ -269,6 +273,24 @@ class IngestOrchestratorTests(TestCase):
         )
         # Umbrella term filtered out.
         self.assertNotIn("COSMETICS", result.related_compounds)
+
+    def test_literature_ingest_does_not_create_related_compounds_by_default(self):
+        [article] = pubmed_client.parse_efetch_xml(XML_SUGARCANE)
+        with mock.patch.object(
+            pubchem_client, "fetch_compound", return_value=self._hex_record
+        ), mock.patch.object(
+            pubmed_client, "esearch", return_value=["39203006"]
+        ), mock.patch.object(
+            pubmed_client, "efetch", return_value=[article]
+        ):
+            result = ingest_compound("1,2-Hexanediol", max_degree=1)
+
+        self.assertEqual(result.articles_linked, 1)
+        self.assertEqual(result.related_compounds, [])
+        self.assertFalse(
+            Compound.objects.filter(canonical_inci="PLANT EXTRACTS").exists()
+        )
+        self.assertFalse(CompoundRelationship.objects.exists())
 
     def test_subject_paper_classified_as_side_effect_family(self):
         [article] = pubmed_client.parse_efetch_xml(XML_HEXANEDIOL)

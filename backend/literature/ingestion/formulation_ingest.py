@@ -109,7 +109,7 @@ def ingest_product_by_barcode(barcode: str) -> BarcodeScanResult:
                 if not name:
                     continue
                 try:
-                    compound, parse_status = resolve_compound(name)
+                    compound, parse_status = resolve_compound(name, from_product=True)
                 except Exception as exc:  # noqa: BLE001
                     logger.warning("Could not resolve compound %r: %s", name, exc)
                     compound = None
@@ -236,12 +236,23 @@ def _normalize_ingredient_token(token: str) -> str:
     return token
 
 
-def resolve_compound(name: str) -> tuple[Compound, str]:
+def resolve_compound(
+    name: str,
+    *,
+    from_product: bool = False,
+    queue_discovery: bool = True,
+) -> tuple[Compound, str]:
     """Match an ingredient to an existing compound or create a new one."""
     canonical = " ".join(name.upper().split())
+    should_queue = from_product and queue_discovery
 
     compound = Compound.objects.filter(canonical_inci=canonical).first()
     if compound:
+        if should_queue:
+            _queue_literature_discovery_for_resolved_compound(
+                compound,
+                canonical=canonical,
+            )
         return compound, "matched"
 
     alias = (
@@ -250,14 +261,54 @@ def resolve_compound(name: str) -> tuple[Compound, str]:
         .first()
     )
     if alias:
+        if should_queue:
+            _queue_literature_discovery_for_resolved_compound(
+                alias.compound,
+                canonical=canonical,
+            )
         return alias.compound, "matched"
 
     compound = Compound.objects.create(
         canonical_inci=canonical,
         display_name=name.strip(),
     )
-    apply_entity_classification(compound, asserted_by="formulation_ingest")
+    classification = apply_entity_classification(
+        compound,
+        asserted_by="formulation_ingest",
+    )
+    if should_queue:
+        from core.models import EntityType
+        from core.models.literature_discovery_target import DiscoveryReason
+        from literature.discovery import emit_literature_discovery_for_compound
+
+        reason = (
+            DiscoveryReason.NEW_MIXTURE
+            if classification.entity_type == EntityType.MIXTURE
+            else DiscoveryReason.NEW_COMPOUND
+        )
+        emit_literature_discovery_for_compound(
+            compound,
+            reason,
+            triggered_by="formulation_ingest",
+            source_ref=f"resolve_compound:{canonical}",
+        )
     return compound, "unmatched"
+
+
+def _queue_literature_discovery_for_resolved_compound(
+    compound: Compound,
+    *,
+    canonical: str,
+) -> None:
+    from core.models.literature_discovery_target import DiscoveryReason
+    from literature.discovery import emit_literature_discovery_for_compound
+
+    emit_literature_discovery_for_compound(
+        compound,
+        DiscoveryReason.NEW_COMPOUND,
+        triggered_by="formulation_ingest",
+        source_ref=f"resolve_compound:{canonical}",
+    )
 
 
 def create_formulation(
@@ -265,6 +316,7 @@ def create_formulation(
     raw_inci_text: str,
     *,
     brand: str = "",
+    queue_discovery: bool = True,
 ) -> Formulation:
     """Persist a formulation and parsed ingredient rows without running enrichment."""
     ingredient_names = parse_inci_list(raw_inci_text)
@@ -277,7 +329,11 @@ def create_formulation(
     )
 
     for position, name in enumerate(ingredient_names, start=1):
-        compound, parse_status = resolve_compound(name)
+        compound, parse_status = resolve_compound(
+            name,
+            from_product=True,
+            queue_discovery=queue_discovery,
+        )
         FormulationIngredient.objects.create(
             formulation=formulation,
             position=position,
@@ -349,7 +405,12 @@ def ingest_formulation(
     max_articles: int = 5,
 ) -> FormulationIngestResult:
     """Create a formulation and enrich all ingredients in one call."""
-    formulation = create_formulation(product_name, raw_inci_text, brand=brand)
+    formulation = create_formulation(
+        product_name,
+        raw_inci_text,
+        brand=brand,
+        queue_discovery=False,
+    )
     return ingest_formulation_ingredients(
         formulation.pk,
         with_pubmed=with_pubmed,
@@ -373,7 +434,11 @@ def _ingest_ingredient(
     )
 
     if compound is None:
-        compound, parse_status = resolve_compound(name)
+        compound, parse_status = resolve_compound(
+            name,
+            from_product=True,
+            queue_discovery=False,
+        )
         row.compound = compound
         row.parse_status = parse_status
         row.save(update_fields=["compound", "parse_status"])
@@ -383,6 +448,7 @@ def _ingest_ingredient(
     inci_result = ingest_inci_ingredient(
         name,
         asserted_by="formulation_ingest",
+        queue_discovery=False,
     )
     result.inci_properties = inci_result.properties_written
     result.errors.extend(inci_result.errors)

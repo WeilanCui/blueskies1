@@ -17,7 +17,9 @@ from core.models import (
     GlossaryTerm,
     InteractionAssertion,
     InteractionRule,
+    LiteratureDiscoveryEvent,
     LiteratureReference,
+    LiteratureDiscoveryTarget,
     Location,
     Profile,
     ProfileConstraint,
@@ -80,6 +82,7 @@ class CompoundAdmin(admin.ModelAdmin):
         "enrichment_status",
         "structure_resolvable",
     )
+    readonly_fields = ('created_at','updated_at') 
     search_fields = ("canonical_inci", "display_name", "primary_cas")
     list_filter = ("entity_type", "enrichment_status")
     inlines = [
@@ -303,6 +306,61 @@ class CompoundLiteratureInline(admin.TabularInline):
         "relationship_degree",
         "confidence",
     )
+
+
+@admin.register(LiteratureDiscoveryTarget)
+class LiteratureDiscoveryTargetAdmin(admin.ModelAdmin):
+    list_display = (
+        "target_type",
+        "search_label",
+        "reason",
+        "status",
+        "priority",
+        "attempt_count",
+        "triggered_by",
+        "last_run_at",
+        "created_at",
+    )
+    list_filter = ("target_type", "status", "reason", "triggered_by")
+    search_fields = (
+        "search_label",
+        "compound__canonical_inci",
+        "formulation__product__name",
+        "product__name",
+        "source_ref",
+        "last_error",
+    )
+    readonly_fields = (
+        "created_at",
+        "updated_at",
+        "last_run_at",
+        "completed_at",
+    )
+
+
+@admin.register(LiteratureDiscoveryEvent)
+class LiteratureDiscoveryEventAdmin(admin.ModelAdmin):
+    list_display = (
+        "event_type",
+        "target_type",
+        "search_label",
+        "status",
+        "priority",
+        "triggered_by",
+        "processed_at",
+        "created_at",
+    )
+    list_filter = ("event_type", "target_type", "status", "triggered_by")
+    search_fields = (
+        "search_label",
+        "dedupe_key",
+        "compound__canonical_inci",
+        "formulation__product__name",
+        "product__name",
+        "source_ref",
+        "last_error",
+    )
+    readonly_fields = ("created_at", "updated_at", "processed_at")
 
 
 @admin.register(LiteratureReference)

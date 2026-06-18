@@ -1,9 +1,16 @@
+from unittest import mock
+
 from django.test import TestCase
 
-from literature.ingestion.formulation_ingest import parse_inci_list, resolve_compound
-from core.models import Compound, FormulationIngredient
+from core.models import Compound, FormulationIngredient, LiteratureDiscoveryTarget
+from literature.ingestion.formulation_ingest import (
+    ingest_formulation,
+    parse_inci_list,
+    resolve_compound,
+)
 from core.models.product import Product
 from literature.seeds.loader import upsert_property_definitions
+from types import SimpleNamespace
 
 
 class ParseInciListTests(TestCase):
@@ -57,3 +64,32 @@ class CreateFormulationTests(TestCase):
         self.assertEqual(formulation.product.name, "Test Serum")
         self.assertEqual(formulation.product.brand.name, "Blueskies")
         self.assertEqual(FormulationIngredient.objects.filter(formulation=formulation).count(), 2)
+
+
+class IngestFormulationTests(TestCase):
+    def setUp(self):
+        upsert_property_definitions()
+
+    @mock.patch("literature.ingestion.formulation_ingest.ingest_compound")
+    @mock.patch("literature.ingestion.formulation_ingest.ingest_inci_ingredient")
+    def test_sync_ingest_does_not_enqueue_discovery_targets(
+        self,
+        mock_ingest_inci,
+        mock_ingest_compound,
+    ):
+        mock_ingest_inci.return_value = SimpleNamespace(
+            properties_written=1,
+            errors=[],
+        )
+        mock_ingest_compound.return_value = SimpleNamespace(
+            descriptors_written=2,
+            articles_linked=3,
+            errors=[],
+        )
+
+        ingest_formulation("Test Serum", "Retinol, Glycerin", brand="Blueskies")
+
+        self.assertFalse(LiteratureDiscoveryTarget.objects.exists())
+        self.assertEqual(mock_ingest_compound.call_count, 2)
+        for call in mock_ingest_inci.call_args_list:
+            self.assertFalse(call.kwargs.get("queue_discovery", True))
