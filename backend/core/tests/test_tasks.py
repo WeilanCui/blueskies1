@@ -10,6 +10,7 @@ from core.models import (
     Formulation,
     FormulationIngredient,
     LiteratureDiscoveryTarget,
+    PRODUCT_FORMULATION_DISCOVERY_PRIORITY,
 )
 from core.tasks import daily_literature_discovery_task, enrich_formulation_ingredients
 from literature.seeds.loader import upsert_property_definitions
@@ -101,7 +102,7 @@ class DailyLiteratureDiscoveryTaskTests(TestCase):
 
         mock_runner_cls.assert_called_once_with(
             compound_limit=10,
-            backfill_limit=0,
+            backfill_limit=None,
             max_articles=3,
             max_related=3,
             enrich=False,
@@ -122,6 +123,8 @@ class DailyLiteratureDiscoveryTaskTests(TestCase):
         LiteratureDiscoveryTarget.objects.create(
             compound=compound,
             reason=DiscoveryReason.NEW_COMPOUND,
+            triggered_by="formulation_ingest",
+            priority=PRODUCT_FORMULATION_DISCOVERY_PRIORITY,
         )
 
         result = daily_literature_discovery_task(

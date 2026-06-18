@@ -163,7 +163,7 @@ CELERY_BEAT_SCHEDULE = {
         ),
         "kwargs": {
             "compound_limit": env.int("LITERATURE_DAILY_COMPOUND_LIMIT", default=25),
-            "backfill_limit": env.int("LITERATURE_DAILY_BACKFILL_LIMIT", default=0),
+            "backfill_limit": env.int("LITERATURE_DAILY_BACKFILL_LIMIT", default=-1),
             "max_articles": env.int("LITERATURE_DAILY_MAX_ARTICLES", default=5),
             "max_related": env.int("LITERATURE_DAILY_MAX_RELATED", default=3),
             "enrich": env.bool("LITERATURE_DAILY_ENRICH", default=False),

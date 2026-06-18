@@ -123,6 +123,8 @@ class LiteratureDiscoveryRunnerTests(TestCase):
         target = LiteratureDiscoveryTarget.objects.create(
             compound=compound,
             reason=DiscoveryReason.NEW_COMPOUND,
+            triggered_by="formulation_ingest",
+            priority=PRODUCT_FORMULATION_DISCOVERY_PRIORITY,
         )
 
         def ingest(name, **kwargs):
@@ -151,6 +153,8 @@ class LiteratureDiscoveryRunnerTests(TestCase):
         target = LiteratureDiscoveryTarget.objects.create(
             compound=compound,
             reason=DiscoveryReason.NEW_COMPOUND,
+            triggered_by="formulation_ingest",
+            priority=PRODUCT_FORMULATION_DISCOVERY_PRIORITY,
         )
 
         def ingest(name, **kwargs):
@@ -182,6 +186,8 @@ class LiteratureDiscoveryRunnerTests(TestCase):
         target = LiteratureDiscoveryTarget.objects.create(
             compound=compound,
             reason=DiscoveryReason.NEW_COMPOUND,
+            triggered_by="formulation_ingest",
+            priority=PRODUCT_FORMULATION_DISCOVERY_PRIORITY,
         )
 
         def ingest(name, **kwargs):
@@ -208,6 +214,218 @@ class LiteratureDiscoveryRunnerTests(TestCase):
         target.refresh_from_db()
         self.assertEqual(target.attempt_count, 3)
         self.assertEqual(target.status, DiscoveryTargetStatus.SKIPPED)
+
+    def test_runner_skips_ingest_compound_only_pending_targets(self):
+        noise = Compound.objects.create(
+            canonical_inci="ORGANOPHOSPHORUS COMPOUNDS",
+            display_name="Organophosphorus Compounds",
+        )
+        LiteratureDiscoveryTarget.objects.create(
+            compound=noise,
+            reason=DiscoveryReason.NEW_COMPOUND,
+            triggered_by="ingest_compound",
+        )
+        product_compound = Compound.objects.create(
+            canonical_inci="NIACINAMIDE",
+            display_name="Niacinamide",
+        )
+        product_target = LiteratureDiscoveryTarget.objects.create(
+            compound=product_compound,
+            reason=DiscoveryReason.NEW_COMPOUND,
+            priority=PRODUCT_FORMULATION_DISCOVERY_PRIORITY,
+            triggered_by="formulation_ingest",
+        )
+
+        processed: list[str] = []
+
+        def ingest(name, **kwargs):
+            processed.append(name)
+            return SimpleNamespace(
+                articles_linked=1,
+                related_compounds=[],
+                errors=[],
+            )
+
+        runner = LiteratureDiscoveryRunner(
+            compound_limit=5,
+            product_targets_only=True,
+            ingest_compound_func=ingest,
+        )
+        result = runner.run()
+
+        self.assertEqual(result["targets_processed"], 1)
+        self.assertEqual(processed, ["Niacinamide"])
+        product_target.refresh_from_db()
+        noise_target = LiteratureDiscoveryTarget.objects.get(compound=noise)
+        self.assertEqual(product_target.status, DiscoveryTargetStatus.COMPLETED)
+        self.assertEqual(noise_target.status, DiscoveryTargetStatus.PENDING)
+
+    def test_runner_product_only_false_processes_ingest_compound_targets(self):
+        compound = Compound.objects.create(
+            canonical_inci="ORGANOPHOSPHORUS COMPOUNDS",
+            display_name="Organophosphorus Compounds",
+        )
+        target = LiteratureDiscoveryTarget.objects.create(
+            compound=compound,
+            reason=DiscoveryReason.NEW_COMPOUND,
+            triggered_by="ingest_compound",
+        )
+
+        runner = LiteratureDiscoveryRunner(
+            compound_limit=5,
+            product_targets_only=False,
+            ingest_compound_func=lambda name, **kwargs: SimpleNamespace(
+                articles_linked=0,
+                related_compounds=[],
+                errors=[],
+            ),
+        )
+        result = runner.run()
+
+        self.assertEqual(result["targets_processed"], 1)
+        target.refresh_from_db()
+        self.assertEqual(target.status, DiscoveryTargetStatus.COMPLETED)
+
+    def test_runner_backfills_pending_formulation_compounds_when_queue_empty(self):
+        from core.models import Product
+        from core.models.brand import Brand
+
+        compound = Compound.objects.create(
+            canonical_inci="PANTHENOL",
+            display_name="Panthenol",
+            enrichment_status=EnrichmentStatus.PENDING,
+        )
+        brand = Brand.objects.create(name="Test Brand")
+        product_obj = Product.objects.create(brand=brand, name="Test Serum")
+        formulation = Formulation.objects.create(
+            product=product_obj,
+            raw_inci_text="Panthenol",
+        )
+        FormulationIngredient.objects.create(
+            formulation=formulation,
+            position=1,
+            raw_text="Panthenol",
+            compound=compound,
+        )
+
+        processed: list[str] = []
+
+        def ingest(name, **kwargs):
+            processed.append(name)
+            return SimpleNamespace(
+                articles_linked=1,
+                related_compounds=[],
+                errors=[],
+            )
+
+        runner = LiteratureDiscoveryRunner(
+            compound_limit=3,
+            backfill_limit=None,
+            backfill_formulation_only=True,
+            ingest_compound_func=ingest,
+        )
+        result = runner.run()
+
+        self.assertEqual(result["targets_processed"], 0)
+        self.assertEqual(result["backfill_processed"], 1)
+        self.assertEqual(processed, ["Panthenol"])
+
+    def test_enqueue_pending_compounds_for_literature(self):
+        from literature.discovery import enqueue_pending_compounds_for_literature
+
+        compound = Compound.objects.create(
+            canonical_inci="ALLANTOIN",
+            display_name="Allantoin",
+            enrichment_status=EnrichmentStatus.PENDING,
+        )
+        from core.models import Product
+        from core.models.brand import Brand
+
+        brand = Brand.objects.create(name="Test Brand")
+        product_obj = Product.objects.create(brand=brand, name="Test Cream")
+        formulation = Formulation.objects.create(
+            product=product_obj,
+            raw_inci_text="Allantoin",
+        )
+        FormulationIngredient.objects.create(
+            formulation=formulation,
+            position=1,
+            raw_text="Allantoin",
+            compound=compound,
+        )
+
+        enqueued = enqueue_pending_compounds_for_literature(5)
+        self.assertEqual(enqueued, 1)
+        target = LiteratureDiscoveryTarget.objects.get(compound=compound)
+        self.assertEqual(target.status, DiscoveryTargetStatus.PENDING)
+        self.assertEqual(target.triggered_by, "formulation_ingest")
+
+    def test_requeue_stale_running_targets(self):
+        from datetime import timedelta
+
+        from django.utils import timezone
+
+        from literature.discovery import requeue_stale_running_targets
+
+        compound = Compound.objects.create(
+            canonical_inci="STALEINE",
+            display_name="Staleine",
+        )
+        stale = LiteratureDiscoveryTarget.objects.create(
+            compound=compound,
+            reason=DiscoveryReason.NEW_COMPOUND,
+            status=DiscoveryTargetStatus.RUNNING,
+            triggered_by="formulation_ingest",
+            last_run_at=timezone.now() - timedelta(hours=2),
+        )
+        fresh = LiteratureDiscoveryTarget.objects.create(
+            compound=Compound.objects.create(
+                canonical_inci="FRESHINE",
+                display_name="Freshine",
+            ),
+            reason=DiscoveryReason.NEW_COMPOUND,
+            status=DiscoveryTargetStatus.RUNNING,
+            triggered_by="formulation_ingest",
+            last_run_at=timezone.now(),
+        )
+
+        requeued = requeue_stale_running_targets(stale_after_seconds=3600)
+
+        self.assertEqual(requeued, 1)
+        stale.refresh_from_db()
+        fresh.refresh_from_db()
+        self.assertEqual(stale.status, DiscoveryTargetStatus.PENDING)
+        self.assertEqual(fresh.status, DiscoveryTargetStatus.RUNNING)
+
+    def test_enqueue_recovers_stale_running_target_for_compound(self):
+        from datetime import timedelta
+
+        from django.utils import timezone
+
+        compound = Compound.objects.create(
+            canonical_inci="RECOVERINE",
+            display_name="Recoverine",
+        )
+        target = LiteratureDiscoveryTarget.objects.create(
+            compound=compound,
+            reason=DiscoveryReason.NEW_COMPOUND,
+            status=DiscoveryTargetStatus.RUNNING,
+            triggered_by="formulation_ingest",
+            priority=0,
+            last_run_at=timezone.now() - timedelta(hours=2),
+        )
+
+        _, created = enqueue_literature_discovery_for_compound(
+            compound,
+            DiscoveryReason.NEW_COMPOUND,
+            triggered_by="formulation_ingest",
+            priority=PRODUCT_FORMULATION_DISCOVERY_PRIORITY,
+        )
+
+        self.assertFalse(created)
+        target.refresh_from_db()
+        self.assertEqual(target.status, DiscoveryTargetStatus.PENDING)
+        self.assertEqual(target.priority, PRODUCT_FORMULATION_DISCOVERY_PRIORITY)
 
     def test_candidate_compounds_excludes_active_queue_targets(self):
         queued = Compound.objects.create(

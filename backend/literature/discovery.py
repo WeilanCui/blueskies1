@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
+from datetime import timedelta
 from typing import Any, Callable
 
 from django.db import IntegrityError, transaction
@@ -48,6 +49,8 @@ def enqueue_literature_discovery_for_compound(
     triggered_by: str = "",
 ) -> tuple[LiteratureDiscoveryTarget, bool]:
     """Queue compound-level literature discovery; idempotent while pending/running."""
+    requeue_stale_running_targets(compound_id=compound.pk)
+
     if priority is None:
         priority = discovery_priority_for_triggered_by(triggered_by)
 
@@ -98,11 +101,38 @@ def enqueue_literature_discovery_for_compound(
     return target, True
 
 
+DEFAULT_STALE_RUNNING_SECONDS = 3600
+
+
+def product_discovery_target_filter() -> Q:
+    """Targets tied to scanned/formulated products, not literature co-mention stubs."""
+    on_formulation = FormulationIngredient.objects.filter(compound_id=OuterRef("compound_id"))
+    return Q(triggered_by__in=PRODUCT_DISCOVERY_TRIGGERED_BY) | Q(
+        Exists(on_formulation)
+    )
+
+
+def requeue_stale_running_targets(
+    *,
+    stale_after_seconds: int = DEFAULT_STALE_RUNNING_SECONDS,
+    compound_id: int | None = None,
+) -> int:
+    """Recover targets left RUNNING after a crashed worker."""
+    cutoff = timezone.now() - timedelta(seconds=stale_after_seconds)
+    queryset = LiteratureDiscoveryTarget.objects.filter(
+        status=DiscoveryTargetStatus.RUNNING,
+    ).filter(Q(last_run_at__lt=cutoff) | Q(last_run_at__isnull=True))
+    if compound_id is not None:
+        queryset = queryset.filter(compound_id=compound_id)
+    return queryset.update(status=DiscoveryTargetStatus.PENDING)
+
+
 def candidate_compounds_for_literature(
     *,
     limit: int,
     exclude_compound_ids: set[int] | None = None,
     exclude_canonical_inci: tuple[str, ...] = DEFAULT_EXCLUDED_CANONICAL_INCI,
+    formulation_only: bool = False,
 ):
     """Backfill: compounds that still need a literature search."""
     if limit <= 0:
@@ -133,9 +163,34 @@ def candidate_compounds_for_literature(
         .exclude(canonical_inci__in=exclude_canonical_inci)
         .order_by("-on_formulation", "updated_at", "id")
     )
+    if formulation_only:
+        candidates = candidates.filter(on_formulation=True)
     if exclude_compound_ids:
         candidates = candidates.exclude(pk__in=exclude_compound_ids)
     return candidates[:limit]
+
+
+def enqueue_pending_compounds_for_literature(
+    limit: int,
+    *,
+    formulation_only: bool = True,
+) -> int:
+    """Add pending compounds to the discovery queue (formulation ingredients first)."""
+    enqueued = 0
+    for compound in candidate_compounds_for_literature(
+        limit=limit,
+        formulation_only=formulation_only,
+    ):
+        _, created = enqueue_literature_discovery_for_compound(
+            compound,
+            DiscoveryReason.NEW_COMPOUND,
+            priority=PRODUCT_FORMULATION_DISCOVERY_PRIORITY,
+            triggered_by="formulation_ingest",
+            source_ref=f"enqueue_pending:{compound.pk}",
+        )
+        if created:
+            enqueued += 1
+    return enqueued
 
 
 def summarize_compound_result(compound: Compound, name: str, result: Any) -> dict:
@@ -154,11 +209,14 @@ class LiteratureDiscoveryRunner:
     """Drain compound discovery queue sequentially, then optional backfill."""
 
     compound_limit: int = 25
-    backfill_limit: int = 0
+    backfill_limit: int | None = None
     max_articles: int = 5
     max_related: int = 3
     enrich: bool = False
     max_attempts: int = DEFAULT_MAX_DISCOVERY_ATTEMPTS
+    product_targets_only: bool = True
+    backfill_formulation_only: bool = True
+    stale_running_seconds: int = DEFAULT_STALE_RUNNING_SECONDS
     ingest_compound_func: Callable[..., Any] | None = None
 
     def __post_init__(self) -> None:
@@ -173,7 +231,18 @@ class LiteratureDiscoveryRunner:
         errors: list[str] = []
         processed_compound_ids: set[int] = set()
 
+        requeued = requeue_stale_running_targets(
+            stale_after_seconds=self.stale_running_seconds,
+        )
+        if requeued:
+            logger.info("Requeued %s stale literature discovery targets", requeued)
+
         targets = list(self._pending_targets()[: self.compound_limit])
+        if not targets and self.product_targets_only:
+            logger.info(
+                "No pending product/formulation literature discovery targets; "
+                "skipping ingest_compound-only queue items"
+            )
         for target in targets:
             try:
                 queue_results.append(self.process_target(target))
@@ -186,11 +255,15 @@ class LiteratureDiscoveryRunner:
                 errors.append(f"target:{target.pk}:{exc}")
 
         remaining = max(0, self.compound_limit - len(queue_results))
-        backfill_cap = min(remaining, self.backfill_limit)
+        if self.backfill_limit is None:
+            backfill_cap = remaining
+        else:
+            backfill_cap = min(remaining, self.backfill_limit)
         if backfill_cap > 0:
             compounds = candidate_compounds_for_literature(
                 limit=backfill_cap,
                 exclude_compound_ids=processed_compound_ids,
+                formulation_only=self.backfill_formulation_only,
             )
             for compound in compounds:
                 try:
@@ -206,15 +279,31 @@ class LiteratureDiscoveryRunner:
             "targets_processed": len(queue_results),
             "backfill_processed": len(backfill_results),
             "compounds_processed": len(queue_results) + len(backfill_results),
+            "stale_targets_requeued": requeued,
             "targets": queue_results,
             "backfill": backfill_results,
             "errors": errors,
         }
 
     def _pending_targets(self):
-        return LiteratureDiscoveryTarget.objects.filter(
-            status=DiscoveryTargetStatus.PENDING,
-        ).select_related("compound")
+        on_formulation = FormulationIngredient.objects.filter(
+            compound_id=OuterRef("compound_id"),
+        )
+        queryset = (
+            LiteratureDiscoveryTarget.objects.filter(
+                status=DiscoveryTargetStatus.PENDING,
+            )
+            .annotate(on_formulation=Exists(on_formulation))
+            .select_related("compound")
+        )
+        if self.product_targets_only:
+            queryset = queryset.filter(product_discovery_target_filter())
+        return queryset.order_by(
+            "-priority",
+            "-on_formulation",
+            "created_at",
+            "id",
+        )
 
     def process_target(self, target: LiteratureDiscoveryTarget) -> dict:
         claimed = self._claim_target(target)
@@ -269,6 +358,8 @@ class LiteratureDiscoveryRunner:
         locked.status = DiscoveryTargetStatus.RUNNING
         locked.last_run_at = now
         locked.save(update_fields=["status", "last_run_at", "updated_at"])
+        # If the worker dies after this commit, requeue_stale_running_targets()
+        # resets stale RUNNING rows back to PENDING on the next runner/enqueue pass.
 
         compound = locked.compound
         search_name = compound.display_name or compound.canonical_inci

@@ -48,7 +48,7 @@ class LiteratureDiscoveryTarget(models.Model):
         choices=DiscoveryTargetStatus.choices,
         default=DiscoveryTargetStatus.PENDING,
     )
-    priority = models.IntegerField(default=0)
+    priority = models.IntegerField(default=DEFAULT_DISCOVERY_PRIORITY)
     attempt_count = models.PositiveIntegerField(default=0)
     last_error = models.TextField(blank=True)
     last_run_at = models.DateTimeField(null=True, blank=True)
