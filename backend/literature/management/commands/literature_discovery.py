@@ -1,4 +1,4 @@
-from django.core.management.base import BaseCommand
+from django.core.management.base import BaseCommand, CommandError
 
 from literature.discovery import (
     LiteratureDiscoveryRunner,
@@ -6,6 +6,12 @@ from literature.discovery import (
     dispatch_pending_literature_discovery_events,
     enqueue_pending_compounds_for_literature,
 )
+
+
+def _require_non_negative(value: int, flag: str) -> int:
+    if value < 0:
+        raise CommandError(f"{flag} must be zero or greater (got {value}).")
+    return value
 
 
 class Command(BaseCommand):
@@ -61,12 +67,16 @@ class Command(BaseCommand):
         )
 
     def handle(self, *args, **options):
-        limit = options["limit"]
+        limit = _require_non_negative(options["limit"], "--limit")
+        event_limit = _require_non_negative(options["event_limit"], "--event-limit")
+        max_articles = _require_non_negative(options["max_articles"], "--max-articles")
+        max_related = _require_non_negative(options["max_related"], "--max-related")
         formulation_only = not options["include_non_formulation"]
 
-        if options["enqueue"]:
+        if options["enqueue"] is not None:
+            enqueue_limit = _require_non_negative(options["enqueue"], "--enqueue")
             enqueued = enqueue_pending_compounds_for_literature(
-                options["enqueue"],
+                enqueue_limit,
                 formulation_only=formulation_only,
             )
             pending_total = candidate_compounds_for_literature(
@@ -84,15 +94,15 @@ class Command(BaseCommand):
             return
 
         event_result = dispatch_pending_literature_discovery_events(
-            limit=options["event_limit"],
+            limit=event_limit,
         )
 
         backfill_limit = 0 if options["no_backfill"] else None
         runner = LiteratureDiscoveryRunner(
             compound_limit=limit,
             backfill_limit=backfill_limit,
-            max_articles=options["max_articles"],
-            max_related=options["max_related"],
+            max_articles=max_articles,
+            max_related=max_related,
             enrich=options["enrich"],
             product_targets_only=not options["all_targets"],
             backfill_formulation_only=formulation_only,

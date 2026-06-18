@@ -703,7 +703,9 @@ class LiteratureDiscoveryRunner:
                         triggered_by=triggered_by,
                         source_ref=f"literature_backfill:{compound.pk}",
                     )
-                    backfill_results.append(self.process_target(target))
+                    backfill_result = self.process_target(target)
+                    if not backfill_result.get("skipped"):
+                        backfill_results.append(backfill_result)
                 except Exception as exc:  # noqa: BLE001
                     logger.exception(
                         "Literature discovery backfill failed for compound %s",
