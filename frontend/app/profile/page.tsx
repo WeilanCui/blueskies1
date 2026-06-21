@@ -11,6 +11,10 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import { Button } from "../../components/Button";
+import { ConcernPicker } from "../../components/profile/ConcernPicker";
+import { ProfileSection } from "../../components/profile/ProfileSection";
+import { SensitivityOptions } from "../../components/profile/SensitivityOptions";
+import { SkinTypeSelector } from "../../components/profile/SkinTypeSelector";
 import {
   getIntake,
   getMe,
@@ -21,105 +25,17 @@ import {
   type IntakePayload,
   type IntakeResponse,
 } from "../../lib/appApi";
+import {
+  cleanList,
+  formatToken,
+  getSavedSkinTypes,
+  intakeToPayload,
+  skinTypeLabels,
+  toggleValue,
+} from "../../lib/profileForm";
 import styles from "./profile.module.css";
 
 type EditableSection = "identity" | "skinType" | "goal" | "concerns" | "avoid";
-
-const skinTypes = [
-  ["dry", "Dry"],
-  ["oily", "Oily"],
-  ["combination", "Combination"],
-  ["normal", "Normal"],
-  ["sensitive", "Sensitive"],
-  ["unknown", "Not sure"],
-];
-
-const concernSections = [
-  {
-    title: "Breakouts & congestion",
-    items: [
-      ["acne", "Acne"],
-      ["clogged_pores", "Clogged pores"],
-      ["blackheads", "Blackheads"],
-      ["whiteheads", "Whiteheads"],
-    ],
-  },
-  {
-    title: "Sensitivity & inflammation",
-    items: [
-      ["redness", "Redness"],
-      ["stinging", "Stinging or burning"],
-      ["reactive_skin", "Reactive skin"],
-      ["rosacea_prone", "Rosacea-prone"],
-    ],
-  },
-  {
-    title: "Hydration & barrier",
-    items: [
-      ["dryness", "Dryness"],
-      ["dehydration", "Dehydration"],
-      ["flaking", "Flaking"],
-      ["tightness", "Tightness"],
-      ["barrier_damage", "Barrier damage"],
-    ],
-  },
-  {
-    title: "Oil & pores",
-    items: [
-      ["oiliness", "Oiliness"],
-      ["enlarged_pores", "Enlarged pores"],
-      ["shine", "Shine"],
-      ["sebaceous_filaments", "Sebaceous filaments"],
-    ],
-  },
-  {
-    title: "Tone & pigment",
-    items: [
-      ["dark_spots", "Dark spots"],
-      ["hyperpigmentation", "Hyperpigmentation"],
-      ["melasma_prone", "Melasma-prone"],
-      ["post_acne_marks", "Post-acne marks"],
-    ],
-  },
-  {
-    title: "Texture & dullness",
-    items: [
-      ["roughness", "Roughness"],
-      ["bumps", "Bumps"],
-      ["uneven_texture", "Uneven texture"],
-      ["dullness", "Dullness"],
-    ],
-  },
-  {
-    title: "Aging & firmness",
-    items: [
-      ["fine_lines", "Fine lines"],
-      ["wrinkles", "Wrinkles"],
-      ["loss_of_firmness", "Loss of firmness"],
-    ],
-  },
-  {
-    title: "Eye area",
-    items: [
-      ["dark_circles", "Dark circles"],
-      ["puffiness", "Puffiness"],
-      ["eye_fine_lines", "Eye-area fine lines"],
-    ],
-  },
-];
-
-const sensitivityOptions = [
-  "Fragrance",
-  "Essential oils",
-  "Denatured alcohol",
-  "Retinoids",
-  "AHAs / BHAs",
-  "Benzoyl peroxide",
-  "Sulfates",
-  "Lanolin",
-];
-
-const skinTypeLabels = Object.fromEntries(skinTypes);
 
 function profileName(user: AuthUser): string {
   return user.display_name?.trim() || user.username || user.email || "Profile";
@@ -138,103 +54,6 @@ function initialsFor(user: AuthUser): string {
       .slice(0, 2)
       .map((word) => word[0]?.toUpperCase())
       .join("") || "U"
-  );
-}
-
-function formatToken(value: string): string {
-  return value
-    .replaceAll("_", " ")
-    .replace(/\b\w/g, (character) => character.toUpperCase());
-}
-
-function toggleValue(values: string[], value: string): string[] {
-  return values.includes(value)
-    ? values.filter((item) => item !== value)
-    : [...values, value];
-}
-
-function cleanList(values: string[]): string[] {
-  const seen = new Set<string>();
-  const cleaned: string[] = [];
-  for (const item of values) {
-    const value = item.trim();
-    const key = value.toLowerCase();
-    if (!value || seen.has(key)) {
-      continue;
-    }
-    seen.add(key);
-    cleaned.push(value);
-  }
-  return cleaned;
-}
-
-function intakeToPayload(
-  intake: IntakeResponse | undefined,
-  overrides: Partial<IntakePayload> = {},
-): IntakePayload {
-  const skinProfile = intake?.skin_profile;
-  const skinTypes = getSavedSkinTypes(skinProfile);
-
-  return {
-    skin_type: skinProfile?.skin_type ?? "unknown",
-    skin_types: skinTypes.length > 0 ? skinTypes : [skinProfile?.skin_type ?? "unknown"],
-    fitzpatrick_skin_type: skinProfile?.fitzpatrick_skin_type ?? "not_provided",
-    baseline_sensitivity: skinProfile?.baseline_sensitivity ?? null,
-    primary_concerns: skinProfile?.primary_concerns ?? [],
-    goals: skinProfile?.goals ?? [],
-    goals_text: "",
-    pregnancy_status: skinProfile?.pregnancy_status ?? "not_provided",
-    climate: skinProfile?.climate ?? "",
-    routine_notes: skinProfile?.routine_notes ?? "",
-    sensitivities: intake?.sensitivities ?? [],
-    ...overrides,
-  };
-}
-
-function getSavedSkinTypes(
-  skinProfile: IntakeResponse["skin_profile"] | undefined,
-): string[] {
-  if (!skinProfile) {
-    return [];
-  }
-  if (skinProfile.skin_types?.length > 0) {
-    return skinProfile.skin_types;
-  }
-  return skinProfile.skin_type ? [skinProfile.skin_type] : [];
-}
-
-function Section({
-  section,
-  title,
-  children,
-  editingSection,
-  onEdit,
-  editor,
-}: {
-  section: EditableSection;
-  title: string;
-  children: React.ReactNode;
-  editingSection: EditableSection | null;
-  onEdit: (section: EditableSection) => void;
-  editor: React.ReactNode;
-}) {
-  const isEditing = editingSection === section;
-
-  return (
-    <article className={styles.profileSection}>
-      <div className={styles.sectionHeader}>
-        <h2>{title}</h2>
-        <button
-          aria-label={`Edit ${title.toLowerCase()}`}
-          className={styles.iconButton}
-          type="button"
-          onClick={() => onEdit(section)}
-        >
-          <PencilSquareIcon aria-hidden="true" />
-        </button>
-      </div>
-      {isEditing ? editor : <div className={styles.sectionDisplay}>{children}</div>}
-    </article>
   );
 }
 
@@ -427,7 +246,13 @@ export default function ProfilePage() {
       </section>
 
       <section className={styles.profileGrid}>
-        <Section
+        <ProfileSection
+          classNames={{
+            section: styles.profileSection,
+            header: styles.sectionHeader,
+            iconButton: styles.iconButton,
+            display: styles.sectionDisplay,
+          }}
           section="skinType"
           title="Skin type"
           editingSection={editingSection}
@@ -444,21 +269,14 @@ export default function ProfilePage() {
                 });
               }}
             >
-              <div className={styles.skinTypeRows}>
-                {skinTypes.map(([value, label]) => (
-                  <label className={styles.skinTypeOption} key={value}>
-                    <input
-                      checked={skinTypesDraft.includes(value)}
-                      type="checkbox"
-                      value={value}
-                      onChange={() =>
-                        setSkinTypesDraft((current) => toggleValue(current, value))
-                      }
-                    />
-                    <span>{label}</span>
-                  </label>
-                ))}
-              </div>
+              <SkinTypeSelector
+                multiple
+                className={styles.skinTypeRows}
+                name="profile_skin_types"
+                optionClassName={styles.skinTypeOption}
+                values={skinTypesDraft}
+                onChange={setSkinTypesDraft}
+              />
               <div className={styles.editorActions}>
                 <Button type="submit" isDisabled={isSaving}>
                   {intakeMutation.isPending ? "Saving..." : "Save"}
@@ -481,9 +299,15 @@ export default function ProfilePage() {
           ) : (
             <span className={styles.valuePill}>Not saved</span>
           )}
-        </Section>
+        </ProfileSection>
 
-        <Section
+        <ProfileSection
+          classNames={{
+            section: styles.profileSection,
+            header: styles.sectionHeader,
+            iconButton: styles.iconButton,
+            display: styles.sectionDisplay,
+          }}
           section="goal"
           title="Primary goal"
           editingSection={editingSection}
@@ -518,9 +342,15 @@ export default function ProfilePage() {
           }
         >
           <span className={styles.goalPill}>{primaryGoal || "No goal saved"}</span>
-        </Section>
+        </ProfileSection>
 
-        <Section
+        <ProfileSection
+          classNames={{
+            section: styles.profileSection,
+            header: styles.sectionHeader,
+            iconButton: styles.iconButton,
+            display: styles.sectionDisplay,
+          }}
           section="concerns"
           title="Skin concerns"
           editingSection={editingSection}
@@ -532,27 +362,16 @@ export default function ProfilePage() {
                 saveIntakeSection(event, { primary_concerns: concernsDraft })
               }
             >
-              <div className={styles.concernStack}>
-                {concernSections.map((section) => (
-                  <fieldset className={styles.fieldset} key={section.title}>
-                    <legend>{section.title}</legend>
-                    <div className={styles.choiceGrid}>
-                      {section.items.map(([value, label]) => (
-                        <label className={styles.choicePill} key={value}>
-                          <input
-                            checked={concernsDraft.includes(value)}
-                            type="checkbox"
-                            onChange={() =>
-                              setConcernsDraft((current) => toggleValue(current, value))
-                            }
-                          />
-                          <span>{label}</span>
-                        </label>
-                      ))}
-                    </div>
-                  </fieldset>
-                ))}
-              </div>
+              <ConcernPicker
+                classNames={{
+                  stack: styles.concernStack,
+                  fieldset: styles.fieldset,
+                  grid: styles.choiceGrid,
+                  option: styles.choicePill,
+                }}
+                values={concernsDraft}
+                onChange={setConcernsDraft}
+              />
               <div className={styles.editorActions}>
                 <Button type="submit" isDisabled={isSaving}>
                   {intakeMutation.isPending ? "Saving..." : "Save"}
@@ -575,9 +394,15 @@ export default function ProfilePage() {
               <span className={styles.valuePill}>No concerns saved</span>
             )}
           </div>
-        </Section>
+        </ProfileSection>
 
-        <Section
+        <ProfileSection
+          classNames={{
+            section: styles.profileSection,
+            header: styles.sectionHeader,
+            iconButton: styles.iconButton,
+            display: styles.sectionDisplay,
+          }}
           section="avoid"
           title="Ingredients to avoid"
           editingSection={editingSection}
@@ -593,20 +418,14 @@ export default function ProfilePage() {
                 We will flag these in ingredient analysis and exclude products containing
                 them from recommendations.
               </p>
-              <div className={styles.choiceGrid}>
-                {sensitivityOptions.map((item) => (
-                  <label className={styles.choicePill} key={item}>
-                    <input
-                      checked={sensitivitiesDraft.includes(item)}
-                      type="checkbox"
-                      onChange={() =>
-                        setSensitivitiesDraft((current) => toggleValue(current, item))
-                      }
-                    />
-                    <span>{item}</span>
-                  </label>
-                ))}
-              </div>
+              <SensitivityOptions
+                gridClassName={styles.choiceGrid}
+                optionClassName={styles.choicePill}
+                values={sensitivitiesDraft}
+                onToggle={(item) =>
+                  setSensitivitiesDraft((current) => toggleValue(current, item))
+                }
+              />
               <div className={styles.customAdd}>
                 <input
                   type="text"
@@ -664,7 +483,7 @@ export default function ProfilePage() {
           ) : (
             <p className={styles.emptyState}>No ingredients blocked yet.</p>
           )}
-        </Section>
+        </ProfileSection>
       </section>
 
       {(message || error) && (
