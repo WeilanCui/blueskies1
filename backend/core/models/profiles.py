@@ -113,6 +113,7 @@ class SkinProfile(models.Model):
         choices=SkinType.choices,
         default=SkinType.UNKNOWN,
     )
+    skin_types = models.JSONField(default=list, blank=True)
     fitzpatrick_skin_type = models.CharField(
         max_length=32,
         choices=FitzpatrickSkinType.choices,

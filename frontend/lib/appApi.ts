@@ -27,6 +27,7 @@ export type LoginPayload = {
 
 export type IntakePayload = {
   skin_type: string;
+  skin_types: string[];
   fitzpatrick_skin_type: string;
   baseline_sensitivity: number | null;
   primary_concerns: string[];
@@ -43,6 +44,7 @@ export type IntakeResponse = {
   skin_profile: null | {
     id: number;
     skin_type: string;
+    skin_types: string[];
     fitzpatrick_skin_type: string;
     primary_concerns: string[];
     goals: string[];

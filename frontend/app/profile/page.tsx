@@ -173,9 +173,11 @@ function intakeToPayload(
   overrides: Partial<IntakePayload> = {},
 ): IntakePayload {
   const skinProfile = intake?.skin_profile;
+  const skinTypes = getSavedSkinTypes(skinProfile);
 
   return {
     skin_type: skinProfile?.skin_type ?? "unknown",
+    skin_types: skinTypes.length > 0 ? skinTypes : [skinProfile?.skin_type ?? "unknown"],
     fitzpatrick_skin_type: skinProfile?.fitzpatrick_skin_type ?? "not_provided",
     baseline_sensitivity: skinProfile?.baseline_sensitivity ?? null,
     primary_concerns: skinProfile?.primary_concerns ?? [],
@@ -187,6 +189,18 @@ function intakeToPayload(
     sensitivities: intake?.sensitivities ?? [],
     ...overrides,
   };
+}
+
+function getSavedSkinTypes(
+  skinProfile: IntakeResponse["skin_profile"] | undefined,
+): string[] {
+  if (!skinProfile) {
+    return [];
+  }
+  if (skinProfile.skin_types?.length > 0) {
+    return skinProfile.skin_types;
+  }
+  return skinProfile.skin_type ? [skinProfile.skin_type] : [];
 }
 
 function Section({
@@ -229,7 +243,7 @@ export default function ProfilePage() {
   const queryClient = useQueryClient();
   const [editingSection, setEditingSection] = useState<EditableSection | null>(null);
   const [displayNameDraft, setDisplayNameDraft] = useState("");
-  const [skinTypeDraft, setSkinTypeDraft] = useState("unknown");
+  const [skinTypesDraft, setSkinTypesDraft] = useState<string[]>([]);
   const [goalDraft, setGoalDraft] = useState("");
   const [concernsDraft, setConcernsDraft] = useState<string[]>([]);
   const [sensitivitiesDraft, setSensitivitiesDraft] = useState<string[]>([]);
@@ -299,7 +313,7 @@ export default function ProfilePage() {
     const user = meQuery.data?.user;
     const skinProfile = intakeQuery.data?.skin_profile;
     setDisplayNameDraft(user ? profileName(user) : "");
-    setSkinTypeDraft(skinProfile?.skin_type ?? "unknown");
+    setSkinTypesDraft(getSavedSkinTypes(skinProfile));
     setGoalDraft(skinProfile?.goals[0] ?? "");
     setConcernsDraft(skinProfile?.primary_concerns ?? []);
     setSensitivitiesDraft(intakeQuery.data?.sensitivities ?? []);
@@ -343,10 +357,15 @@ export default function ProfilePage() {
   const sensitivities = intakeQuery.data?.sensitivities ?? [];
   const isSaving = identityMutation.isPending || intakeMutation.isPending;
   const primaryGoal = skinProfile?.goals[0] ?? "";
+  const savedSkinTypes = getSavedSkinTypes(skinProfile);
+  const savedSkinTypeLabel =
+    savedSkinTypes.length > 0
+      ? savedSkinTypes
+          .map((skinType) => skinTypeLabels[skinType] || formatToken(skinType))
+          .join(", ")
+      : "";
   const profileSubtitle = [
-    skinProfile?.skin_type
-      ? `${skinTypeLabels[skinProfile.skin_type] || formatToken(skinProfile.skin_type)} skin`
-      : "Skin profile",
+    savedSkinTypeLabel ? `${savedSkinTypeLabel} skin` : "Skin profile",
     primaryGoal,
   ]
     .filter(Boolean)
@@ -416,17 +435,25 @@ export default function ProfilePage() {
           editor={
             <form
               className={styles.editor}
-              onSubmit={(event) => saveIntakeSection(event, { skin_type: skinTypeDraft })}
+              onSubmit={(event) => {
+                const selectedSkinTypes =
+                  skinTypesDraft.length > 0 ? skinTypesDraft : ["unknown"];
+                saveIntakeSection(event, {
+                  skin_type: selectedSkinTypes[0],
+                  skin_types: selectedSkinTypes,
+                });
+              }}
             >
-              <div className={styles.choiceGrid}>
+              <div className={styles.skinTypeRows}>
                 {skinTypes.map(([value, label]) => (
-                  <label className={styles.choicePill} key={value}>
+                  <label className={styles.skinTypeOption} key={value}>
                     <input
-                      checked={skinTypeDraft === value}
-                      name="skin_type"
-                      type="radio"
+                      checked={skinTypesDraft.includes(value)}
+                      type="checkbox"
                       value={value}
-                      onChange={() => setSkinTypeDraft(value)}
+                      onChange={() =>
+                        setSkinTypesDraft((current) => toggleValue(current, value))
+                      }
                     />
                     <span>{label}</span>
                   </label>
@@ -443,11 +470,17 @@ export default function ProfilePage() {
             </form>
           }
         >
-          <span className={styles.valuePill}>
-            {skinProfile?.skin_type
-              ? skinTypeLabels[skinProfile.skin_type] || formatToken(skinProfile.skin_type)
-              : "Not saved"}
-          </span>
+          {savedSkinTypes.length > 0 ? (
+            <div className={styles.tagList}>
+              {savedSkinTypes.map((skinType) => (
+                <span className={styles.valuePill} key={skinType}>
+                  {skinTypeLabels[skinType] || formatToken(skinType)}
+                </span>
+              ))}
+            </div>
+          ) : (
+            <span className={styles.valuePill}>Not saved</span>
+          )}
         </Section>
 
         <Section

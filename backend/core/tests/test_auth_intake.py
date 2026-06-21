@@ -187,6 +187,7 @@ class IntakeApiTests(TestCase):
             reverse("intake"),
             {
                 "skin_type": "combination",
+                "skin_types": ["combination", "oily", "combination"],
                 "fitzpatrick_skin_type": "type_iii",
                 "baseline_sensitivity": 6,
                 "primary_concerns": ["acne", "redness", "acne"],
@@ -206,6 +207,7 @@ class IntakeApiTests(TestCase):
         current = profile.skin_profiles.get(is_current=True)
         self.assertEqual(current.id, skin_profile.id)
         self.assertEqual(current.skin_type, "combination")
+        self.assertEqual(current.skin_types, ["combination", "oily"])
         self.assertEqual(current.fitzpatrick_skin_type, "type_iii")
         self.assertEqual(current.baseline_sensitivity, 6)
         self.assertEqual(current.primary_concerns, ["acne", "redness"])
@@ -219,6 +221,10 @@ class IntakeApiTests(TestCase):
             ["Fragrance", "Retinoids"],
         )
         self.assertEqual(response.data["skin_profile"]["id"], current.id)
+        self.assertEqual(
+            response.data["skin_profile"]["skin_types"],
+            ["combination", "oily"],
+        )
         self.assertEqual(response.data["sensitivities"], ["Fragrance", "Retinoids"])
 
     def test_intake_post_creates_skin_profile_when_none_exists(self):
@@ -236,6 +242,30 @@ class IntakeApiTests(TestCase):
         self.assertEqual(
             profile.skin_profiles.get(is_current=True).skin_type,
             "combination",
+        )
+        self.assertEqual(
+            profile.skin_profiles.get(is_current=True).skin_types,
+            ["combination"],
+        )
+
+    def test_intake_accepts_multiple_skin_types_without_single_skin_type(self):
+        self.client.force_authenticate(user=self.user)
+        profile = Profile.objects.create(user=self.user)
+
+        response = self.client.post(
+            reverse("intake"),
+            {"skin_types": ["oily", "sensitive"]},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 201)
+        skin_profile = profile.skin_profiles.get(is_current=True)
+        self.assertEqual(skin_profile.skin_type, "oily")
+        self.assertEqual(skin_profile.skin_types, ["oily", "sensitive"])
+        self.assertEqual(response.data["skin_profile"]["skin_type"], "oily")
+        self.assertEqual(
+            response.data["skin_profile"]["skin_types"],
+            ["oily", "sensitive"],
         )
 
     def test_intake_put_updates_current_skin_profile(self):
