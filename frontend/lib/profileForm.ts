@@ -89,56 +89,35 @@ export const fitzpatrickTypeOptions: FitzpatrickOption[] = [
 
 export const concernSections: ConcernSection[] = [
   {
-    title: "Acne blemishes",
+    title: "Skin concerns",
     items: [
-      ["breakouts", "Breakouts"],
-      ["post_acne_marks", "Post-acne marks"],
-    ],
-  },
-  {
-    title: "Dehydrated / dryness",
-    items: [["dehydrated_dryness", "Dehydrated / dryness"]],
-  },
-  {
-    title: "Enlarged pores",
-    items: [["enlarged_pores", "Enlarged pores"]],
-  },
-  {
-    title: "Dark circles",
-    items: [["dark_circles", "Dark circles"]],
-  },
-  {
-    title: "Sun damage",
-    items: [["sun_damage", "Sun damage"]],
-  },
-  {
-    title: "Uneven tone",
-    items: [
-      ["uneven_skin_tone", "Uneven skin tone"],
-      ["hyperpigmentation", "Hyperpigmentation"],
-      ["dull_skin", "Dull skin"],
-    ],
-  },
-  {
-    title: "Wrinkles / firmness",
-    items: [
-      ["wrinkles", "Wrinkles"],
-      ["firmness", "Firmness"],
-      ["skin_elasticity", "Skin elasticity"],
-    ],
-  },
-  {
-    title: "Sensitive or reactive skin",
-    items: [
-      ["redness", "Redness"],
-      ["reactive_skin", "Reactive skin"],
-      ["sensitivity", "Sensitivity"],
-      ["damaged_skin_barrier", "Damaged skin barrier"],
+      ["acne_blemishes", "Acne blemishes: breakouts, post-acne marks"],
+      ["dehydrated_dryness", "Dehydrated / dryness"],
+      ["enlarged_pores", "Enlarged pores"],
+      ["dark_circles", "Dark circles"],
+      ["sun_damage", "Sun damage"],
+      [
+        "uneven_tone_hyperpigmentation_dull_skin",
+        "Uneven skin tone, hyperpigmentation, dull skin",
+      ],
+      [
+        "wrinkles_firmness_elasticity",
+        "Wrinkles / firmness / skin elasticity",
+      ],
+      [
+        "sensitive_reactive_skin",
+        "Sensitive or reactive skin: redness, reactive skin, sensitivity, damaged skin barrier",
+      ],
     ],
   },
 ];
 
+export const concernLabels = Object.fromEntries(
+  concernSections.flatMap((section) => section.items),
+);
+
 export const concernZones: Record<string, string[]> = {
+  acne_blemishes: ["forehead", "cheeks", "chin"],
   breakouts: ["forehead", "cheeks", "chin"],
   acne: ["forehead", "cheeks", "chin"],
   clogged_pores: ["nose", "chin"],
@@ -163,6 +142,7 @@ export const concernZones: Record<string, string[]> = {
   melasma_prone: ["cheeks", "forehead"],
   post_acne_marks: ["cheeks", "chin"],
   sun_damage: ["cheeks", "forehead"],
+  uneven_tone_hyperpigmentation_dull_skin: ["cheeks", "forehead"],
   uneven_skin_tone: ["cheeks", "forehead"],
   dull_skin: ["cheeks", "forehead"],
   roughness: ["cheeks", "forehead"],
@@ -172,11 +152,13 @@ export const concernZones: Record<string, string[]> = {
   fine_lines: ["eyes", "forehead"],
   wrinkles: ["eyes", "forehead"],
   loss_of_firmness: ["cheeks", "chin"],
+  wrinkles_firmness_elasticity: ["eyes", "forehead", "cheeks", "chin"],
   firmness: ["cheeks", "chin"],
   skin_elasticity: ["cheeks", "chin"],
   dark_circles: ["eyes"],
   puffiness: ["eyes"],
   eye_fine_lines: ["eyes"],
+  sensitive_reactive_skin: ["cheeks", "forehead"],
   sensitivity: ["cheeks"],
   damaged_skin_barrier: ["cheeks", "forehead"],
 };

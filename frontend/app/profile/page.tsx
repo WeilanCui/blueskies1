@@ -27,6 +27,7 @@ import {
 } from "../../lib/appApi";
 import {
   cleanList,
+  concernLabels,
   formatToken,
   getSavedSkinTypes,
   intakeToPayload,
@@ -387,7 +388,7 @@ export default function ProfilePage() {
             {(skinProfile?.primary_concerns ?? []).length > 0 ? (
               skinProfile?.primary_concerns.map((concern) => (
                 <span className={styles.valuePill} key={concern}>
-                  {formatToken(concern)}
+                  {concernLabels[concern] || formatToken(concern)}
                 </span>
               ))
             ) : (
