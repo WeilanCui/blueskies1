@@ -223,13 +223,7 @@ export default function IntakePage() {
         <section className={styles.intakeCard}>
           <h2>Primary Focus</h2>
           <ConcernPicker
-            classNames={{
-              stack: styles.concernSectionStack,
-              fieldset: styles.concernSection,
-              grid: styles.concernChoiceGrid,
-              option: ["choice-card", styles.concernChoice].join(" "),
-              input: styles.visuallyHiddenInput,
-            }}
+            variant="card"
             sections={primaryConcernOptions}
             values={concerns}
             onChange={setConcerns}

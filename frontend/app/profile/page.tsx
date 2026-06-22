@@ -369,13 +369,7 @@ export default function ProfilePage() {
               }
             >
               <ConcernPicker
-                classNames={{
-                  stack: styles.concernStack,
-                  fieldset: styles.fieldset,
-                  grid: styles.concernChoiceGrid,
-                  option: [styles.choicePill, styles.concernChoicePill].join(" "),
-                  input: styles.visuallyHiddenInput,
-                }}
+                variant="pill"
                 sections={primaryConcernOptions}
                 values={concernsDraft}
                 onChange={setConcernsDraft}

@@ -126,6 +126,21 @@ class AuthApiTests(TestCase):
         self.assertEqual(response.status_code, 400)
         self.assertEqual(Profile.objects.get(user=user).display_name, "Old Name")
 
+    def test_me_patch_without_display_name_keeps_existing_name(self):
+        user = get_user_model().objects.create_user(
+            username="partial-patch-user",
+            email="partial-patch-user@example.com",
+            password="strong-test-pass-123",
+        )
+        Profile.objects.create(user=user, display_name="Old Name")
+        self.client.force_authenticate(user=user)
+
+        response = self.client.patch(reverse("auth-me"), {}, format="json")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["user"]["display_name"], "Old Name")
+        self.assertEqual(Profile.objects.get(user=user).display_name, "Old Name")
+
     def test_login_sets_csrf_cookie_for_session_authenticated_writes(self):
         user = get_user_model().objects.create_user(
             username="csrf-user",

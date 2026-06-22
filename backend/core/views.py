@@ -283,21 +283,22 @@ class SessionAuthViewSet(viewsets.ViewSet):
                 status=status.HTTP_401_UNAUTHORIZED,
             )
         if request.method == "PATCH":
-            display_name = request.data.get("display_name", "")
-            if not isinstance(display_name, str):
-                return Response(
-                    {"display_name": "Display name must be a string."},
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
-            display_name = display_name.strip()
-            if len(display_name) > 128:
-                return Response(
-                    {"display_name": "Display name must be 128 characters or fewer."},
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
-            profile, _ = Profile.objects.get_or_create(user=request.user)
-            profile.display_name = display_name
-            profile.save(update_fields=["display_name", "updated_at"])
+            if "display_name" in request.data:
+                display_name = request.data.get("display_name")
+                if not isinstance(display_name, str):
+                    return Response(
+                        {"display_name": "Display name must be a string."},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+                display_name = display_name.strip()
+                if len(display_name) > 128:
+                    return Response(
+                        {"display_name": "Display name must be 128 characters or fewer."},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+                profile, _ = Profile.objects.get_or_create(user=request.user)
+                profile.display_name = display_name
+                profile.save(update_fields=["display_name", "updated_at"])
         return Response({"user": auth_user_payload(request.user)})
 
     @action(
