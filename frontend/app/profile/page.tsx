@@ -27,7 +27,9 @@ import {
 } from "../../lib/appApi";
 import {
   cleanList,
+  concernLabelMap,
   concernLabels,
+  concernSections,
   formatToken,
   getSavedSkinTypes,
   intakeToPayload,
@@ -101,8 +103,9 @@ export default function ProfilePage() {
 
   const intakeMutation = useMutation({
     mutationFn: saveIntake,
-    onSuccess: (data) => {
+    onSuccess: async (data) => {
       queryClient.setQueryData<IntakeResponse>(["intake"], data);
+      await queryClient.invalidateQueries({ queryKey: ["intake"] });
       queryClient.setQueryData<AuthResponse | undefined>(["me"], (current) =>
         current
           ? {
@@ -178,6 +181,8 @@ export default function ProfilePage() {
   const isSaving = identityMutation.isPending || intakeMutation.isPending;
   const primaryGoal = skinProfile?.goals[0] ?? "";
   const savedSkinTypes = getSavedSkinTypes(skinProfile);
+  const skinConcernSections = intakeQuery.data?.skin_concern_sections ?? concernSections;
+  const skinConcernLabels = concernLabelMap(skinConcernSections);
   const savedSkinTypeLabel =
     savedSkinTypes.length > 0
       ? savedSkinTypes
@@ -367,9 +372,11 @@ export default function ProfilePage() {
                 classNames={{
                   stack: styles.concernStack,
                   fieldset: styles.fieldset,
-                  grid: styles.choiceGrid,
-                  option: styles.choicePill,
+                  grid: styles.concernChoiceGrid,
+                  option: [styles.choicePill, styles.concernChoicePill].join(" "),
+                  input: styles.visuallyHiddenInput,
                 }}
+                sections={skinConcernSections}
                 values={concernsDraft}
                 onChange={setConcernsDraft}
               />
@@ -388,7 +395,7 @@ export default function ProfilePage() {
             {(skinProfile?.primary_concerns ?? []).length > 0 ? (
               skinProfile?.primary_concerns.map((concern) => (
                 <span className={styles.valuePill} key={concern}>
-                  {concernLabels[concern] || formatToken(concern)}
+                  {skinConcernLabels[concern] || concernLabels[concern] || formatToken(concern)}
                 </span>
               ))
             ) : (

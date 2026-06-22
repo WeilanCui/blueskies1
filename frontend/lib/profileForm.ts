@@ -1,10 +1,14 @@
 import type { IntakePayload, IntakeResponse } from "./appApi";
 
 export type ProfileOption = readonly [value: string, label: string];
+export type ConcernOption = {
+  value: string;
+  label: string;
+};
 
 export type ConcernSection = {
   title: string;
-  items: ProfileOption[];
+  items: ConcernOption[];
 };
 
 export type FitzpatrickStyleKey =
@@ -91,30 +95,40 @@ export const concernSections: ConcernSection[] = [
   {
     title: "Skin concerns",
     items: [
-      ["acne_blemishes", "Acne blemishes: breakouts, post-acne marks"],
-      ["dehydrated_dryness", "Dehydrated / dryness"],
-      ["enlarged_pores", "Enlarged pores"],
-      ["dark_circles", "Dark circles"],
-      ["sun_damage", "Sun damage"],
-      [
-        "uneven_tone_hyperpigmentation_dull_skin",
-        "Uneven skin tone, hyperpigmentation, dull skin",
-      ],
-      [
-        "wrinkles_firmness_elasticity",
-        "Wrinkles / firmness / skin elasticity",
-      ],
-      [
-        "sensitive_reactive_skin",
-        "Sensitive or reactive skin: redness, reactive skin, sensitivity, damaged skin barrier",
-      ],
+      {
+        value: "acne_blemishes",
+        label: "Acne blemishes: breakouts, post-acne marks",
+      },
+      { value: "dehydrated_dryness", label: "Dehydrated / dryness" },
+      { value: "enlarged_pores", label: "Enlarged pores" },
+      { value: "dark_circles", label: "Dark circles" },
+      { value: "sun_damage", label: "Sun damage" },
+      {
+        value: "uneven_tone_hyperpigmentation_dull_skin",
+        label: "Uneven skin tone, hyperpigmentation, dull skin",
+      },
+      {
+        value: "wrinkles_firmness_elasticity",
+        label: "Wrinkles / firmness / skin elasticity",
+      },
+      {
+        value: "sensitive_reactive_skin",
+        label:
+          "Sensitive or reactive skin: redness, reactive skin, sensitivity, damaged skin barrier",
+      },
     ],
   },
 ];
 
-export const concernLabels = Object.fromEntries(
-  concernSections.flatMap((section) => section.items),
-);
+export function concernLabelMap(sections: ConcernSection[]): Record<string, string> {
+  return Object.fromEntries(
+    sections.flatMap((section) =>
+      section.items.map((item) => [item.value, item.label]),
+    ),
+  );
+}
+
+export const concernLabels = concernLabelMap(concernSections);
 
 export const concernZones: Record<string, string[]> = {
   acne_blemishes: ["forehead", "cheeks", "chin"],

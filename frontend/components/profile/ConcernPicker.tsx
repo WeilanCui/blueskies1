@@ -9,6 +9,7 @@ type ConcernPickerClassNames = {
   fieldset?: string;
   grid?: string;
   option?: string;
+  input?: string;
 };
 
 type ConcernPickerProps = {
@@ -30,14 +31,15 @@ export function ConcernPicker({
         <fieldset className={classNames?.fieldset} key={section.title}>
           <legend>{section.title}</legend>
           <div className={classNames?.grid}>
-            {section.items.map(([value, label]) => (
-              <label className={classNames?.option} key={value}>
+            {section.items.map((item) => (
+              <label className={classNames?.option} key={item.value}>
                 <input
-                  checked={values.includes(value)}
+                  className={classNames?.input}
+                  checked={values.includes(item.value)}
                   type="checkbox"
-                  onChange={() => onChange(toggleValue(values, value))}
+                  onChange={() => onChange(toggleValue(values, item.value))}
                 />
-                <span>{label}</span>
+                <span>{item.label}</span>
               </label>
             ))}
           </div>

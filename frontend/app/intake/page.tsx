@@ -19,6 +19,7 @@ import {
   type IntakePayload,
 } from "../../lib/appApi";
 import {
+  concernSections,
   fitzpatrickTypeOptions,
   toggleValue,
   type FitzpatrickStyleKey,
@@ -108,6 +109,7 @@ export default function IntakePage() {
   }, [intakeQuery.data]);
 
   const activeZones = useConcernZones(concerns);
+  const skinConcernSections = intakeQuery.data?.skin_concern_sections ?? concernSections;
 
   function addCustomSensitivity() {
     const value = customSensitivity.trim();
@@ -224,9 +226,11 @@ export default function IntakePage() {
             classNames={{
               stack: styles.concernSectionStack,
               fieldset: styles.concernSection,
-              grid: "choice-grid",
-              option: "choice-card",
+              grid: styles.concernChoiceGrid,
+              option: ["choice-card", styles.concernChoice].join(" "),
+              input: styles.visuallyHiddenInput,
             }}
+            sections={skinConcernSections}
             values={concerns}
             onChange={setConcerns}
           />

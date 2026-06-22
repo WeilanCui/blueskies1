@@ -297,6 +297,37 @@ class IntakeApiTests(TestCase):
         self.assertEqual(response.data["skin_profile"]["id"], skin_profile.id)
         self.assertEqual(response.data["sensitivities"], ["Fragrance"])
 
+    def test_intake_persists_backend_skin_concern_options(self):
+        self.client.force_authenticate(user=self.user)
+        profile = Profile.objects.create(user=self.user)
+
+        response = self.client.post(
+            reverse("intake"),
+            {
+                "skin_type": "combination",
+                "primary_concerns": [
+                    "acne_blemishes",
+                    "sensitive_reactive_skin",
+                ],
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 201)
+        skin_profile = profile.skin_profiles.get(is_current=True)
+        self.assertEqual(
+            skin_profile.primary_concerns,
+            ["acne_blemishes", "sensitive_reactive_skin"],
+        )
+        self.assertEqual(
+            response.data["skin_profile"]["primary_concerns"],
+            ["acne_blemishes", "sensitive_reactive_skin"],
+        )
+        self.assertEqual(
+            response.data["skin_concern_sections"][0]["items"][0]["value"],
+            "acne_blemishes",
+        )
+
     def test_intake_get_returns_existing_profile_state(self):
         self.client.force_authenticate(user=self.user)
         profile = Profile.objects.create(user=self.user)

@@ -39,8 +39,19 @@ export type IntakePayload = {
   sensitivities: string[];
 };
 
+export type IntakeOption = {
+  value: string;
+  label: string;
+};
+
+export type IntakeOptionSection = {
+  title: string;
+  items: IntakeOption[];
+};
+
 export type IntakeResponse = {
   profile_id: number;
+  skin_concern_sections: IntakeOptionSection[];
   skin_profile: null | {
     id: number;
     skin_type: string;
