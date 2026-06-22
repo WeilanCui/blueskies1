@@ -123,7 +123,6 @@ export default function IntakePage() {
   function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const payload: IntakePayload = {
-      skin_type: skinType,
       skin_types: [skinType],
       fitzpatrick_skin_type: fitzpatrickSkinType,
       baseline_sensitivity: baselineSensitivity,

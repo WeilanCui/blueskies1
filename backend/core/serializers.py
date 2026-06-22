@@ -1402,11 +1402,6 @@ def serialize_catalog_product(product: Product) -> dict:
 
 
 class IntakeSerializer(serializers.Serializer):
-    skin_type = serializers.ChoiceField(
-        choices=SkinType.choices,
-        required=False,
-        default=SkinType.UNKNOWN,
-    )
     skin_types = serializers.ListField(
         child=serializers.ChoiceField(choices=SkinType.choices),
         required=False,
@@ -1453,6 +1448,15 @@ class IntakeSerializer(serializers.Serializer):
     def validate_skin_types(self, value: list[str]) -> list[str]:
         return self._clean_unique_list(value)
 
+    def validate(self, attrs: dict) -> dict:
+        attrs = super().validate(attrs)
+        skin_types = attrs.get("skin_types", [])
+
+        if not skin_types:
+            attrs["skin_types"] = [SkinType.UNKNOWN]
+
+        return attrs
+
     def validate_goals(self, value: list[str]) -> list[str]:
         return self._clean_unique_list(value)
 
@@ -1479,10 +1483,7 @@ class IntakeSerializer(serializers.Serializer):
         goals_text = data.get("goals_text", "").strip()
         if goals_text:
             goals = [*goals, goals_text]
-        skin_types = data.get("skin_types", [])
-        if not skin_types:
-            skin_types = [data.get("skin_type", SkinType.UNKNOWN)]
-        primary_skin_type = skin_types[0] if skin_types else SkinType.UNKNOWN
+        primary_skin_type = data["skin_types"][0]
 
         current_profiles = profile.skin_profiles.filter(is_current=True).order_by(
             "-captured_at",
@@ -1497,7 +1498,7 @@ class IntakeSerializer(serializers.Serializer):
             "label": "Initial intake",
             "is_current": True,
             "skin_type": primary_skin_type,
-            "skin_types": skin_types,
+            "skin_types": data["skin_types"],
             "fitzpatrick_skin_type": data.get(
                 "fitzpatrick_skin_type",
                 FitzpatrickSkinType.NOT_PROVIDED,

@@ -237,7 +237,6 @@ export function intakeToPayload(
   const skinTypes = getSavedSkinTypes(skinProfile);
 
   return {
-    skin_type: skinProfile?.skin_type ?? "unknown",
     skin_types: skinTypes.length > 0 ? skinTypes : [skinProfile?.skin_type ?? "unknown"],
     fitzpatrick_skin_type: skinProfile?.fitzpatrick_skin_type ?? "not_provided",
     baseline_sensitivity: skinProfile?.baseline_sensitivity ?? null,

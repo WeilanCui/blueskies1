@@ -270,7 +270,6 @@ export default function ProfilePage() {
                 const selectedSkinTypes =
                   skinTypesDraft.length > 0 ? skinTypesDraft : ["unknown"];
                 saveIntakeSection(event, {
-                  skin_type: selectedSkinTypes[0],
                   skin_types: selectedSkinTypes,
                 });
               }}

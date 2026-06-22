@@ -152,7 +152,7 @@ class AuthApiTests(TestCase):
 
         response = client.post(
             reverse("intake"),
-            data=json.dumps({"skin_type": "combination"}),
+            data=json.dumps({"skin_types": ["combination"]}),
             content_type="application/json",
             HTTP_X_CSRFTOKEN=csrf_token,
         )
@@ -186,7 +186,6 @@ class IntakeApiTests(TestCase):
         response = self.client.post(
             reverse("intake"),
             {
-                "skin_type": "combination",
                 "skin_types": ["combination", "oily", "combination"],
                 "fitzpatrick_skin_type": "type_iii",
                 "baseline_sensitivity": 6,
@@ -233,7 +232,7 @@ class IntakeApiTests(TestCase):
 
         response = self.client.post(
             reverse("intake"),
-            {"skin_type": "combination"},
+            {"skin_types": ["combination"]},
             format="json",
         )
 
@@ -281,7 +280,7 @@ class IntakeApiTests(TestCase):
         response = self.client.put(
             reverse("intake"),
             {
-                "skin_type": "oily",
+                "skin_types": ["oily"],
                 "primary_concerns": ["shine", "pores"],
                 "sensitivities": ["Fragrance"],
             },
@@ -304,7 +303,7 @@ class IntakeApiTests(TestCase):
         response = self.client.post(
             reverse("intake"),
             {
-                "skin_type": "combination",
+                "skin_types": ["combination"],
                 "primary_concerns": [
                     "acne_blemishes",
                     "sensitive_reactive_skin",

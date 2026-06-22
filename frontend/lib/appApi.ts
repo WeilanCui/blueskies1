@@ -26,7 +26,6 @@ export type LoginPayload = {
 };
 
 export type IntakePayload = {
-  skin_type: string;
   skin_types: string[];
   fitzpatrick_skin_type: string;
   baseline_sensitivity: number | null;
