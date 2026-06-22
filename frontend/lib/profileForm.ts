@@ -91,9 +91,9 @@ export const fitzpatrickTypeOptions: FitzpatrickOption[] = [
   },
 ];
 
-export const concernSections: ConcernSection[] = [
+export const primaryConcernSections: ConcernSection[] = [
   {
-    title: "Skin concerns",
+    title: "Primary Focus",
     items: [
       {
         value: "acne_blemishes",
@@ -128,7 +128,7 @@ export function concernLabelMap(sections: ConcernSection[]): Record<string, stri
   );
 }
 
-export const concernLabels = concernLabelMap(concernSections);
+export const primaryConcernLabels = concernLabelMap(primaryConcernSections);
 
 export const concernZones: Record<string, string[]> = {
   acne_blemishes: ["forehead", "cheeks", "chin"],

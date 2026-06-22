@@ -46,9 +46,9 @@ from core.services.weather import get_or_create_shared_location
 User = get_user_model()
 
 
-SKIN_CONCERN_SECTIONS = [
+PRIMARY_CONCERN_SECTIONS = [
     {
-        "title": "Skin concerns",
+        "title": "Primary Focus",
         "items": [
             {
                 "value": "acne_blemishes",
@@ -1542,7 +1542,7 @@ def intake_payload(profile: Profile) -> dict:
     constraints = profile.constraints.filter(source="intake", is_active=True)
     return {
         "profile_id": profile.id,
-        "skin_concern_sections": SKIN_CONCERN_SECTIONS,
+        "primary_concern_sections": PRIMARY_CONCERN_SECTIONS,
         "skin_profile": None
         if skin_profile is None
         else {

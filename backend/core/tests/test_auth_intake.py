@@ -296,7 +296,7 @@ class IntakeApiTests(TestCase):
         self.assertEqual(response.data["skin_profile"]["id"], skin_profile.id)
         self.assertEqual(response.data["sensitivities"], ["Fragrance"])
 
-    def test_intake_persists_backend_skin_concern_options(self):
+    def test_intake_persists_backend_primary_concern_options(self):
         self.client.force_authenticate(user=self.user)
         profile = Profile.objects.create(user=self.user)
 
@@ -323,7 +323,7 @@ class IntakeApiTests(TestCase):
             ["acne_blemishes", "sensitive_reactive_skin"],
         )
         self.assertEqual(
-            response.data["skin_concern_sections"][0]["items"][0]["value"],
+            response.data["primary_concern_sections"][0]["items"][0]["value"],
             "acne_blemishes",
         )
 

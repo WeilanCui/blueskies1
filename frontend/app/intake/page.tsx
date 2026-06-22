@@ -19,8 +19,8 @@ import {
   type IntakePayload,
 } from "../../lib/appApi";
 import {
-  concernSections,
   fitzpatrickTypeOptions,
+  primaryConcernSections,
   toggleValue,
   type FitzpatrickStyleKey,
 } from "../../lib/profileForm";
@@ -109,7 +109,8 @@ export default function IntakePage() {
   }, [intakeQuery.data]);
 
   const activeZones = useConcernZones(concerns);
-  const skinConcernSections = intakeQuery.data?.skin_concern_sections ?? concernSections;
+  const primaryConcernOptions =
+    intakeQuery.data?.primary_concern_sections ?? primaryConcernSections;
 
   function addCustomSensitivity() {
     const value = customSensitivity.trim();
@@ -220,7 +221,7 @@ export default function IntakePage() {
         </section>
 
         <section className={styles.intakeCard}>
-          <h2>Skin concerns</h2>
+          <h2>Primary Focus</h2>
           <ConcernPicker
             classNames={{
               stack: styles.concernSectionStack,
@@ -229,7 +230,7 @@ export default function IntakePage() {
               option: ["choice-card", styles.concernChoice].join(" "),
               input: styles.visuallyHiddenInput,
             }}
-            sections={skinConcernSections}
+            sections={primaryConcernOptions}
             values={concerns}
             onChange={setConcerns}
           />

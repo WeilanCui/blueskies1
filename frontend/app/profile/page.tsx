@@ -28,11 +28,11 @@ import {
 import {
   cleanList,
   concernLabelMap,
-  concernLabels,
-  concernSections,
   formatToken,
   getSavedSkinTypes,
   intakeToPayload,
+  primaryConcernLabels,
+  primaryConcernSections,
   skinTypeLabels,
   toggleValue,
 } from "../../lib/profileForm";
@@ -181,8 +181,9 @@ export default function ProfilePage() {
   const isSaving = identityMutation.isPending || intakeMutation.isPending;
   const primaryGoal = skinProfile?.goals[0] ?? "";
   const savedSkinTypes = getSavedSkinTypes(skinProfile);
-  const skinConcernSections = intakeQuery.data?.skin_concern_sections ?? concernSections;
-  const skinConcernLabels = concernLabelMap(skinConcernSections);
+  const primaryConcernOptions =
+    intakeQuery.data?.primary_concern_sections ?? primaryConcernSections;
+  const primaryConcernLabelMap = concernLabelMap(primaryConcernOptions);
   const savedSkinTypeLabel =
     savedSkinTypes.length > 0
       ? savedSkinTypes
@@ -357,7 +358,7 @@ export default function ProfilePage() {
             display: styles.sectionDisplay,
           }}
           section="concerns"
-          title="Skin concerns"
+          title="Primary Focus"
           editingSection={editingSection}
           onEdit={openEditor}
           editor={
@@ -375,7 +376,7 @@ export default function ProfilePage() {
                   option: [styles.choicePill, styles.concernChoicePill].join(" "),
                   input: styles.visuallyHiddenInput,
                 }}
-                sections={skinConcernSections}
+                sections={primaryConcernOptions}
                 values={concernsDraft}
                 onChange={setConcernsDraft}
               />
@@ -394,7 +395,9 @@ export default function ProfilePage() {
             {(skinProfile?.primary_concerns ?? []).length > 0 ? (
               skinProfile?.primary_concerns.map((concern) => (
                 <span className={styles.valuePill} key={concern}>
-                  {skinConcernLabels[concern] || concernLabels[concern] || formatToken(concern)}
+                  {primaryConcernLabelMap[concern] ||
+                    primaryConcernLabels[concern] ||
+                    formatToken(concern)}
                 </span>
               ))
             ) : (

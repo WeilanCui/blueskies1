@@ -50,7 +50,7 @@ export type IntakeOptionSection = {
 
 export type IntakeResponse = {
   profile_id: number;
-  skin_concern_sections: IntakeOptionSection[];
+  primary_concern_sections: IntakeOptionSection[];
   skin_profile: null | {
     id: number;
     skin_type: string;

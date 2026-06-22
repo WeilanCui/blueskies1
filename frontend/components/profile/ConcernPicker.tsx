@@ -1,5 +1,5 @@
 import {
-  concernSections,
+  primaryConcernSections,
   toggleValue,
   type ConcernSection,
 } from "../../lib/profileForm";
@@ -22,7 +22,7 @@ type ConcernPickerProps = {
 export function ConcernPicker({
   values,
   onChange,
-  sections = concernSections,
+  sections = primaryConcernSections,
   classNames,
 }: ConcernPickerProps) {
   return (
