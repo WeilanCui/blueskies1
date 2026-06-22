@@ -1483,7 +1483,6 @@ class IntakeSerializer(serializers.Serializer):
         goals_text = data.get("goals_text", "").strip()
         if goals_text:
             goals = [*goals, goals_text]
-        primary_skin_type = data["skin_types"][0]
 
         current_profiles = profile.skin_profiles.filter(is_current=True).order_by(
             "-captured_at",
@@ -1497,7 +1496,6 @@ class IntakeSerializer(serializers.Serializer):
         skin_profile_values = {
             "label": "Initial intake",
             "is_current": True,
-            "skin_type": primary_skin_type,
             "skin_types": data["skin_types"],
             "fitzpatrick_skin_type": data.get(
                 "fitzpatrick_skin_type",
@@ -1547,8 +1545,7 @@ def intake_payload(profile: Profile) -> dict:
         if skin_profile is None
         else {
             "id": skin_profile.id,
-            "skin_type": skin_profile.skin_type,
-            "skin_types": skin_profile.skin_types or [skin_profile.skin_type],
+            "skin_types": skin_profile.skin_types or [SkinType.UNKNOWN],
             "fitzpatrick_skin_type": skin_profile.fitzpatrick_skin_type,
             "primary_concerns": skin_profile.primary_concerns,
             "goals": skin_profile.goals,

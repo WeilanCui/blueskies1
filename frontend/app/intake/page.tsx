@@ -97,7 +97,7 @@ export default function IntakePage() {
     if (!skinProfile) {
       return;
     }
-    setSkinType(skinProfile.skin_type);
+    setSkinType(skinProfile.skin_types[0] ?? "unknown");
     setFitzpatrickSkinType(skinProfile.fitzpatrick_skin_type);
     setBaselineSensitivity(skinProfile.baseline_sensitivity ?? 5);
     setConcerns(skinProfile.primary_concerns);

@@ -179,7 +179,7 @@ class IntakeApiTests(TestCase):
         profile = Profile.objects.create(user=self.user)
         skin_profile = SkinProfile.objects.create(
             profile=profile,
-            skin_type="dry",
+            skin_types=["dry"],
             is_current=True,
         )
 
@@ -205,7 +205,7 @@ class IntakeApiTests(TestCase):
 
         current = profile.skin_profiles.get(is_current=True)
         self.assertEqual(current.id, skin_profile.id)
-        self.assertEqual(current.skin_type, "combination")
+        self.assertEqual(current.primary_skin_type, "combination")
         self.assertEqual(current.skin_types, ["combination", "oily"])
         self.assertEqual(current.fitzpatrick_skin_type, "type_iii")
         self.assertEqual(current.baseline_sensitivity, 6)
@@ -239,7 +239,7 @@ class IntakeApiTests(TestCase):
         self.assertEqual(response.status_code, 201)
         self.assertEqual(profile.skin_profiles.count(), 1)
         self.assertEqual(
-            profile.skin_profiles.get(is_current=True).skin_type,
+            profile.skin_profiles.get(is_current=True).primary_skin_type,
             "combination",
         )
         self.assertEqual(
@@ -259,9 +259,8 @@ class IntakeApiTests(TestCase):
 
         self.assertEqual(response.status_code, 201)
         skin_profile = profile.skin_profiles.get(is_current=True)
-        self.assertEqual(skin_profile.skin_type, "oily")
+        self.assertEqual(skin_profile.primary_skin_type, "oily")
         self.assertEqual(skin_profile.skin_types, ["oily", "sensitive"])
-        self.assertEqual(response.data["skin_profile"]["skin_type"], "oily")
         self.assertEqual(
             response.data["skin_profile"]["skin_types"],
             ["oily", "sensitive"],
@@ -272,7 +271,7 @@ class IntakeApiTests(TestCase):
         profile = Profile.objects.create(user=self.user)
         skin_profile = SkinProfile.objects.create(
             profile=profile,
-            skin_type="dry",
+            skin_types=["dry"],
             primary_concerns=["flaking"],
             is_current=True,
         )
@@ -291,7 +290,7 @@ class IntakeApiTests(TestCase):
         self.assertEqual(profile.skin_profiles.count(), 1)
         skin_profile.refresh_from_db()
         self.assertTrue(skin_profile.is_current)
-        self.assertEqual(skin_profile.skin_type, "oily")
+        self.assertEqual(skin_profile.primary_skin_type, "oily")
         self.assertEqual(skin_profile.primary_concerns, ["shine", "pores"])
         self.assertEqual(response.data["skin_profile"]["id"], skin_profile.id)
         self.assertEqual(response.data["sensitivities"], ["Fragrance"])
@@ -332,7 +331,7 @@ class IntakeApiTests(TestCase):
         profile = Profile.objects.create(user=self.user)
         SkinProfile.objects.create(
             profile=profile,
-            skin_type="oily",
+            skin_types=["oily"],
             primary_concerns=["oiliness"],
             goals=["less shine"],
             is_current=True,
@@ -346,7 +345,7 @@ class IntakeApiTests(TestCase):
         response = self.client.get(reverse("intake"))
 
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.data["skin_profile"]["skin_type"], "oily")
+        self.assertEqual(response.data["skin_profile"]["skin_types"], ["oily"])
         self.assertEqual(response.data["sensitivities"], ["Fragrance"])
 
 

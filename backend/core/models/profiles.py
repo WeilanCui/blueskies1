@@ -108,11 +108,6 @@ class SkinProfile(models.Model):
     captured_at = models.DateTimeField(default=timezone.now)
     effective_from = models.DateField(null=True, blank=True)
     effective_to = models.DateField(null=True, blank=True)
-    skin_type = models.CharField(
-        max_length=32,
-        choices=SkinType.choices,
-        default=SkinType.UNKNOWN,
-    )
     skin_types = models.JSONField(default=list, blank=True)
     fitzpatrick_skin_type = models.CharField(
         max_length=32,
@@ -150,6 +145,10 @@ class SkinProfile(models.Model):
     def __str__(self) -> str:
         label = self.label or self.captured_at.date().isoformat()
         return f"{self.profile} skin profile ({label})"
+
+    @property
+    def primary_skin_type(self) -> str:
+        return (self.skin_types or [SkinType.UNKNOWN])[0]
 
 
 class ProfileConstraint(models.Model):

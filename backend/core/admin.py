@@ -417,7 +417,7 @@ class SkinProfileInline(admin.TabularInline):
         "label",
         "is_current",
         "captured_at",
-        "skin_type",
+        "skin_types",
         "fitzpatrick_skin_type",
         "baseline_sensitivity",
     )
@@ -678,11 +678,11 @@ class SkinProfileAdmin(admin.ModelAdmin):
         "profile",
         "label",
         "is_current",
-        "skin_type",
+        "primary_skin_type",
         "fitzpatrick_skin_type",
         "captured_at",
     )
-    list_filter = ("is_current", "skin_type", "fitzpatrick_skin_type")
+    list_filter = ("is_current", "fitzpatrick_skin_type")
     search_fields = ("profile__user__username", "profile__handle", "label")
 
 

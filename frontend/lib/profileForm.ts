@@ -226,7 +226,7 @@ export function getSavedSkinTypes(
   if (skinProfile.skin_types.length > 0) {
     return skinProfile.skin_types;
   }
-  return skinProfile.skin_type ? [skinProfile.skin_type] : [];
+  return [];
 }
 
 export function intakeToPayload(
@@ -237,7 +237,7 @@ export function intakeToPayload(
   const skinTypes = getSavedSkinTypes(skinProfile);
 
   return {
-    skin_types: skinTypes.length > 0 ? skinTypes : [skinProfile?.skin_type ?? "unknown"],
+    skin_types: skinTypes.length > 0 ? skinTypes : ["unknown"],
     fitzpatrick_skin_type: skinProfile?.fitzpatrick_skin_type ?? "not_provided",
     baseline_sensitivity: skinProfile?.baseline_sensitivity ?? null,
     primary_concerns: skinProfile?.primary_concerns ?? [],

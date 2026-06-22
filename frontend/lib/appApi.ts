@@ -53,7 +53,6 @@ export type IntakeResponse = {
   primary_concern_sections: IntakeOptionSection[];
   skin_profile: null | {
     id: number;
-    skin_type: string;
     skin_types: string[];
     fitzpatrick_skin_type: string;
     primary_concerns: string[];
