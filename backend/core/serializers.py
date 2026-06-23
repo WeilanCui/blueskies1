@@ -48,7 +48,7 @@ User = get_user_model()
 
 PRIMARY_CONCERN_SECTIONS = [
     {
-        "title": "Primary Focus",
+        "title": "Primary concerns",
         "items": [
             {
                 "value": "acne_blemishes",

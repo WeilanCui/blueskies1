@@ -91,44 +91,15 @@ export const fitzpatrickTypeOptions: FitzpatrickOption[] = [
   },
 ];
 
-export const primaryConcernSections: ConcernSection[] = [
-  {
-    title: "Primary Focus",
-    items: [
-      {
-        value: "acne_blemishes",
-        label: "Acne blemishes: breakouts, post-acne marks",
-      },
-      { value: "dehydrated_dryness", label: "Dehydrated / dryness" },
-      { value: "enlarged_pores", label: "Enlarged pores" },
-      { value: "dark_circles", label: "Dark circles" },
-      { value: "sun_damage", label: "Sun damage" },
-      {
-        value: "uneven_tone_hyperpigmentation_dull_skin",
-        label: "Uneven skin tone, hyperpigmentation, dull skin",
-      },
-      {
-        value: "wrinkles_firmness_elasticity",
-        label: "Wrinkles / firmness / skin elasticity",
-      },
-      {
-        value: "sensitive_reactive_skin",
-        label:
-          "Sensitive or reactive skin: redness, reactive skin, sensitivity, damaged skin barrier",
-      },
-    ],
-  },
-];
-
-export function concernLabelMap(sections: ConcernSection[]): Record<string, string> {
+export function concernLabelMap(
+  sections: ConcernSection[],
+): Record<string, string> {
   return Object.fromEntries(
     sections.flatMap((section) =>
       section.items.map((item) => [item.value, item.label]),
     ),
   );
 }
-
-export const primaryConcernLabels = concernLabelMap(primaryConcernSections);
 
 export const concernZones: Record<string, string[]> = {
   acne_blemishes: ["forehead", "cheeks", "chin"],

@@ -1,24 +1,21 @@
-import {
-  primaryConcernSections,
-  toggleValue,
-  type ConcernSection,
-} from "../../lib/profileForm";
+import { type ConcernSection, toggleValue } from "../../lib/profileForm";
 import styles from "./ConcernPicker.module.css";
 
 type ConcernPickerProps = {
   values: string[];
   onChange: (values: string[]) => void;
-  sections?: ConcernSection[];
+  sections: ConcernSection[];
   variant?: "card" | "pill";
 };
 
 export function ConcernPicker({
   values,
   onChange,
-  sections = primaryConcernSections,
+  sections,
   variant = "card",
 }: ConcernPickerProps) {
-  const optionClass = variant === "pill" ? styles.pillOption : styles.cardOption;
+  const optionClass =
+    variant === "pill" ? styles.pillOption : styles.cardOption;
 
   return (
     <div className={styles.stack}>

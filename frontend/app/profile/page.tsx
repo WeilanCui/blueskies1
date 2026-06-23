@@ -31,8 +31,6 @@ import {
   formatToken,
   getSavedSkinTypes,
   intakeToPayload,
-  primaryConcernLabels,
-  primaryConcernSections,
   skinTypeLabels,
   toggleValue,
 } from "../../lib/profileForm";
@@ -182,7 +180,7 @@ export default function ProfilePage() {
   const primaryGoal = skinProfile?.goals[0] ?? "";
   const savedSkinTypes = getSavedSkinTypes(skinProfile);
   const primaryConcernOptions =
-    intakeQuery.data?.primary_concern_sections ?? primaryConcernSections;
+    intakeQuery.data?.primary_concern_sections ?? [];
   const primaryConcernLabelMap = concernLabelMap(primaryConcernOptions);
   const savedSkinTypeLabel =
     savedSkinTypes.length > 0
@@ -358,7 +356,7 @@ export default function ProfilePage() {
             display: styles.sectionDisplay,
           }}
           section="concerns"
-          title="Primary Focus"
+          title="Primary concerns"
           editingSection={editingSection}
           onEdit={openEditor}
           editor={
@@ -389,9 +387,7 @@ export default function ProfilePage() {
             {(skinProfile?.primary_concerns ?? []).length > 0 ? (
               skinProfile?.primary_concerns.map((concern) => (
                 <span className={styles.valuePill} key={concern}>
-                  {primaryConcernLabelMap[concern] ||
-                    primaryConcernLabels[concern] ||
-                    formatToken(concern)}
+                  {primaryConcernLabelMap[concern] || formatToken(concern)}
                 </span>
               ))
             ) : (

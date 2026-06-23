@@ -337,6 +337,10 @@ class IntakeApiTests(TestCase):
             ["acne_blemishes", "sensitive_reactive_skin"],
         )
         self.assertEqual(
+            response.data["primary_concern_sections"][0]["title"],
+            "Primary concerns",
+        )
+        self.assertEqual(
             response.data["primary_concern_sections"][0]["items"][0]["value"],
             "acne_blemishes",
         )

@@ -377,7 +377,7 @@ export default function ExperienceFlow() {
           </label>
 
           <fieldset className="choice-group">
-            <legend>Primary Focus</legend>
+            <legend>Primary concerns</legend>
             <div className="choice-grid">
               {CONCERNS.map((concern) => (
                 <label className="choice-card" key={concern.id}>

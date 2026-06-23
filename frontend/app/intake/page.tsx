@@ -20,7 +20,6 @@ import {
 } from "../../lib/appApi";
 import {
   fitzpatrickTypeOptions,
-  primaryConcernSections,
   toggleValue,
   type FitzpatrickStyleKey,
 } from "../../lib/profileForm";
@@ -110,7 +109,7 @@ export default function IntakePage() {
 
   const activeZones = useConcernZones(concerns);
   const primaryConcernOptions =
-    intakeQuery.data?.primary_concern_sections ?? primaryConcernSections;
+    intakeQuery.data?.primary_concern_sections ?? [];
 
   function addCustomSensitivity() {
     const value = customSensitivity.trim();
@@ -221,7 +220,7 @@ export default function IntakePage() {
         </section>
 
         <section className={styles.intakeCard}>
-          <h2>Primary Focus</h2>
+          <h2>Primary concerns</h2>
           <ConcernPicker
             variant="card"
             sections={primaryConcernOptions}
