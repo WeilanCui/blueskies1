@@ -67,6 +67,7 @@ class LiteratureReference(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
+        db_table = "core_literaturereference"
         ordering = ["-year", "pmid"]
         indexes = [models.Index(fields=["pmid"])]
 
@@ -130,6 +131,7 @@ class CompoundLiterature(SourceMetadata):
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
+        db_table = "core_compoundliterature"
         constraints = [
             models.UniqueConstraint(
                 fields=["compound", "literature"],
@@ -172,6 +174,7 @@ class CompoundRelationship(SourceMetadata):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
+        db_table = "core_compoundrelationship"
         constraints = [
             models.UniqueConstraint(
                 fields=["compound_a", "compound_b", "relationship_type"],

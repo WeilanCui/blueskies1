@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from core.models import RelevanceCategory, RoleInPaper
+from literature.models import RelevanceCategory, RoleInPaper
 
 # PubMed clauses that scope results to user-experience-relevant literature.
 # The cosmetics/preservatives clauses are what capture formulation-context papers
