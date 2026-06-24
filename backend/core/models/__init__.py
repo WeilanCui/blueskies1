@@ -62,17 +62,21 @@ from core.models.properties import (
     PropertyDomain,
     ValueType,
 )
-from core.models.profiles import (
-    ConstraintEnforcement,
-    ConstraintSeverity,
-    FitzpatrickSkinType,
-    PregnancyStatus,
+from core.models.profile import (
     Profile,
-    ProfileConstraint,
-    ProfileConstraintKind,
     ProfileVisibility,
+)
+from core.models.skin_profile import (
     SkinProfile,
     SkinType,
+    FitzpatrickSkinType,
+    PregnancyStatus,
+)
+from core.models.profile_constraint import (
+    ProfileConstraint,
+    ProfileConstraintKind,
+    ConstraintEnforcement,
+    ConstraintSeverity,
 )
 
 __all__ = [
