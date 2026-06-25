@@ -112,8 +112,8 @@ class Compound(models.Model):
     def pubchem_url(self) -> str:
         """Link to the PubChem compound page when a CID identifier is stored."""
         ident = (
-            self.identifiers.filter(id_type="pubchem_cid", is_primary=True).first()
-            or self.identifiers.filter(id_type="pubchem_cid").first()
+            self.identifiers.filter(id_type="pubchem_cid", is_primary=True).first()  # pyright: ignore[reportAttributeAccessIssue]
+            or self.identifiers.filter(id_type="pubchem_cid").first()  # pyright: ignore[reportAttributeAccessIssue]
         )
         if ident is None:
             return ""
@@ -123,7 +123,7 @@ class Compound(models.Model):
         """Active class properties that apply when no direct compound claim exists."""
         from core.models.properties import PropertyAssertion
 
-        direct_property_ids = self.property_assertions.filter(
+        direct_property_ids = self.property_assertions.filter(  # pyright: ignore[reportAttributeAccessIssue]
             is_active=True,
         ).values_list("property_def_id", flat=True)
         return (
@@ -139,7 +139,7 @@ class Compound(models.Model):
 
     def effective_property_assertions(self):
         """Direct active compound properties plus inherited class properties."""
-        direct = self.property_assertions.filter(
+        direct = self.property_assertions.filter(  # pyright: ignore[reportAttributeAccessIssue]
             is_active=True,
         ).select_related("property_def")
         return list(direct) + list(self.inherited_property_assertions())

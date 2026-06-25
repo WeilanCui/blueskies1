@@ -52,8 +52,8 @@ class RoutineApiTests(TestCase):
                     {
                         "position": 2,
                         "routine_step": "moisturizer",
-                        "product_id": self.product.id,
-                        "formulation_id": self.formulation.id,
+                        "product_id": self.product.id,  # pyright: ignore[reportAttributeAccessIssue]
+                        "formulation_id": self.formulation.id,  # pyright: ignore[reportAttributeAccessIssue]
                     },
                 ],
             },
@@ -62,8 +62,8 @@ class RoutineApiTests(TestCase):
 
         self.assertEqual(response.status_code, 201)
         routine = Routine.objects.get(profile=self.profile)
-        self.assertEqual(list(routine.items.values_list("position", flat=True)), [1, 2])
-        linked_item = routine.items.get(position=2)
+        self.assertEqual(list(routine.items.values_list("position", flat=True)), [1, 2])  # pyright: ignore[reportAttributeAccessIssue]
+        linked_item = routine.items.get(position=2)  # pyright: ignore[reportAttributeAccessIssue]
         self.assertEqual(linked_item.product, self.product)
         self.assertEqual(linked_item.formulation, self.formulation)
         self.assertEqual(response.data["items"][0]["display_name"], "Manual Cleanser")  # pyright: ignore[reportAttributeAccessIssue]
@@ -96,15 +96,15 @@ class RoutineApiTests(TestCase):
                 "is_active": True,
                 "items": [
                     {
-                        "id": second.id,
+                        "id": second.id,  # pyright: ignore[reportAttributeAccessIssue]
                         "position": 1,
                         "routine_step": second.routine_step,
-                        "product_id": self.product.id,
-                        "formulation_id": self.formulation.id,
+                        "product_id": self.product.id,  # pyright: ignore[reportAttributeAccessIssue]
+                        "formulation_id": self.formulation.id,  # pyright: ignore[reportAttributeAccessIssue]
                         "raw_product_name": "",
                     },
                     {
-                        "id": first.id,
+                        "id": first.id,  # pyright: ignore[reportAttributeAccessIssue]
                         "position": 2,
                         "routine_step": first.routine_step,
                         "raw_product_name": first.raw_product_name,
@@ -116,16 +116,16 @@ class RoutineApiTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(
-            list(routine.items.order_by("position").values_list("id", flat=True)),
-            [second.id, first.id],
+            list(routine.items.order_by("position").values_list("id", flat=True)),  # pyright: ignore[reportAttributeAccessIssue]
+            [second.id, first.id],  # pyright: ignore[reportAttributeAccessIssue]
         )
         self.assertEqual(
-            list(routine.items.order_by("position").values_list("position", flat=True)),
+            list(routine.items.order_by("position").values_list("position", flat=True)),  # pyright: ignore[reportAttributeAccessIssue]
             [1, 2],
         )
         self.assertEqual(
             [item["id"] for item in response.data["items"]],  # pyright: ignore[reportAttributeAccessIssue]
-            [second.id, first.id],
+            [second.id, first.id],  # pyright: ignore[reportAttributeAccessIssue]
         )
 
     def test_activating_same_timing_deactivates_prior_routine_in_domain_logic(self):
@@ -161,15 +161,15 @@ class RoutineApiTests(TestCase):
             reverse("routine-add-product"),
             {
                 "time_of_day": "am",
-                "product_id": self.product.id,
-                "formulation_id": self.formulation.id,
+                "product_id": self.product.id,  # pyright: ignore[reportAttributeAccessIssue]
+                "formulation_id": self.formulation.id,  # pyright: ignore[reportAttributeAccessIssue]
             },
             format="json",
         )
 
         self.assertEqual(response.status_code, 201)
         routine = Routine.objects.get(profile=self.profile, time_of_day="am")
-        item = routine.items.get()
+        item = routine.items.get()  # pyright: ignore[reportAttributeAccessIssue]
         self.assertEqual(routine.name, "AM Routine")
         self.assertEqual(item.position, 1)
         self.assertEqual(item.product, self.product)
@@ -192,15 +192,15 @@ class RoutineApiTests(TestCase):
         response = self.client.post(
             reverse("routine-add-product"),
             {
-                "routine_id": routine.id,
-                "product_id": self.product.id,
+                "routine_id": routine.id,  # pyright: ignore[reportAttributeAccessIssue]
+                "product_id": self.product.id,  # pyright: ignore[reportAttributeAccessIssue]
                 "routine_step": "moisturizer",
             },
             format="json",
         )
 
         self.assertEqual(response.status_code, 201)
-        item = routine.items.get(position=2)
+        item = routine.items.get(position=2)  # pyright: ignore[reportAttributeAccessIssue]
         self.assertEqual(item.product, self.product)
         self.assertEqual(item.routine_step, "moisturizer")
         self.assertEqual(response.data["routine"]["id"], routine.id)  # pyright: ignore[reportAttributeAccessIssue]
@@ -220,8 +220,8 @@ class RoutineApiTests(TestCase):
         response = self.client.post(
             reverse("routine-add-product"),
             {
-                "routine_id": routine.id,
-                "product_id": self.product.id,
+                "routine_id": routine.id,  # pyright: ignore[reportAttributeAccessIssue]
+                "product_id": self.product.id,  # pyright: ignore[reportAttributeAccessIssue]
             },
             format="json",
         )
@@ -229,7 +229,7 @@ class RoutineApiTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertFalse(response.data["created"])  # pyright: ignore[reportAttributeAccessIssue]
         self.assertEqual(response.data["item_id"], existing_item.id)  # pyright: ignore[reportAttributeAccessIssue]
-        self.assertEqual(routine.items.count(), 1)
+        self.assertEqual(routine.items.count(), 1)  # pyright: ignore[reportAttributeAccessIssue]
 
     def test_add_product_rejects_other_users_routine(self):
         other_routine = Routine.objects.create(
@@ -241,8 +241,8 @@ class RoutineApiTests(TestCase):
         response = self.client.post(
             reverse("routine-add-product"),
             {
-                "routine_id": other_routine.id,
-                "product_id": self.product.id,
+                "routine_id": other_routine.id,  # pyright: ignore[reportAttributeAccessIssue]
+                "product_id": self.product.id,  # pyright: ignore[reportAttributeAccessIssue]
             },
             format="json",
         )
@@ -284,7 +284,7 @@ class RoutineApiTests(TestCase):
             {
                 "skin_feel": "good",
                 "skin_notes": "Less redness.",
-                "completed_routine_item_ids": [item.id],
+                "completed_routine_item_ids": [item.id],  # pyright: ignore[reportAttributeAccessIssue]
             },
             format="json",
         )
@@ -314,7 +314,7 @@ class RoutineApiTests(TestCase):
 
         response = self.client.post(
             reverse("daily-checkin-today"),
-            {"completed_routine_item_ids": [other_item.id]},
+            {"completed_routine_item_ids": [other_item.id]},  # pyright: ignore[reportAttributeAccessIssue]
             format="json",
         )
 
@@ -334,9 +334,9 @@ class RoutineApiTests(TestCase):
                 "title": "Mild peeling",
                 "severity": "mild",
                 "status": "active",
-                "routine": routine.id,
-                "routine_item": item.id,
-                "product_id": self.product.id,
+                "routine": routine.id,  # pyright: ignore[reportAttributeAccessIssue]
+                "routine_item": item.id,  # pyright: ignore[reportAttributeAccessIssue]
+                "product_id": self.product.id,  # pyright: ignore[reportAttributeAccessIssue]
                 "symptoms": ["peeling", "peeling"],
             },
             format="json",
@@ -363,7 +363,7 @@ class RoutineApiTests(TestCase):
         )
 
         response = self.client.patch(
-            reverse("reaction-detail", args=[reaction.id]),
+            reverse("reaction-detail", args=[reaction.id]),  # pyright: ignore[reportAttributeAccessIssue]
             {"status": "resolved"},
             format="json",
         )

@@ -152,10 +152,10 @@ class IntakeApiTests(TestCase):
         )
 
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(profile.skin_profiles.count(), 1)
+        self.assertEqual(profile.skin_profiles.count(), 1)  # pyright: ignore[reportAttributeAccessIssue]
 
-        current = profile.skin_profiles.get(is_current=True)
-        self.assertEqual(current.id, skin_profile.id)
+        current = profile.skin_profiles.get(is_current=True)  # pyright: ignore[reportAttributeAccessIssue]
+        self.assertEqual(current.id, skin_profile.id)  # pyright: ignore[reportAttributeAccessIssue]
         self.assertEqual(current.skin_type, "combination")
         self.assertEqual(current.fitzpatrick_skin_type, "type_iii")
         self.assertEqual(current.baseline_sensitivity, 6)
@@ -183,9 +183,9 @@ class IntakeApiTests(TestCase):
         )
 
         self.assertEqual(response.status_code, 201)
-        self.assertEqual(profile.skin_profiles.count(), 1)
+        self.assertEqual(profile.skin_profiles.count(), 1)  # pyright: ignore[reportAttributeAccessIssue]
         self.assertEqual(
-            profile.skin_profiles.get(is_current=True).skin_type,
+            profile.skin_profiles.get(is_current=True).skin_type,  # pyright: ignore[reportAttributeAccessIssue]
             "combination",
         )
 
@@ -210,7 +210,7 @@ class IntakeApiTests(TestCase):
         )
 
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(profile.skin_profiles.count(), 1)
+        self.assertEqual(profile.skin_profiles.count(), 1)  # pyright: ignore[reportAttributeAccessIssue]
         skin_profile.refresh_from_db()
         self.assertTrue(skin_profile.is_current)
         self.assertEqual(skin_profile.skin_type, "oily")

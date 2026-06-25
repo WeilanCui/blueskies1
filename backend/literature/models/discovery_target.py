@@ -207,11 +207,11 @@ class LiteratureDiscoveryTarget(models.Model):
     @property
     def target_id(self) -> int | None:
         if self.target_type == LiteratureDiscoveryTargetType.COMPOUND:
-            return self.compound_id
+            return self.compound_id  # pyright: ignore[reportAttributeAccessIssue]
         if self.target_type == LiteratureDiscoveryTargetType.FORMULATION:
-            return self.formulation_id
+            return self.formulation_id  # pyright: ignore[reportAttributeAccessIssue]
         if self.target_type == LiteratureDiscoveryTargetType.PRODUCT:
-            return self.product_id
+            return self.product_id  # pyright: ignore[reportAttributeAccessIssue]
         return None
 
     def resolved_search_label(self) -> str:
@@ -343,11 +343,11 @@ class LiteratureDiscoveryEvent(models.Model):
     @property
     def target_id(self) -> int | None:
         if self.target_type == LiteratureDiscoveryTargetType.COMPOUND:
-            return self.compound_id
+            return self.compound_id  # pyright: ignore[reportAttributeAccessIssue]
         if self.target_type == LiteratureDiscoveryTargetType.FORMULATION:
-            return self.formulation_id
+            return self.formulation_id  # pyright: ignore[reportAttributeAccessIssue]
         if self.target_type == LiteratureDiscoveryTargetType.PRODUCT:
-            return self.product_id
+            return self.product_id  # pyright: ignore[reportAttributeAccessIssue]
         return None
 
     def resolved_search_label(self) -> str:

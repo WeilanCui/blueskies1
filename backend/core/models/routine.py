@@ -106,16 +106,16 @@ class RoutineItem(models.Model):
         ]
 
     def clean(self) -> None:
-        if self.formulation_id and self.product_id and self.formulation.product_id != self.product_id:
+        if self.formulation_id and self.product_id and self.formulation.product_id != self.product_id:  # pyright: ignore[reportAttributeAccessIssue]
             raise ValidationError("Formulation must belong to the selected product.")
-        if not self.product_id and not self.formulation_id and not self.raw_product_name.strip():
+        if not self.product_id and not self.formulation_id and not self.raw_product_name.strip():  # pyright: ignore[reportAttributeAccessIssue]
             raise ValidationError("Routine item needs a product, formulation, or raw_product_name.")
 
     @property
     def display_name(self) -> str:
-        if self.product_id:
+        if self.product_id:  # pyright: ignore[reportAttributeAccessIssue]
             return self.product.display_name or self.product.name
-        if self.formulation_id:
+        if self.formulation_id:  # pyright: ignore[reportAttributeAccessIssue]
             return self.formulation.product.display_name or self.formulation.product.name
         return self.raw_product_name
 

@@ -154,7 +154,7 @@ class PropertyAssertion(SourceMetadata):
     def clean(self) -> None:
         targets = sum(
             1
-            for x in (self.compound_id, self.chemical_class_id, self.formulation_id)
+            for x in (self.compound_id, self.chemical_class_id, self.formulation_id)  # pyright: ignore[reportAttributeAccessIssue]
             if x
         )
         if targets != 1:
