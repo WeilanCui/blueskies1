@@ -12,6 +12,7 @@ if TYPE_CHECKING:
     from core.models.formulation import FormulationIngredient
     from core.models.interactions import InteractionAssertion
     from core.models.literature import CompoundLiterature, CompoundRelationship
+    from core.models.literature_discovery_target import LiteratureDiscoveryEvent, LiteratureDiscoveryTarget
     from core.models.profiles import ProfileConstraint
     from core.models.properties import PropertyAssertion
 
@@ -78,6 +79,8 @@ class Compound(models.Model):
     interactions_as_b: Manager[InteractionAssertion]
     profile_constraints: Manager[ProfileConstraint]
     formulation_appearances: Manager[FormulationIngredient]
+    literature_discovery_targets: Manager[LiteratureDiscoveryTarget]
+    literature_discovery_events: Manager[LiteratureDiscoveryEvent]
 
     canonical_inci = models.CharField(max_length=512, unique=True)
     display_name = models.CharField(max_length=512, blank=True)

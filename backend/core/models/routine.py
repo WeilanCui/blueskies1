@@ -61,6 +61,7 @@ class RoutineItem(models.Model):
     product_id: int | None
     formulation_id: int | None
     daily_product_uses: Manager[DailyProductUse]
+    reaction_events: Manager[ReactionEvent]
 
     routine = models.ForeignKey(
         Routine,
