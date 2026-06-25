@@ -1,10 +1,29 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 from django.db import models
 
 from core.models.metadata import SourceMetadata
 
+if TYPE_CHECKING:
+    from django.db.models import Manager
+
+    from core.models.formulation import FormulationIngredient
+    from core.models.interactions import InteractionAssertion
+    from core.models.literature import CompoundLiterature, CompoundRelationship
+    from core.models.profiles import ProfileConstraint
+    from core.models.properties import PropertyAssertion
+
 
 class ChemicalClass(models.Model):
     """A reusable chemical family whose properties can be inherited by compounds."""
+
+    id: int
+    children: Manager[ChemicalClass]
+    memberships: Manager[ChemicalClassMembership]
+    property_assertions: Manager[PropertyAssertion]
+    profile_constraints: Manager[ProfileConstraint]
 
     name = models.CharField(max_length=128, unique=True)
     slug = models.SlugField(max_length=128, unique=True)
@@ -48,6 +67,18 @@ class EnrichmentStatus(models.TextChoices):
 
 
 class Compound(models.Model):
+    id: int
+    identifiers: Manager[CompoundIdentifier]
+    property_assertions: Manager[PropertyAssertion]
+    chemical_class_memberships: Manager[ChemicalClassMembership]
+    literature_links: Manager[CompoundLiterature]
+    relationships_as_a: Manager[CompoundRelationship]
+    relationships_as_b: Manager[CompoundRelationship]
+    interactions_as_a: Manager[InteractionAssertion]
+    interactions_as_b: Manager[InteractionAssertion]
+    profile_constraints: Manager[ProfileConstraint]
+    formulation_appearances: Manager[FormulationIngredient]
+
     canonical_inci = models.CharField(max_length=512, unique=True)
     display_name = models.CharField(max_length=512, blank=True)
     entity_type = models.CharField(
@@ -128,7 +159,7 @@ class ChemicalClassMembership(SourceMetadata):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
-    class Meta:
+    class Meta:  # pyright: ignore[reportIncompatibleVariableOverride]
         ordering = ["chemical_class__name", "compound__canonical_inci"]
         constraints = [
             models.UniqueConstraint(

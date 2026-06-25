@@ -108,7 +108,7 @@ class IngestProductByBarcodeTests(TestCase):
         mock_api2.assert_not_called()
 
     def test_get_product_none_raises_value_error(self):
-        with _mock_get_product(return_value=None), _mock_enrich_delay():
+        with _mock_get_product(return_value=None), _mock_enrich_delay():  # pyright: ignore[reportArgumentType]
             with self.assertRaises(ValueError) as ctx:
                 ingest_product_by_barcode("9999999999999")
         self.assertIn("9999999999999", str(ctx.exception))
@@ -155,14 +155,14 @@ class IngestProductByBarcodeTests(TestCase):
 class ScanBarcodeViewTests(TestCase):
     def setUp(self):
         self.client = APIClient()
-        self.user = User.objects.create_user(
+        self.user = User.objects.create_user(  # pyright: ignore[reportAttributeAccessIssue]
             username="scanner",
             email="scanner@example.com",
             password="testpass123",
         )
 
     def _auth(self):
-        self.client.force_authenticate(user=self.user)
+        self.client.force_authenticate(user=self.user)  # pyright: ignore[reportAttributeAccessIssue]
 
     def test_unauthenticated_returns_401_or_403(self):
         response = self.client.post(
@@ -176,11 +176,11 @@ class ScanBarcodeViewTests(TestCase):
         self._auth()
         response = self.client.post(SCAN_URL, {}, format="json")
         self.assertEqual(response.status_code, 400)
-        self.assertIn("barcode", response.data.get("detail", ""))
+        self.assertIn("barcode", response.data.get("detail", ""))  # pyright: ignore[reportAttributeAccessIssue]
 
     def test_unknown_barcode_returns_404(self):
         self._auth()
-        with _mock_get_product(return_value=None), _mock_enrich_delay():
+        with _mock_get_product(return_value=None), _mock_enrich_delay():  # pyright: ignore[reportArgumentType]
             response = self.client.post(
                 SCAN_URL,
                 {"barcode": "9999999999999"},
@@ -198,7 +198,7 @@ class ScanBarcodeViewTests(TestCase):
             )
 
         self.assertEqual(response.status_code, 201)
-        data = response.data
+        data = response.data  # pyright: ignore[reportAttributeAccessIssue]
         self.assertTrue(data["created"])
         self.assertEqual(data["barcode"], _FAKE_PRODUCT.barcode)
         formulation_data = data["formulation"]
@@ -224,5 +224,5 @@ class ScanBarcodeViewTests(TestCase):
                 format="json",
             )
         self.assertEqual(r2.status_code, 200)
-        self.assertFalse(r2.data["created"])
+        self.assertFalse(r2.data["created"])  # pyright: ignore[reportAttributeAccessIssue]
         mock_api.assert_not_called()

@@ -136,7 +136,7 @@ class FormulationIngredientFunctionTests(TestCase):
         request.user = User(is_staff=True, is_superuser=True)
         model_admin = FormulationAdmin(Formulation, AdminSite())
 
-        formsets, inline_instances = model_admin._create_formsets(
+        formsets, inline_instances = model_admin._create_formsets(  # pyright: ignore[reportAttributeAccessIssue]
             request,
             self.formulation,
             change=True,

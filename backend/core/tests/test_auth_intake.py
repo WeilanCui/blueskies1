@@ -26,14 +26,14 @@ class AuthApiTests(TestCase):
         self.assertEqual(response.status_code, 201)
         user = get_user_model().objects.get(email="alex@example.com")
         self.assertTrue(Profile.objects.filter(user=user).exists())
-        self.assertEqual(response.data["user"]["email"], "alex@example.com")
+        self.assertEqual(response.data["user"]["email"], "alex@example.com")  # pyright: ignore[reportAttributeAccessIssue]
 
         me = self.client.get(reverse("auth-me"))
         self.assertEqual(me.status_code, 200)
-        self.assertEqual(me.data["user"]["id"], user.id)
+        self.assertEqual(me.data["user"]["id"], user.id)  # pyright: ignore[reportAttributeAccessIssue]
 
     def test_signup_rejects_duplicate_email(self):
-        get_user_model().objects.create_user(
+        get_user_model().objects.create_user(  # pyright: ignore[reportAttributeAccessIssue]
             username="alex",
             email="alex@example.com",
             password="strong-test-pass-123",
@@ -48,7 +48,7 @@ class AuthApiTests(TestCase):
         self.assertEqual(response.status_code, 400)
 
     def test_login_accepts_email_and_logout_clears_session(self):
-        user = get_user_model().objects.create_user(
+        user = get_user_model().objects.create_user(  # pyright: ignore[reportAttributeAccessIssue]
             username="alex",
             email="alex@example.com",
             password="strong-test-pass-123",
@@ -62,7 +62,7 @@ class AuthApiTests(TestCase):
         )
 
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.data["user"]["id"], user.id)
+        self.assertEqual(response.data["user"]["id"], user.id)  # pyright: ignore[reportAttributeAccessIssue]
 
         self.assertEqual(self.client.get(reverse("auth-me")).status_code, 200)
         self.assertEqual(self.client.post(reverse("auth-logout")).status_code, 200)
@@ -78,7 +78,7 @@ class AuthApiTests(TestCase):
         self.assertEqual(response.status_code, 400)
 
     def test_login_sets_csrf_cookie_for_session_authenticated_writes(self):
-        user = get_user_model().objects.create_user(
+        user = get_user_model().objects.create_user(  # pyright: ignore[reportAttributeAccessIssue]
             username="csrf-user",
             email="csrf-user@example.com",
             password="strong-test-pass-123",
@@ -114,7 +114,7 @@ class AuthApiTests(TestCase):
 class IntakeApiTests(TestCase):
     def setUp(self):
         self.client = APIClient()
-        self.user = get_user_model().objects.create_user(
+        self.user = get_user_model().objects.create_user(  # pyright: ignore[reportAttributeAccessIssue]
             username="morgan",
             email="morgan@example.com",
             password="strong-test-pass-123",
@@ -126,7 +126,7 @@ class IntakeApiTests(TestCase):
         self.assertEqual(response.status_code, 403)
 
     def test_intake_updates_current_skin_profile_and_constraints(self):
-        self.client.force_authenticate(user=self.user)
+        self.client.force_authenticate(user=self.user)  # pyright: ignore[reportAttributeAccessIssue]
         profile = Profile.objects.create(user=self.user)
         skin_profile = SkinProfile.objects.create(
             profile=profile,
@@ -169,11 +169,11 @@ class IntakeApiTests(TestCase):
             sorted(constraint.raw_label for constraint in constraints),
             ["Fragrance", "Retinoids"],
         )
-        self.assertEqual(response.data["skin_profile"]["id"], current.id)
-        self.assertEqual(response.data["sensitivities"], ["Fragrance", "Retinoids"])
+        self.assertEqual(response.data["skin_profile"]["id"], current.id)  # pyright: ignore[reportAttributeAccessIssue]
+        self.assertEqual(response.data["sensitivities"], ["Fragrance", "Retinoids"])  # pyright: ignore[reportAttributeAccessIssue]
 
     def test_intake_post_creates_skin_profile_when_none_exists(self):
-        self.client.force_authenticate(user=self.user)
+        self.client.force_authenticate(user=self.user)  # pyright: ignore[reportAttributeAccessIssue]
         profile = Profile.objects.create(user=self.user)
 
         response = self.client.post(
@@ -190,7 +190,7 @@ class IntakeApiTests(TestCase):
         )
 
     def test_intake_put_updates_current_skin_profile(self):
-        self.client.force_authenticate(user=self.user)
+        self.client.force_authenticate(user=self.user)  # pyright: ignore[reportAttributeAccessIssue]
         profile = Profile.objects.create(user=self.user)
         skin_profile = SkinProfile.objects.create(
             profile=profile,
@@ -215,11 +215,11 @@ class IntakeApiTests(TestCase):
         self.assertTrue(skin_profile.is_current)
         self.assertEqual(skin_profile.skin_type, "oily")
         self.assertEqual(skin_profile.primary_concerns, ["shine", "pores"])
-        self.assertEqual(response.data["skin_profile"]["id"], skin_profile.id)
-        self.assertEqual(response.data["sensitivities"], ["Fragrance"])
+        self.assertEqual(response.data["skin_profile"]["id"], skin_profile.id)  # pyright: ignore[reportAttributeAccessIssue]
+        self.assertEqual(response.data["sensitivities"], ["Fragrance"])  # pyright: ignore[reportAttributeAccessIssue]
 
     def test_intake_get_returns_existing_profile_state(self):
-        self.client.force_authenticate(user=self.user)
+        self.client.force_authenticate(user=self.user)  # pyright: ignore[reportAttributeAccessIssue]
         profile = Profile.objects.create(user=self.user)
         SkinProfile.objects.create(
             profile=profile,
@@ -237,8 +237,8 @@ class IntakeApiTests(TestCase):
         response = self.client.get(reverse("intake"))
 
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.data["skin_profile"]["skin_type"], "oily")
-        self.assertEqual(response.data["sensitivities"], ["Fragrance"])
+        self.assertEqual(response.data["skin_profile"]["skin_type"], "oily")  # pyright: ignore[reportAttributeAccessIssue]
+        self.assertEqual(response.data["sensitivities"], ["Fragrance"])  # pyright: ignore[reportAttributeAccessIssue]
 
 
 class ProtectedWriteEndpointTests(TestCase):
