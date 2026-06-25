@@ -1,5 +1,8 @@
+from __future__ import annotations
+
 from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 from hashlib import sha256
+from typing import TYPE_CHECKING
 
 from django.core.exceptions import ValidationError
 from django.core.validators import MaxValueValidator, MinValueValidator
@@ -8,6 +11,12 @@ from django.db.models import Q
 from django.utils import timezone
 
 from core.models.profile import Profile
+
+if TYPE_CHECKING:
+    from django.db.models import Manager
+
+    # Forward declarations for self-references
+    from core.models.location import ProfileLocation, WeatherSnapshot
 
 
 LOCATION_GRID_KEY_MAX_LENGTH = 160
@@ -65,6 +74,10 @@ def _bounded_grid_key(value: str) -> str:
 
 class Location(models.Model):
     """A shared normalized place used for weather/UV cache reuse."""
+
+    id: int
+    profile_locations: Manager[ProfileLocation]
+    weather_snapshots: Manager[WeatherSnapshot]
 
     grid_key = models.CharField(max_length=LOCATION_GRID_KEY_MAX_LENGTH, unique=True)
     label = models.CharField(max_length=128, blank=True)
@@ -161,6 +174,8 @@ class Location(models.Model):
 class ProfileLocation(models.Model):
     """A profile-owned relationship to a shared Location."""
 
+    id: int
+
     profile = models.ForeignKey(
         Profile,
         on_delete=models.CASCADE,
@@ -209,6 +224,8 @@ class ProfileLocation(models.Model):
 
 class WeatherSnapshot(models.Model):
     """Cached weather/UV context for a shared Location."""
+
+    id: int
 
     location = models.ForeignKey(
         Location,

@@ -47,7 +47,7 @@ def request_json(
     backoff: float = 0.5,
 ) -> dict:
     """GET a URL and parse JSON, retrying on 429/503 and transient errors."""
-    return _request(
+    return _request(  # pyright: ignore[reportReturnType]
         "json",
         url,
         params=params,

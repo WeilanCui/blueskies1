@@ -33,6 +33,12 @@ class ConstraintSeverity(models.TextChoices):
 class ProfileConstraint(models.Model):
     """A flexible personal rule used by recommendation and safety evaluators."""
 
+    id: int
+    compound_id: int | None
+    chemical_class_id: int | None
+    formulation_id: int | None
+    property_def_id: int | None
+
     profile = models.ForeignKey(
         Profile,
         on_delete=models.CASCADE,

@@ -33,17 +33,17 @@ class ContactSubmissionTests(TestCase):
         self.assertEqual(submission.source, "landing_page")
         self.assertEqual(submission.user_agent, "Test Browser")
         self.assertEqual(
-            response.data["detail"],
+            response.data["detail"],  # pyright: ignore[reportAttributeAccessIssue]
             "Thanks for reaching out. We will reach out shortly.",
         )
 
     def test_authenticated_contact_submit_attaches_current_user(self):
-        user = get_user_model().objects.create_user(
+        user = get_user_model().objects.create_user(  # pyright: ignore[reportAttributeAccessIssue]
             username="jordan",
             email="jordan@example.com",
             password="test-pass",
         )
-        self.client.force_authenticate(user=user)
+        self.client.force_authenticate(user=user)  # pyright: ignore[reportAttributeAccessIssue]
 
         response = self.client.post(
             reverse("contact-submit"),
@@ -61,17 +61,17 @@ class ContactSubmissionTests(TestCase):
 
     def test_contact_submit_ignores_payload_provided_user(self):
         user_model = get_user_model()
-        current_user = user_model.objects.create_user(
+        current_user = user_model.objects.create_user(  # pyright: ignore[reportAttributeAccessIssue]
             username="current",
             email="current@example.com",
             password="test-pass",
         )
-        other_user = user_model.objects.create_user(
+        other_user = user_model.objects.create_user(  # pyright: ignore[reportAttributeAccessIssue]
             username="other",
             email="other@example.com",
             password="test-pass",
         )
-        self.client.force_authenticate(user=current_user)
+        self.client.force_authenticate(user=current_user)  # pyright: ignore[reportAttributeAccessIssue]
 
         response = self.client.post(
             reverse("contact-submit"),
@@ -90,7 +90,7 @@ class ContactSubmissionTests(TestCase):
         self.assertEqual(submission.user, current_user)
 
     def test_anonymous_contact_submit_ignores_payload_provided_user(self):
-        other_user = get_user_model().objects.create_user(
+        other_user = get_user_model().objects.create_user(  # pyright: ignore[reportAttributeAccessIssue]
             username="other",
             email="other@example.com",
             password="test-pass",

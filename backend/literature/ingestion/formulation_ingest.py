@@ -131,7 +131,7 @@ def ingest_product_by_barcode(barcode: str) -> BarcodeScanResult:
 
     # After the transaction commits, enqueue async enrichment.
     from core.tasks import enrich_formulation_ingredients  # avoid circular import
-    enrich_formulation_ingredients.delay(formulation.pk)
+    enrich_formulation_ingredients.delay(formulation.pk)  # pyright: ignore[reportFunctionMemberAccess]
 
     return BarcodeScanResult(
         formulation_id=formulation.pk,

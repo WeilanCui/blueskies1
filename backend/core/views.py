@@ -162,7 +162,7 @@ class FormulationViewSet(viewsets.ModelViewSet):
         )
         return [permission() for permission in permission_classes]
 
-    def get_throttles(self):
+    def get_throttles(self):  # pyright: ignore[reportIncompatibleMethodOverride]
         throttle_classes = (
             [FormulationSubmitRateThrottle] if self.action == "create" else []
         )
@@ -258,7 +258,7 @@ class ProductCatalogViewSet(ReadOnlyResourceViewSet):
         return Response(serialize_catalog_product(product))
 
     def get_object(self):
-        lookup = self.kwargs[self.lookup_url_kwarg]
+        lookup = self.kwargs[self.lookup_url_kwarg]  # pyright: ignore[reportArgumentType]
         queryset = self.get_queryset()
         if lookup.isdigit():
             return get_object_or_404(queryset, pk=int(lookup))

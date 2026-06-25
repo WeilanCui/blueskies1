@@ -293,7 +293,7 @@ def emit_literature_discovery_event(
         formulation=formulation,
         product=product,
     )
-    target_id = next(iter(filter_kwargs.values())).pk
+    target_id = next(iter(filter_kwargs.values())).pk  # pyright: ignore[reportAttributeAccessIssue]
     if target_id is None:
         raise ValueError("literature discovery events require saved target objects")
 
@@ -789,6 +789,7 @@ class LiteratureDiscoveryRunner:
 
         search_name = locked.search_label or compound.display_name or compound.canonical_inci
         try:
+            assert self.ingest_compound_func is not None
             result = self.ingest_compound_func(
                 search_name,
                 with_pubmed=True,
@@ -897,6 +898,7 @@ class LiteratureDiscoveryRunner:
 
     def process_compound(self, compound: Compound) -> dict:
         search_name = compound.display_name or compound.canonical_inci
+        assert self.ingest_compound_func is not None
         result = self.ingest_compound_func(
             search_name,
             with_pubmed=True,

@@ -1,11 +1,20 @@
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from django.db import models
 from django.db.models.functions import Lower
+
+if TYPE_CHECKING:
+    from django.db.models import Manager
+
+    from core.models.product import Product
 
 
 class Brand(models.Model):
     """A commercial skincare brand that owns one or more products."""
+
+    products: Manager[Product]
 
     name = models.CharField(max_length=256)
     display_name = models.CharField(max_length=256, blank=True)

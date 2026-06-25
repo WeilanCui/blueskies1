@@ -1,7 +1,16 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 from django.core.exceptions import ValidationError
 from django.db import models
 
 from core.models.metadata import SourceMetadata, SourceType
+
+if TYPE_CHECKING:
+    from django.db.models import Manager
+
+    from core.models.profiles import ProfileConstraint
 
 __all__ = [
     "PropertyDomain",
@@ -32,6 +41,10 @@ class ValueType(models.TextChoices):
 
 class PropertyDefinition(models.Model):
     """Controlled vocabulary: what properties exist and how agents should derive them."""
+
+    id: int
+    assertions: Manager[PropertyAssertion]
+    profile_constraints: Manager[ProfileConstraint]
 
     key = models.SlugField(max_length=64, unique=True)
     domain = models.CharField(max_length=32, choices=PropertyDomain.choices)
@@ -81,6 +94,13 @@ class PropertyAssertion(SourceMetadata):
     :class:`SourceMetadata`.
     """
 
+    id: int
+    compound_id: int | None
+    chemical_class_id: int | None
+    formulation_id: int | None
+    superseded_by_id: int | None
+    supersedes: Manager[PropertyAssertion]
+
     property_def = models.ForeignKey(
         PropertyDefinition,
         on_delete=models.CASCADE,
@@ -124,7 +144,7 @@ class PropertyAssertion(SourceMetadata):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
-    class Meta:
+    class Meta:  # pyright: ignore[reportIncompatibleVariableOverride]
         indexes = [
             models.Index(fields=["compound", "property_def", "is_active"]),
             models.Index(fields=["chemical_class", "property_def", "is_active"]),

@@ -1,12 +1,27 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 from django.core.exceptions import ValidationError
 from django.db import models
 
 from core.models.daily_checkin import RoutineStep, RoutineTimeOfDay
 from core.models.profile import Profile
 
+if TYPE_CHECKING:
+    from django.db.models import Manager
+
+    from core.models.daily_checkin import DailyProductUse
+    from core.models.reaction import ReactionEvent
+
 
 class Routine(models.Model):
     """A reusable profile-owned skincare routine template."""
+
+    id: int
+    items: Manager[RoutineItem]
+    daily_product_uses: Manager[DailyProductUse]
+    reaction_events: Manager[ReactionEvent]
 
     profile = models.ForeignKey(
         Profile,
@@ -41,6 +56,12 @@ class Routine(models.Model):
 
 class RoutineItem(models.Model):
     """An ordered product or manual entry in a routine template."""
+
+    id: int
+    product_id: int | None
+    formulation_id: int | None
+    daily_product_uses: Manager[DailyProductUse]
+    reaction_events: Manager[ReactionEvent]
 
     routine = models.ForeignKey(
         Routine,
