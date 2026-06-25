@@ -7,7 +7,7 @@ from core.seeds.loader import seed_catalog
 class Command(BaseCommand):
     help = (
         "Seed brands, products, formulations, and ingredient rows from the "
-        "reference catalog and/or seed/*.csv files. Idempotent — safe to re-run."
+        "reference catalog and/or data/*.csv files. Idempotent — safe to re-run."
     )
 
     def add_arguments(self, parser):
@@ -19,7 +19,7 @@ class Command(BaseCommand):
         parser.add_argument(
             "--csv-only",
             action="store_true",
-            help="Only load product rows from CSV files in the seed/ folder.",
+            help="Only load product rows from CSV files in the data/ folder.",
         )
         parser.add_argument(
             "--seed-dir",
