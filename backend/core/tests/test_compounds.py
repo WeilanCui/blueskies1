@@ -184,3 +184,10 @@ class CompoundLiteratureCountTests(TestCase):
         serialized = CompoundSerializer(plain_compound).data
 
         self.assertEqual(serialized["literature_count"], 2)
+
+        # The fallback must count at the DB (a single COUNT), not load all rows.
+        with CaptureQueriesContext(connection) as ctx:
+            count = CompoundSerializer().get_literature_count(plain_compound)
+        self.assertEqual(count, 2)
+        self.assertEqual(len(ctx.captured_queries), 1)
+        self.assertIn("COUNT", ctx.captured_queries[0]["sql"].upper())
