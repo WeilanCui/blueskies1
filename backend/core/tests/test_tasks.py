@@ -8,21 +8,17 @@ from core.models import (
     Formulation,
     FormulationIngredient,
 )
-from core.tasks import daily_literature_discovery_task, enrich_formulation_ingredients
+from core.tasks import (
+    daily_literature_discovery_task,
+    drain_literature_discovery_queue,
+    enrich_formulation_ingredients,
+)
 from literature.models import (
     DiscoveryReason,
     DiscoveryTargetStatus,
     LiteratureDiscoveryTarget,
     PRODUCT_FORMULATION_DISCOVERY_PRIORITY,
 )
-<<<<<<< HEAD
-from core.tasks import (
-    daily_literature_discovery_task,
-    drain_literature_discovery_queue,
-    enrich_formulation_ingredients,
-)
-=======
->>>>>>> main
 from literature.seeds.loader import upsert_property_definitions
 
 
