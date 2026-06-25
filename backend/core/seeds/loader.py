@@ -274,8 +274,8 @@ def seed_catalog(
     include_reference: bool = True,
     include_csv: bool = True,
     seed_dir=None,
-) -> dict[str, dict[str, int] | int]:
-    results: dict[str, dict[str, int] | int] = {}
+) -> dict[str, dict[str, int]]:
+    results: dict[str, dict[str, int]] = {}
     if include_reference:
         results["reference"] = upsert_catalog()
     if include_csv:
