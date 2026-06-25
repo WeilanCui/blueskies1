@@ -183,4 +183,4 @@ class LiteratureAgentTests(TestCase):
             source_ref="pubmed:39153997",
         )
         self.assertFalse(lit.is_active)
-        self.assertEqual(lit.superseded_by_id, human.pk)
+        self.assertEqual(lit.superseded_by_id, human.pk)  # pyright: ignore[reportAttributeAccessIssue]

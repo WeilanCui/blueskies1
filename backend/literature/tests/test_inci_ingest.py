@@ -234,7 +234,7 @@ class ProvenanceTests(TestCase):
         )
         self.assertTrue(human.is_active)
         self.assertFalse(inci.is_active)
-        self.assertEqual(inci.superseded_by_id, human.pk)
+        self.assertEqual(inci.superseded_by_id, human.pk)  # pyright: ignore[reportAttributeAccessIssue]
 
     def test_aggregator_beats_seed_on_ingest(self):
         seed = PropertyAssertion.objects.create(
@@ -257,7 +257,7 @@ class ProvenanceTests(TestCase):
             source_ref=self.source_ref,
         )
         self.assertFalse(seed.is_active)
-        self.assertEqual(seed.superseded_by_id, inci.pk)
+        self.assertEqual(seed.superseded_by_id, inci.pk)  # pyright: ignore[reportAttributeAccessIssue]
         self.assertTrue(inci.is_active)
 
     def test_reingest_is_idempotent(self):

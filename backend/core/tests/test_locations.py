@@ -175,7 +175,7 @@ class ProfileLocationApiTests(TestCase):
         mock_get.return_value = response_mock
 
         response = self.client.post(
-            reverse("profile-location-refresh-weather", args=[profile_location.id]),
+            reverse("profile-location-refresh-weather", args=[profile_location.id]),  # pyright: ignore[reportAttributeAccessIssue]
             format="json",
         )
 
@@ -204,7 +204,7 @@ class ProfileLocationApiTests(TestCase):
         )
 
         response = self.client.post(
-            reverse("profile-location-refresh-weather", args=[profile_location.id]),
+            reverse("profile-location-refresh-weather", args=[profile_location.id]),  # pyright: ignore[reportAttributeAccessIssue]
             format="json",
         )
 

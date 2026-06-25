@@ -198,9 +198,9 @@ def _barcode_scan_result(
 ) -> BarcodeScanResult:
     return BarcodeScanResult(
         formulation_id=formulation.pk,
-        product_id=formulation.product_id,
+        product_id=formulation.product_id,  # pyright: ignore[reportAttributeAccessIssue]
         barcode=barcode,
-        ingredient_count=formulation.ingredients.count(),
+        ingredient_count=formulation.ingredients.count(),  # pyright: ignore[reportAttributeAccessIssue]
         created=created,
     )
 
@@ -376,7 +376,7 @@ def ingest_formulation_ingredients(
     )
     results: list[IngredientIngestResult] = []
 
-    for row in formulation.ingredients.all():
+    for row in formulation.ingredients.all():  # pyright: ignore[reportAttributeAccessIssue]
         ingredient_result = _ingest_ingredient(
             row,
             with_pubmed=with_pubmed,
@@ -472,7 +472,7 @@ def _ingest_ingredient(
 
 
 def _finalize_formulation_status(formulation: Formulation) -> None:
-    ingredients = list(formulation.ingredients.select_related("compound"))
+    ingredients = list(formulation.ingredients.select_related("compound"))  # pyright: ignore[reportAttributeAccessIssue]
     if not ingredients:
         formulation.enrichment_status = EnrichmentStatus.PENDING
         formulation.save(update_fields=["enrichment_status", "updated_at"])

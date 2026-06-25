@@ -144,7 +144,7 @@ class IngestProductByBarcodeTests(TestCase):
 
         self.assertFalse(result.created)
         self.assertEqual(result.formulation_id, winner.pk)
-        self.assertEqual(result.product_id, winner.product_id)
+        self.assertEqual(result.product_id, winner.product_id)  # pyright: ignore[reportAttributeAccessIssue]
         mock_task.delay.assert_not_called()
 
 

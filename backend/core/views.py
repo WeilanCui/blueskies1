@@ -344,7 +344,7 @@ class IntakeViewSet(viewsets.ModelViewSet):
         profile, _ = Profile.objects.get_or_create(user=request.user)
         status_code = (
             status.HTTP_200_OK
-            if profile.skin_profiles.filter(is_current=True).exists()
+            if profile.skin_profiles.filter(is_current=True).exists()  # pyright: ignore[reportAttributeAccessIssue]
             else status.HTTP_201_CREATED
         )
         return self._save_intake(request, status_code=status_code)
@@ -500,7 +500,7 @@ class RoutineViewSet(viewsets.ModelViewSet):
         return Response(
             {
                 "routine": routine_serializer.data,
-                "item_id": serializer.item.id,
+                "item_id": serializer.item.id,  # pyright: ignore[reportAttributeAccessIssue]
                 "created": serializer.created,
             },
             status=status.HTTP_201_CREATED if serializer.created else status.HTTP_200_OK,
@@ -535,7 +535,7 @@ class DailyCheckInViewSet(viewsets.ReadOnlyModelViewSet):
                 profile=profile,
                 checkin_date=checkin_date,
                 defaults={
-                    "skin_profile": profile.skin_profiles.filter(is_current=True).first(),
+                    "skin_profile": profile.skin_profiles.filter(is_current=True).first(),  # pyright: ignore[reportAttributeAccessIssue]
                 },
             )
             return Response(self.get_serializer(checkin).data)

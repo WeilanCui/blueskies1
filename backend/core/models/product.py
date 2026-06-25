@@ -62,6 +62,6 @@ class Product(models.Model):
     def __str__(self) -> str:
         if self.display_name:
             return self.display_name
-        if self.brand_id:
+        if self.brand_id:  # pyright: ignore[reportAttributeAccessIssue]
             return f"{self.brand} {self.name}"
         return self.name
