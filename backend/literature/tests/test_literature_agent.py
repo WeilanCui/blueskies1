@@ -131,6 +131,7 @@ class LiteratureAgentTests(TestCase):
     def test_stub_enriches_preservative_fixture(self):
         extraction = enrich_literature_link(self.link, extractor=StubExtractor())
         self.assertIsNotNone(extraction)
+        assert extraction is not None
         self.link.refresh_from_db()
         self.assertEqual(self.link.enrichment_status, LiteratureEnrichmentStatus.ENRICHED)
         self.assertEqual(self.link.enriched_by, "stub")
