@@ -322,7 +322,9 @@ class RoutineAddProductSerializer(serializers.Serializer):
 
     @transaction.atomic
     def save(self, **kwargs) -> Routine:
-        profile = self.context["profile"]
+        profile = Profile.objects.select_for_update().get(
+            pk=self.context["profile"].pk
+        )
         data = self.validated_data
         routine = data.get("routine") or self._get_or_create_routine(
             profile=profile,

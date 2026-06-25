@@ -1,3 +1,5 @@
+from unittest import mock
+
 from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.urls import reverse
@@ -246,6 +248,26 @@ class RoutineApiTests(TestCase):
         )
 
         self.assertEqual(response.status_code, 400)
+
+    def test_add_product_acquires_profile_row_lock(self):
+        """Verify that save() acquires a row-level lock on the profile."""
+        with mock.patch.object(
+            Profile.objects, "select_for_update", wraps=Profile.objects.select_for_update
+        ) as spy:
+            response = self.client.post(
+                reverse("routine-add-product"),
+                {
+                    "time_of_day": "am",
+                    "product_id": self.product.id,
+                },
+                format="json",
+            )
+
+            self.assertEqual(response.status_code, 201)
+            spy.assert_called_once()
+            # Verify the returned routine was created as expected
+            routine = Routine.objects.get(profile=self.profile, time_of_day="am")
+            self.assertEqual(routine.items.count(), 1)
 
     def test_today_log_creates_checkin_and_daily_product_uses(self):
         routine = Routine.objects.create(profile=self.profile, name="PM", time_of_day="pm")
