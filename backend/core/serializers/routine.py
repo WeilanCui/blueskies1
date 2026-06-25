@@ -2,7 +2,7 @@ from django.db import transaction
 from django.db.models import Max
 from rest_framework import serializers
 
-from core.models import Formulation, Routine, RoutineItem, RoutineStep, RoutineTimeOfDay
+from core.models import Formulation, Profile, Routine, RoutineItem, RoutineStep, RoutineTimeOfDay
 from core.models.product import Product
 from core.serializers.formulation import FormulationSerializer
 from core.serializers.product import ProductSummarySerializer
@@ -360,7 +360,7 @@ class RoutineAddProductSerializer(serializers.Serializer):
 
     def _get_or_create_routine(
         self,
-        profile,
+        profile: Profile,
         time_of_day: str,
         custom_time_label: str,
     ) -> Routine:
