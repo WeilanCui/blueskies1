@@ -7,7 +7,7 @@ from django.db import models
 from django.db.models import Q
 from django.utils import timezone
 
-from core.models.profiles import Profile
+from core.models.profile import Profile
 
 
 LOCATION_GRID_KEY_MAX_LENGTH = 160
