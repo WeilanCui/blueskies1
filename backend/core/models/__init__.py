@@ -23,32 +23,6 @@ from core.models.formulation import (
     Formulation,
     FormulationIngredient,
 )
-from core.models.interactions import (
-    InteractionAssertion,
-    InteractionRule,
-    InteractionType,
-    RiskClass,
-)
-from core.models.literature import (
-    CompoundLiterature,
-    CompoundRelationship,
-    LiteratureEnrichmentStatus,
-    LiteratureReference,
-    RelationshipType,
-    RelevanceCategory,
-    RoleInPaper,
-)
-from core.models.literature_discovery_target import (
-    DEFAULT_DISCOVERY_PRIORITY,
-    DiscoveryReason,
-    DiscoveryTargetStatus,
-    LiteratureDiscoveryEvent,
-    LiteratureDiscoveryEventStatus,
-    LiteratureDiscoveryEventType,
-    LiteratureDiscoveryTarget,
-    LiteratureDiscoveryTargetType,
-    PRODUCT_FORMULATION_DISCOVERY_PRIORITY,
-)
 from core.models.location import (
     Location,
     LocationPrecision,
@@ -62,17 +36,15 @@ from core.models.metadata import (
     SourceType,
 )
 from core.models.product import Product
-from core.models.profiles import (
+from core.models.profile import (
+    Profile,
+    ProfileVisibility,
+)
+from core.models.profile_constraint import (
     ConstraintEnforcement,
     ConstraintSeverity,
-    FitzpatrickSkinType,
-    PregnancyStatus,
-    Profile,
     ProfileConstraint,
     ProfileConstraintKind,
-    ProfileVisibility,
-    SkinProfile,
-    SkinType,
 )
 from core.models.properties import (
     GlossaryTerm,
@@ -90,6 +62,12 @@ from core.models.routine import (
     Routine,
     RoutineItem,
 )
+from core.models.skin_profile import (
+    FitzpatrickSkinType,
+    PregnancyStatus,
+    SkinProfile,
+    SkinType,
+)
 
 __all__ = [
     "Brand",
@@ -98,38 +76,22 @@ __all__ = [
     "Compound",
     "CompoundAlias",
     "CompoundIdentifier",
-    "CompoundLiterature",
-    "CompoundRelationship",
     "CompoundStructure",
     "ConstraintEnforcement",
     "ConstraintSeverity",
     "ContactSubmission",
     "ContactSubmissionStatus",
-    "DEFAULT_DISCOVERY_PRIORITY",
     "DailyCheckIn",
     "DailyProductUse",
-    "DiscoveryReason",
-    "DiscoveryTargetStatus",
     "EnrichmentStatus",
     "EntityType",
     "FitzpatrickSkinType",
     "Formulation",
     "FormulationIngredient",
     "GlossaryTerm",
-    "InteractionAssertion",
-    "InteractionRule",
-    "InteractionType",
-    "LiteratureDiscoveryEvent",
-    "LiteratureDiscoveryEventStatus",
-    "LiteratureDiscoveryEventType",
-    "LiteratureDiscoveryTarget",
-    "LiteratureDiscoveryTargetType",
-    "LiteratureEnrichmentStatus",
-    "LiteratureReference",
     "Location",
     "LocationPrecision",
     "LocationSource",
-    "PRODUCT_FORMULATION_DISCOVERY_PRIORITY",
     "PregnancyStatus",
     "Product",
     "Profile",
@@ -143,10 +105,6 @@ __all__ = [
     "ReactionEvent",
     "ReactionSeverity",
     "ReactionStatus",
-    "RelationshipType",
-    "RelevanceCategory",
-    "RiskClass",
-    "RoleInPaper",
     "Routine",
     "RoutineItem",
     "RoutineStep",

@@ -2,13 +2,14 @@ from unittest import mock
 
 from django.test import TestCase
 
-from core.models import Compound, FormulationIngredient, LiteratureDiscoveryTarget
+from core.models import Compound, FormulationIngredient
+from core.models.product import Product
+from literature.models import LiteratureDiscoveryTarget
 from literature.ingestion.formulation_ingest import (
     ingest_formulation,
     parse_inci_list,
     resolve_compound,
 )
-from core.models.product import Product
 from literature.seeds.loader import upsert_property_definitions
 from types import SimpleNamespace
 

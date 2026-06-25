@@ -159,7 +159,7 @@ def _get_or_create_brand(name: str) -> Brand | None:
         return Brand.objects.filter(name__iexact=cleaned).first()
 
 
-def _get_or_create_inci_product(product_data: InciProduct, *, barcode: str) -> Product:
+def _get_or_create_inci_product(product_data: inci_client.InciProduct, *, barcode: str) -> Product:
     brand_obj = _get_or_create_brand(product_data.brand)
     product_name = product_data.name.strip() or "Unnamed product"
     product_obj = Product.objects.filter(
@@ -278,7 +278,7 @@ def resolve_compound(
     )
     if should_queue:
         from core.models import EntityType
-        from core.models.literature_discovery_target import DiscoveryReason
+        from literature.models import DiscoveryReason
         from literature.discovery import emit_literature_discovery_for_compound
 
         reason = (
@@ -300,7 +300,7 @@ def _queue_literature_discovery_for_resolved_compound(
     *,
     canonical: str,
 ) -> None:
-    from core.models.literature_discovery_target import DiscoveryReason
+    from literature.models import DiscoveryReason
     from literature.discovery import emit_literature_discovery_for_compound
 
     emit_literature_discovery_for_compound(

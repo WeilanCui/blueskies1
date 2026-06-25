@@ -315,7 +315,7 @@ def _get_or_create_compound(
     )
     classification = apply_entity_classification(compound, asserted_by=asserted_by)
     from core.models import EntityType
-    from core.models.literature_discovery_target import DiscoveryReason
+    from literature.models import DiscoveryReason
     from literature.discovery import (
         PRODUCT_DISCOVERY_TRIGGERED_BY,
         emit_literature_discovery_for_compound,

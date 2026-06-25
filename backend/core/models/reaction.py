@@ -1,7 +1,7 @@
 from django.db import models
 from django.utils import timezone
 
-from core.models.profiles import Profile
+from core.models.profile import Profile
 
 
 class ReactionSeverity(models.TextChoices):
