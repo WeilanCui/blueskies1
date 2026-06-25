@@ -6,7 +6,7 @@ from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_SEED_DIR = Path(__file__).resolve().parents[2] / "seed"
+DEFAULT_SEED_DIR = Path(__file__).resolve().parents[2] / "data"
 
 
 def _resolve_seed_dir(seed_dir: Path | str | None) -> Path:
