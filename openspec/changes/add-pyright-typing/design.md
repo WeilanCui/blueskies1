@@ -13,8 +13,8 @@ The backend is Django 5 + DRF + Celery. No `pyproject.toml` exists at repo root;
 ### Checker: pyright (not mypy)
 Chosen by the user. Fast, no separate plugin needed for basic Django support when paired with `django-types`. Distributed as a pip package (`pyright`) that bootstraps its own node-based binary.
 
-### Django stubs: `django-types` (not `django-stubs`)
-`django-types` is the lighter, pyright-oriented stub package (no mypy plugin requirement). It is sufficient for `standard` mode. `djangorestframework-stubs` is intentionally **not** added (user scope = django-types only); DRF imports will therefore lack stubs.
+### Django stubs: `django-types` + `djangorestframework-stubs`
+`django-types` is the lighter, pyright-oriented Django stub package (no mypy plugin requirement). `djangorestframework-stubs` was added after measurement: with deps installed, standard mode produced 39 errors that were **all** DRF false positives (`get_queryset`/`get_serializer_class` overrides, `validated_data` subscripting seen as possibly-None). Adding DRF stubs cleared 37 of them, letting the correctness rules they touch (`reportOptionalSubscript`, `reportIndexIssue`, `reportIncompatibleMethodOverride` at most sites) stay at `error` rather than being blanket-downgraded. Net: stubs over suppression wherever a stub package exists.
 
 ### Type-checking mode: `standard`
 User-selected. More thorough than `basic`. To keep the current tree green at `standard` without annotating code, suppress noise that is purely about missing third-party stubs rather than real type errors:

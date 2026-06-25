@@ -133,7 +133,9 @@ pip install -r backend/requirements-dev.txt
 pre-commit install
 ```
 
-The `pyright` hook runs on every commit, configured via `pyrightconfig.json` at standard type-checking mode scoped to the `backend/` directory. See that file for configuration details.
+The `pyright` hook runs on every commit, configured via `pyrightconfig.json` at standard type-checking mode scoped to the `backend/` directory. Django-aware typing comes from `django-types` and `djangorestframework-stubs`. A handful of standard-mode diagnostics are downgraded to warnings where they fire on framework/stub limitations (e.g. reverse-relation accessors, abstract-model `Meta`); each downgrade is documented inline in `pyrightconfig.json`.
+
+Note: the hook resolves imports from your installed environment, so install `backend/requirements-dev.txt` (which pulls in the runtime deps) before committing — otherwise pyright reports unresolved third-party imports.
 
 ## Layout
 

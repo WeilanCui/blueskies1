@@ -16,12 +16,12 @@ The repository SHALL include a `pyrightconfig.json` at the repo root that scopes
 
 ### Requirement: Django-aware type stubs
 
-The dev tooling SHALL include `django-types` so pyright resolves Django model and ORM constructs.
+The dev tooling SHALL include `django-types` and `djangorestframework-stubs` so pyright resolves Django ORM and DRF constructs.
 
-#### Scenario: django-types is a declared dev dependency
+#### Scenario: stub packages are declared dev dependencies
 
 - WHEN `backend/requirements-dev.txt` is inspected
-- THEN it lists `django-types`
+- THEN it lists `django-types` and `djangorestframework-stubs`
 
 ### Requirement: Clean baseline on current tree
 
@@ -53,4 +53,4 @@ The repository SHALL capture the new dev tooling in `backend/requirements-dev.tx
 #### Scenario: Manifest lists tooling
 
 - WHEN `backend/requirements-dev.txt` is inspected
-- THEN it lists `pyright`, `django-types`, and `pre-commit`
+- THEN it lists `pyright`, `django-types`, `djangorestframework-stubs`, and `pre-commit`
