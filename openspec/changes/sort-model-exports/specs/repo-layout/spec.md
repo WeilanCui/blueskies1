@@ -8,6 +8,7 @@
 
 - **WHEN** reading `core/models/__init__.py`
 - **THEN** the `from core.models.<module>` blocks appear in alphabetical module order
+- **AND** the names imported within each block are in alphabetical order
 - **AND** `__all__` is in alphabetical order
 
 #### Scenario: Export set unchanged
