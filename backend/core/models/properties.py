@@ -124,7 +124,7 @@ class PropertyAssertion(SourceMetadata):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
-    class Meta:
+    class Meta:  # pyright: ignore[reportIncompatibleVariableOverride]
         indexes = [
             models.Index(fields=["compound", "property_def", "is_active"]),
             models.Index(fields=["chemical_class", "property_def", "is_active"]),
@@ -134,7 +134,7 @@ class PropertyAssertion(SourceMetadata):
     def clean(self) -> None:
         targets = sum(
             1
-            for x in (self.compound_id, self.chemical_class_id, self.formulation_id)
+            for x in (self.compound_id, self.chemical_class_id, self.formulation_id)  # pyright: ignore[reportAttributeAccessIssue]
             if x
         )
         if targets != 1:

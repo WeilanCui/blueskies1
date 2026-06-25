@@ -98,7 +98,7 @@ class InteractionAssertion(SourceMetadata):
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
-    class Meta:
+    class Meta:  # pyright: ignore[reportIncompatibleVariableOverride]
         indexes = [
             models.Index(fields=["formulation", "is_active"]),
             models.Index(fields=["compound_a", "compound_b"]),

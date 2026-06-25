@@ -47,19 +47,19 @@ User = get_user_model()
 
 
 class CompoundAliasSerializer(serializers.ModelSerializer):
-    class Meta:
+    class Meta:  # pyright: ignore[reportIncompatibleVariableOverride]
         model = CompoundAlias
         fields = ["alias_text", "alias_type", "source"]
 
 
 class CompoundIdentifierSerializer(serializers.ModelSerializer):
-    class Meta:
+    class Meta:  # pyright: ignore[reportIncompatibleVariableOverride]
         model = CompoundIdentifier
         fields = ["id_type", "id_value", "source", "is_primary"]
 
 
 class CompoundStructureSerializer(serializers.ModelSerializer):
-    class Meta:
+    class Meta:  # pyright: ignore[reportIncompatibleVariableOverride]
         model = CompoundStructure
         fields = [
             "smiles",
@@ -73,7 +73,7 @@ class CompoundStructureSerializer(serializers.ModelSerializer):
 
 
 class ChemicalClassSerializer(serializers.ModelSerializer):
-    class Meta:
+    class Meta:  # pyright: ignore[reportIncompatibleVariableOverride]
         model = ChemicalClass
         fields = ["id", "name", "slug", "description", "parent"]
 
@@ -81,7 +81,7 @@ class ChemicalClassSerializer(serializers.ModelSerializer):
 class ChemicalClassMembershipSerializer(serializers.ModelSerializer):
     chemical_class = ChemicalClassSerializer(read_only=True)
 
-    class Meta:
+    class Meta:  # pyright: ignore[reportIncompatibleVariableOverride]
         model = ChemicalClassMembership
         fields = [
             "chemical_class",
@@ -96,11 +96,11 @@ class ChemicalClassMembershipSerializer(serializers.ModelSerializer):
 
 class PropertyAssertionSerializer(serializers.ModelSerializer):
     key = serializers.CharField(source="property_def.key", read_only=True)
-    label = serializers.CharField(source="property_def.label", read_only=True)
+    label = serializers.CharField(source="property_def.label", read_only=True)  # pyright: ignore[reportAssignmentType]
     value = serializers.SerializerMethodField()
     inherited_from = serializers.SerializerMethodField()
 
-    class Meta:
+    class Meta:  # pyright: ignore[reportIncompatibleVariableOverride]
         model = PropertyAssertion
         fields = [
             "key",
@@ -117,11 +117,11 @@ class PropertyAssertionSerializer(serializers.ModelSerializer):
             "retrieved_at",
         ]
 
-    def get_value(self, obj: PropertyAssertion) -> str:
+    def get_value(self, obj: PropertyAssertion) -> str:  # pyright: ignore[reportIncompatibleMethodOverride]
         return obj.display_value()
 
     def get_inherited_from(self, obj: PropertyAssertion) -> str:
-        if obj.chemical_class_id is None:
+        if obj.chemical_class_id is None:  # pyright: ignore[reportAttributeAccessIssue]
             return ""
         return obj.chemical_class.name
 
@@ -136,7 +136,7 @@ class CompoundSerializer(serializers.ModelSerializer):
     effective_properties = serializers.SerializerMethodField()
     literature_count = serializers.SerializerMethodField()
 
-    class Meta:
+    class Meta:  # pyright: ignore[reportIncompatibleVariableOverride]
         model = Compound
         fields = [
             "id",
@@ -160,29 +160,29 @@ class CompoundSerializer(serializers.ModelSerializer):
     def get_chemical_classes(self, obj: Compound) -> list:
         memberships = [
             membership
-            for membership in obj.chemical_class_memberships.all()
+            for membership in obj.chemical_class_memberships.all()  # pyright: ignore[reportAttributeAccessIssue]
             if membership.is_active
         ]
-        return ChemicalClassMembershipSerializer(memberships, many=True).data
+        return ChemicalClassMembershipSerializer(memberships, many=True).data  # pyright: ignore[reportReturnType]
 
     def get_properties(self, obj: Compound) -> list:
-        active = [a for a in obj.property_assertions.all() if a.is_active]
-        return PropertyAssertionSerializer(active, many=True).data
+        active = [a for a in obj.property_assertions.all() if a.is_active]  # pyright: ignore[reportAttributeAccessIssue]
+        return PropertyAssertionSerializer(active, many=True).data  # pyright: ignore[reportReturnType]
 
     def get_inherited_properties(self, obj: Compound) -> list:
-        return PropertyAssertionSerializer(
+        return PropertyAssertionSerializer(  # pyright: ignore[reportReturnType]
             obj.inherited_property_assertions(),
             many=True,
         ).data
 
     def get_effective_properties(self, obj: Compound) -> list:
-        return PropertyAssertionSerializer(
+        return PropertyAssertionSerializer(  # pyright: ignore[reportReturnType]
             obj.effective_property_assertions(),
             many=True,
         ).data
 
     def get_literature_count(self, obj: Compound) -> int:
-        return len(obj.literature_links.all())
+        return len(obj.literature_links.all())  # pyright: ignore[reportAttributeAccessIssue]
 
 
 class FormulationSubmitSerializer(serializers.Serializer):
@@ -206,7 +206,7 @@ def auth_user_payload(user) -> dict:
         "username": user.get_username(),
         "email": user.email,
         "display_name": profile.display_name,
-        "has_completed_intake": profile.skin_profiles.filter(is_current=True).exists(),
+        "has_completed_intake": profile.skin_profiles.filter(is_current=True).exists(),  # pyright: ignore[reportAttributeAccessIssue]
     }
 
 
@@ -240,7 +240,7 @@ class SignupSerializer(serializers.Serializer):
 
     def create(self, validated_data: dict):
         email = validated_data["email"]
-        user = User.objects.create_user(
+        user = User.objects.create_user(  # pyright: ignore[reportAttributeAccessIssue]
             username=_unique_username_from_email(email),
             email=email,
             password=validated_data["password"],
@@ -279,7 +279,7 @@ class LoginSerializer(serializers.Serializer):
 class ContactSubmissionSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(required=True, allow_blank=False)
 
-    class Meta:
+    class Meta:  # pyright: ignore[reportIncompatibleVariableOverride]
         model = ContactSubmission
         fields = ["id", "name", "email", "feedback", "source", "created_at"]
         read_only_fields = ["id", "created_at"]
@@ -325,7 +325,7 @@ class LocationSerializer(serializers.ModelSerializer):
         read_only=True,
     )
 
-    class Meta:
+    class Meta:  # pyright: ignore[reportIncompatibleVariableOverride]
         model = Location
         fields = [
             "id",
@@ -367,7 +367,7 @@ class WeatherSnapshotSerializer(serializers.ModelSerializer):
         read_only=True,
     )
 
-    class Meta:
+    class Meta:  # pyright: ignore[reportIncompatibleVariableOverride]
         model = WeatherSnapshot
         fields = [
             "id",
@@ -425,7 +425,7 @@ class ProfileLocationSerializer(serializers.ModelSerializer):
         "precision",
     }
 
-    class Meta:
+    class Meta:  # pyright: ignore[reportIncompatibleVariableOverride]
         model = ProfileLocation
         fields = [
             "id",
@@ -549,7 +549,7 @@ class ProfileLocationSerializer(serializers.ModelSerializer):
 class ProductSummarySerializer(serializers.ModelSerializer):
     brand = serializers.SerializerMethodField()
 
-    class Meta:
+    class Meta:  # pyright: ignore[reportIncompatibleVariableOverride]
         model = Product
         fields = [
             "id",
@@ -561,7 +561,7 @@ class ProductSummarySerializer(serializers.ModelSerializer):
         ]
 
     def get_brand(self, obj: Product) -> str:
-        if obj.brand_id is None:
+        if obj.brand_id is None:  # pyright: ignore[reportAttributeAccessIssue]
             return ""
         return obj.brand.name
 
@@ -573,7 +573,7 @@ class FormulationIngredientSerializer(serializers.ModelSerializer):
     effective_functional_classes = serializers.SerializerMethodField()
     is_function_override = serializers.SerializerMethodField()
 
-    class Meta:
+    class Meta:  # pyright: ignore[reportIncompatibleVariableOverride]
         model = FormulationIngredient
         fields = [
             "position",
@@ -621,7 +621,7 @@ class FormulationSerializer(serializers.ModelSerializer):
     ingredients = FormulationIngredientSerializer(many=True, read_only=True)
     ingredient_count = serializers.SerializerMethodField()
 
-    class Meta:
+    class Meta:  # pyright: ignore[reportIncompatibleVariableOverride]
         model = Formulation
         fields = [
             "id",
@@ -644,7 +644,7 @@ class FormulationSerializer(serializers.ModelSerializer):
         ]
 
     def get_ingredient_count(self, obj: Formulation) -> int:
-        return obj.ingredients.count()
+        return obj.ingredients.count()  # pyright: ignore[reportAttributeAccessIssue]
 
 
 class RoutineItemSerializer(serializers.ModelSerializer):
@@ -655,7 +655,7 @@ class RoutineItemSerializer(serializers.ModelSerializer):
     display_name = serializers.CharField(read_only=True)
     id = serializers.IntegerField(required=False, allow_null=True)
 
-    class Meta:
+    class Meta:  # pyright: ignore[reportIncompatibleVariableOverride]
         model = RoutineItem
         fields = [
             "id",
@@ -696,7 +696,7 @@ class RoutineItemSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError(
                     {"formulation_id": "Formulation not found."}
                 )
-            if product is not None and formulation.product_id != product.id:
+            if product is not None and formulation.product_id != product.id:  # pyright: ignore[reportAttributeAccessIssue]
                 raise serializers.ValidationError(
                     {"formulation_id": "Formulation must belong to product."}
                 )
@@ -728,7 +728,7 @@ class RoutineItemSerializer(serializers.ModelSerializer):
 class RoutineSerializer(serializers.ModelSerializer):
     items = RoutineItemSerializer(many=True, required=False)
 
-    class Meta:
+    class Meta:  # pyright: ignore[reportIncompatibleVariableOverride]
         model = Routine
         fields = [
             "id",
@@ -800,7 +800,7 @@ class RoutineSerializer(serializers.ModelSerializer):
         """Update routine items in place so reordering preserves item IDs."""
         kept_ids: list[int] = []
 
-        for offset, existing in enumerate(routine.items.all(), start=1):
+        for offset, existing in enumerate(routine.items.all(), start=1):  # pyright: ignore[reportAttributeAccessIssue]
             existing.position = 10_000 + offset
             existing.save(update_fields=["position"])
 
@@ -811,7 +811,7 @@ class RoutineSerializer(serializers.ModelSerializer):
 
             if item_id is not None:
                 try:
-                    routine_item = routine.items.get(pk=item_id)
+                    routine_item = routine.items.get(pk=item_id)  # pyright: ignore[reportAttributeAccessIssue]
                 except RoutineItem.DoesNotExist:
                     routine_item = None
             else:
@@ -830,9 +830,9 @@ class RoutineSerializer(serializers.ModelSerializer):
                 position=position,
                 **item_data,
             )
-            kept_ids.append(created.id)
+            kept_ids.append(created.id)  # pyright: ignore[reportAttributeAccessIssue]
 
-        routine.items.exclude(pk__in=kept_ids).delete()
+        routine.items.exclude(pk__in=kept_ids).delete()  # pyright: ignore[reportAttributeAccessIssue]
 
     def _deactivate_competing(self, routine: Routine) -> None:
         if not routine.is_active:
@@ -922,7 +922,7 @@ class RoutineAddProductSerializer(serializers.Serializer):
                 raise serializers.ValidationError(
                     {"formulation_id": "Formulation not found."}
                 )
-            if product is not None and formulation.product_id != product.id:
+            if product is not None and formulation.product_id != product.id:  # pyright: ignore[reportAttributeAccessIssue]
                 raise serializers.ValidationError(
                     {"formulation_id": "Formulation must belong to product."}
                 )
@@ -981,7 +981,7 @@ class RoutineAddProductSerializer(serializers.Serializer):
             return routine
 
         next_position = (
-            routine.items.aggregate(max_position=Max("position"))["max_position"] or 0
+            routine.items.aggregate(max_position=Max("position"))["max_position"] or 0  # pyright: ignore[reportAttributeAccessIssue]
         ) + 1
         self.item = RoutineItem.objects.create(
             routine=routine,
@@ -1041,19 +1041,19 @@ class RoutineAddProductSerializer(serializers.Serializer):
     ) -> RoutineItem | None:
         if formulation is not None:
             return (
-                routine.items.filter(formulation=formulation)
+                routine.items.filter(formulation=formulation)  # pyright: ignore[reportAttributeAccessIssue]
                 .order_by("position", "id")
                 .first()
             )
         if product is not None:
             return (
-                routine.items.filter(product=product)
+                routine.items.filter(product=product)  # pyright: ignore[reportAttributeAccessIssue]
                 .order_by("position", "id")
                 .first()
             )
         if raw_product_name:
             return (
-                routine.items.filter(raw_product_name__iexact=raw_product_name)
+                routine.items.filter(raw_product_name__iexact=raw_product_name)  # pyright: ignore[reportAttributeAccessIssue]
                 .order_by("position", "id")
                 .first()
             )
@@ -1065,7 +1065,7 @@ class DailyProductUseSerializer(serializers.ModelSerializer):
     formulation = FormulationSerializer(read_only=True)
     routine_item = RoutineItemSerializer(read_only=True)
 
-    class Meta:
+    class Meta:  # pyright: ignore[reportIncompatibleVariableOverride]
         model = DailyProductUse
         fields = [
             "id",
@@ -1085,7 +1085,7 @@ class DailyCheckInSerializer(serializers.ModelSerializer):
     product_uses = DailyProductUseSerializer(many=True, read_only=True)
     completed_routine_item_ids = serializers.SerializerMethodField()
 
-    class Meta:
+    class Meta:  # pyright: ignore[reportIncompatibleVariableOverride]
         model = DailyCheckIn
         fields = [
             "id",
@@ -1105,7 +1105,7 @@ class DailyCheckInSerializer(serializers.ModelSerializer):
     def get_completed_routine_item_ids(self, obj: DailyCheckIn) -> list[int]:
         return [
             product_use.routine_item_id
-            for product_use in obj.product_uses.all()
+            for product_use in obj.product_uses.all()  # pyright: ignore[reportAttributeAccessIssue]
             if product_use.routine_item_id is not None
         ]
 
@@ -1170,7 +1170,7 @@ class TodayCheckInSerializer(serializers.Serializer):
             .filter(routine__profile=profile, pk__in=item_ids)
             .order_by("routine__time_of_day", "position", "id")
         )
-        completed_item_ids = {item.id for item in items}
+        completed_item_ids = {item.id for item in items}  # pyright: ignore[reportAttributeAccessIssue]
         active_routines = profile.routines.filter(
             is_active=True,
             time_of_day__in=[RoutineTimeOfDay.AM, RoutineTimeOfDay.PM],
@@ -1189,7 +1189,7 @@ class TodayCheckInSerializer(serializers.Serializer):
         )
         checkin.save()
 
-        checkin.product_uses.filter(routine_item__isnull=False).delete()
+        checkin.product_uses.filter(routine_item__isnull=False).delete()  # pyright: ignore[reportAttributeAccessIssue]
         for item in items:
             DailyProductUse.objects.create(
                 checkin=checkin,
@@ -1223,7 +1223,7 @@ class ReactionEventSerializer(serializers.ModelSerializer):
     product_id = serializers.IntegerField(required=False, allow_null=True)
     formulation_id = serializers.IntegerField(required=False, allow_null=True)
 
-    class Meta:
+    class Meta:  # pyright: ignore[reportIncompatibleVariableOverride]
         model = ReactionEvent
         fields = [
             "id",
@@ -1276,7 +1276,7 @@ class ReactionEventSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError(
                     {"formulation_id": "Formulation not found."}
                 )
-            if product is not None and formulation.product_id != product.id:
+            if product is not None and formulation.product_id != product.id:  # pyright: ignore[reportAttributeAccessIssue]
                 raise serializers.ValidationError(
                     {"formulation_id": "Formulation must belong to product."}
                 )
@@ -1335,7 +1335,7 @@ def catalog_slug(product: Product) -> str:
 
 
 def serialize_catalog_product(product: Product) -> dict:
-    formulation = product.formulations.first()
+    formulation = product.formulations.first()  # pyright: ignore[reportAttributeAccessIssue]
     ingredients: list[dict] = []
 
     if formulation is not None:
@@ -1350,11 +1350,11 @@ def serialize_catalog_product(product: Product) -> dict:
                 }
             )
 
-    brand_name = product.brand.name if product.brand_id else ""
+    brand_name = product.brand.name if product.brand_id else ""  # pyright: ignore[reportAttributeAccessIssue]
 
     return {
         "id": catalog_slug(product),
-        "product_id": product.id,
+        "product_id": product.id,  # pyright: ignore[reportAttributeAccessIssue]
         "formulation_id": formulation.id if formulation is not None else None,
         "brand": brand_name,
         "name": product.name,
@@ -1436,12 +1436,12 @@ class IntakeSerializer(serializers.Serializer):
         if goals_text:
             goals = [*goals, goals_text]
 
-        current_profiles = profile.skin_profiles.filter(is_current=True).order_by(
+        current_profiles = profile.skin_profiles.filter(is_current=True).order_by(  # pyright: ignore[reportAttributeAccessIssue]
             "-captured_at",
             "-id",
         )
         skin_profile = current_profiles.first()
-        profile.skin_profiles.filter(is_current=True).exclude(
+        profile.skin_profiles.filter(is_current=True).exclude(  # pyright: ignore[reportAttributeAccessIssue]
             pk=getattr(skin_profile, "pk", None),
         ).update(is_current=False)
 
@@ -1473,7 +1473,7 @@ class IntakeSerializer(serializers.Serializer):
                 setattr(skin_profile, field, value)
             skin_profile.save(update_fields=[*skin_profile_values.keys()])
 
-        profile.constraints.filter(source="intake").delete()
+        profile.constraints.filter(source="intake").delete()  # pyright: ignore[reportAttributeAccessIssue]
         for sensitivity in data.get("sensitivities", []):
             ProfileConstraint.objects.create(
                 profile=profile,
@@ -1488,10 +1488,10 @@ class IntakeSerializer(serializers.Serializer):
 
 
 def intake_payload(profile: Profile) -> dict:
-    skin_profile = profile.skin_profiles.filter(is_current=True).first()
-    constraints = profile.constraints.filter(source="intake", is_active=True)
+    skin_profile = profile.skin_profiles.filter(is_current=True).first()  # pyright: ignore[reportAttributeAccessIssue]
+    constraints = profile.constraints.filter(source="intake", is_active=True)  # pyright: ignore[reportAttributeAccessIssue]
     return {
-        "profile_id": profile.id,
+        "profile_id": profile.id,  # pyright: ignore[reportAttributeAccessIssue]
         "skin_profile": None
         if skin_profile is None
         else {

@@ -81,7 +81,7 @@ class ProfileConstraintEvaluator:
         return evaluation
 
     def active_constraints(self, profile: Profile):
-        return profile.constraints.filter(is_active=True).select_related(
+        return profile.constraints.filter(is_active=True).select_related(  # pyright: ignore[reportAttributeAccessIssue]
             "compound",
             "chemical_class",
             "formulation",
@@ -93,23 +93,23 @@ class ProfileConstraintEvaluator:
         constraint: ProfileConstraint,
         formulation: Formulation,
     ) -> bool:
-        if constraint.formulation_id:
-            return constraint.formulation_id == formulation.id
+        if constraint.formulation_id:  # pyright: ignore[reportAttributeAccessIssue]
+            return constraint.formulation_id == formulation.id  # pyright: ignore[reportAttributeAccessIssue]
 
-        if constraint.compound_id:
-            return formulation.ingredients.filter(
-                compound_id=constraint.compound_id,
+        if constraint.compound_id:  # pyright: ignore[reportAttributeAccessIssue]
+            return formulation.ingredients.filter(  # pyright: ignore[reportAttributeAccessIssue]
+                compound_id=constraint.compound_id,  # pyright: ignore[reportAttributeAccessIssue]
             ).exists()
 
-        if constraint.chemical_class_id:
-            return formulation.ingredients.filter(
+        if constraint.chemical_class_id:  # pyright: ignore[reportAttributeAccessIssue]
+            return formulation.ingredients.filter(  # pyright: ignore[reportAttributeAccessIssue]
                 compound__chemical_class_memberships__chemical_class_id=(
-                    constraint.chemical_class_id
+                    constraint.chemical_class_id  # pyright: ignore[reportAttributeAccessIssue]
                 ),
                 compound__chemical_class_memberships__is_active=True,
             ).exists()
 
-        if constraint.property_def_id:
+        if constraint.property_def_id:  # pyright: ignore[reportAttributeAccessIssue]
             return self._matches_property_constraint(constraint, formulation)
 
         if constraint.raw_label:
@@ -122,7 +122,7 @@ class ProfileConstraintEvaluator:
         constraint: ProfileConstraint,
         formulation: Formulation,
     ) -> bool:
-        property_def_id = constraint.property_def_id
+        property_def_id = constraint.property_def_id  # pyright: ignore[reportAttributeAccessIssue]
         return Formulation.objects.filter(pk=formulation.pk).filter(
             Q(
                 property_assertions__property_def_id=property_def_id,
@@ -166,7 +166,7 @@ class ProfileConstraintEvaluator:
         score_delta = self._score_delta(constraint)
         target = constraint.display_target()
         return ConstraintImpact(
-            constraint_id=constraint.id,
+            constraint_id=constraint.id,  # pyright: ignore[reportAttributeAccessIssue]
             kind=constraint.kind,
             enforcement=constraint.enforcement,
             severity=constraint.severity,
