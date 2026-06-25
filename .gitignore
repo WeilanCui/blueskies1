@@ -18,3 +18,4 @@ yarn-error.log*
 postgres_data/
 redis_data/
 .venv/
+.worktrees/
