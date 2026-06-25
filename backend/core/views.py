@@ -1,7 +1,7 @@
 from django.contrib.auth import login as django_login
 from django.contrib.auth import logout as django_logout
 from django.db import connection
-from django.db.models import Prefetch, Q
+from django.db.models import Count, Prefetch, Q
 from django.http import Http404
 from django.middleware.csrf import get_token
 from django.shortcuts import get_object_or_404
@@ -134,12 +134,12 @@ class CompoundViewSet(ReadOnlyResourceViewSet):
     queryset = (
         Compound.objects.all()
         .select_related("structure")
+        .annotate(literature_count=Count("literature_links"))
         .prefetch_related(
             "aliases",
             "identifiers",
             "chemical_class_memberships__chemical_class",
             "property_assertions__property_def",
-            "literature_links",
         )
     )
 
