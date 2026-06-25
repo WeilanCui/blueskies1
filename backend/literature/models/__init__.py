@@ -1,3 +1,22 @@
+from literature.models.discovery_target import (
+    ACTIVE_DISCOVERY_STATUSES,
+    DEFAULT_DISCOVERY_PRIORITY,
+    DEFAULT_MAX_DISCOVERY_ATTEMPTS,
+    DiscoveryReason,
+    DiscoveryTargetStatus,
+    LiteratureDiscoveryEvent,
+    LiteratureDiscoveryEventStatus,
+    LiteratureDiscoveryEventType,
+    LiteratureDiscoveryTarget,
+    LiteratureDiscoveryTargetType,
+    PRODUCT_FORMULATION_DISCOVERY_PRIORITY,
+)
+from literature.models.interactions import (
+    InteractionAssertion,
+    InteractionRule,
+    InteractionType,
+    RiskClass,
+)
 from literature.models.literature import (
     CompoundLiterature,
     CompoundRelationship,
@@ -7,32 +26,15 @@ from literature.models.literature import (
     RelevanceCategory,
     RoleInPaper,
 )
-from literature.models.discovery_target import (
-    DiscoveryReason,
-    DiscoveryTargetStatus,
-    DEFAULT_DISCOVERY_PRIORITY,
-    LiteratureDiscoveryEvent,
-    LiteratureDiscoveryEventStatus,
-    LiteratureDiscoveryEventType,
-    LiteratureDiscoveryTarget,
-    LiteratureDiscoveryTargetType,
-    PRODUCT_FORMULATION_DISCOVERY_PRIORITY,
-    ACTIVE_DISCOVERY_STATUSES,
-    DEFAULT_MAX_DISCOVERY_ATTEMPTS,
-)
-from literature.models.interactions import (
-    InteractionAssertion,
-    InteractionRule,
-    InteractionType,
-    RiskClass,
-)
 
 __all__ = [
+    "ACTIVE_DISCOVERY_STATUSES",
     "CompoundLiterature",
     "CompoundRelationship",
+    "DEFAULT_DISCOVERY_PRIORITY",
+    "DEFAULT_MAX_DISCOVERY_ATTEMPTS",
     "DiscoveryReason",
     "DiscoveryTargetStatus",
-    "DEFAULT_DISCOVERY_PRIORITY",
     "InteractionAssertion",
     "InteractionRule",
     "InteractionType",
@@ -48,6 +50,4 @@ __all__ = [
     "RelevanceCategory",
     "RiskClass",
     "RoleInPaper",
-    "ACTIVE_DISCOVERY_STATUSES",
-    "DEFAULT_MAX_DISCOVERY_ATTEMPTS",
 ]
