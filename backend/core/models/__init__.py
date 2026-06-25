@@ -1,3 +1,4 @@
+from core.models.brand import Brand
 from core.models.compound import (
     ChemicalClass,
     ChemicalClassMembership,
@@ -5,30 +6,23 @@ from core.models.compound import (
     CompoundAlias,
     CompoundIdentifier,
     CompoundStructure,
-    EntityType,
     EnrichmentStatus,
+    EntityType,
 )
-from core.models.contact import ContactSubmission, ContactSubmissionStatus
-from core.models.brand import Brand
+from core.models.contact import (
+    ContactSubmission,
+    ContactSubmissionStatus,
+)
 from core.models.daily_checkin import (
     DailyCheckIn,
     DailyProductUse,
     RoutineStep,
     RoutineTimeOfDay,
 )
-from core.models.formulation import Formulation, FormulationIngredient
-from core.models.location import (
-    Location,
-    LocationPrecision,
-    LocationSource,
-    ProfileLocation,
-    WeatherSnapshot,
-    WeatherSnapshotSource,
+from core.models.formulation import (
+    Formulation,
+    FormulationIngredient,
 )
-from core.models.product import Product
-from core.models.reaction import ReactionEvent, ReactionSeverity, ReactionStatus
-from core.models.routine import Routine, RoutineItem
-from core.models.metadata import SourceMetadata, SourceType
 from core.models.interactions import (
     InteractionAssertion,
     InteractionRule,
@@ -45,9 +39,9 @@ from core.models.literature import (
     RoleInPaper,
 )
 from core.models.literature_discovery_target import (
+    DEFAULT_DISCOVERY_PRIORITY,
     DiscoveryReason,
     DiscoveryTargetStatus,
-    DEFAULT_DISCOVERY_PRIORITY,
     LiteratureDiscoveryEvent,
     LiteratureDiscoveryEventStatus,
     LiteratureDiscoveryEventType,
@@ -55,13 +49,19 @@ from core.models.literature_discovery_target import (
     LiteratureDiscoveryTargetType,
     PRODUCT_FORMULATION_DISCOVERY_PRIORITY,
 )
-from core.models.properties import (
-    GlossaryTerm,
-    PropertyAssertion,
-    PropertyDefinition,
-    PropertyDomain,
-    ValueType,
+from core.models.location import (
+    Location,
+    LocationPrecision,
+    LocationSource,
+    ProfileLocation,
+    WeatherSnapshot,
+    WeatherSnapshotSource,
 )
+from core.models.metadata import (
+    SourceMetadata,
+    SourceType,
+)
+from core.models.product import Product
 from core.models.profiles import (
     ConstraintEnforcement,
     ConstraintSeverity,
@@ -74,29 +74,44 @@ from core.models.profiles import (
     SkinProfile,
     SkinType,
 )
+from core.models.properties import (
+    GlossaryTerm,
+    PropertyAssertion,
+    PropertyDefinition,
+    PropertyDomain,
+    ValueType,
+)
+from core.models.reaction import (
+    ReactionEvent,
+    ReactionSeverity,
+    ReactionStatus,
+)
+from core.models.routine import (
+    Routine,
+    RoutineItem,
+)
 
 __all__ = [
     "Brand",
-    "Compound",
-    "CompoundAlias",
     "ChemicalClass",
     "ChemicalClassMembership",
+    "Compound",
+    "CompoundAlias",
     "CompoundIdentifier",
     "CompoundLiterature",
     "CompoundRelationship",
     "CompoundStructure",
-    "ContactSubmission",
-    "ContactSubmissionStatus",
     "ConstraintEnforcement",
     "ConstraintSeverity",
+    "ContactSubmission",
+    "ContactSubmissionStatus",
+    "DEFAULT_DISCOVERY_PRIORITY",
     "DailyCheckIn",
     "DailyProductUse",
     "DiscoveryReason",
     "DiscoveryTargetStatus",
-    "DEFAULT_DISCOVERY_PRIORITY",
-    "PRODUCT_FORMULATION_DISCOVERY_PRIORITY",
-    "EntityType",
     "EnrichmentStatus",
+    "EntityType",
     "FitzpatrickSkinType",
     "Formulation",
     "FormulationIngredient",
@@ -104,16 +119,17 @@ __all__ = [
     "InteractionAssertion",
     "InteractionRule",
     "InteractionType",
-    "LiteratureEnrichmentStatus",
     "LiteratureDiscoveryEvent",
     "LiteratureDiscoveryEventStatus",
     "LiteratureDiscoveryEventType",
     "LiteratureDiscoveryTarget",
     "LiteratureDiscoveryTargetType",
+    "LiteratureEnrichmentStatus",
     "LiteratureReference",
     "Location",
     "LocationPrecision",
     "LocationSource",
+    "PRODUCT_FORMULATION_DISCOVERY_PRIORITY",
     "PregnancyStatus",
     "Product",
     "Profile",
@@ -124,11 +140,11 @@ __all__ = [
     "PropertyAssertion",
     "PropertyDefinition",
     "PropertyDomain",
-    "RelationshipType",
-    "RelevanceCategory",
     "ReactionEvent",
     "ReactionSeverity",
     "ReactionStatus",
+    "RelationshipType",
+    "RelevanceCategory",
     "RiskClass",
     "RoleInPaper",
     "Routine",
