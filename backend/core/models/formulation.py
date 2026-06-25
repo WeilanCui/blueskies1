@@ -40,6 +40,7 @@ class Formulation(models.Model):
     interaction_assertions: Manager[InteractionAssertion]
     daily_product_uses: Manager[DailyProductUse]
     routine_items: Manager[RoutineItem]
+    reaction_events: Manager[ReactionEvent]
 
     product = models.ForeignKey(
         Product,

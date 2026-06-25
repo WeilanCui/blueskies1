@@ -81,6 +81,8 @@ class Compound(models.Model):
     formulation_appearances: Manager[FormulationIngredient]
     literature_discovery_targets: Manager[LiteratureDiscoveryTarget]
     literature_discovery_events: Manager[LiteratureDiscoveryEvent]
+    aliases: Manager[CompoundAlias]
+    structure: CompoundStructure
 
     canonical_inci = models.CharField(max_length=512, unique=True)
     display_name = models.CharField(max_length=512, blank=True)
