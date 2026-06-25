@@ -18,7 +18,7 @@ Chosen by the user. Fast, no separate plugin needed for basic Django support whe
 
 ### Type-checking mode: `standard`
 User-selected. More thorough than `basic`. To keep the current tree green at `standard` without annotating code, suppress noise that is purely about missing third-party stubs rather than real type errors:
-- `reportMissingTypeStubs: "none"` and `reportMissingModuleSource: "none"` — DRF/celery/etc. have no stubs; these would otherwise be reported.
+- `reportMissingTypeStubs: "none"` and `reportMissingModuleSource: "none"` — celery/openai/redis/etc. have no stubs (DRF is covered by `djangorestframework-stubs`); these would otherwise be reported.
 - `reportAttributeAccessIssue` / dynamic-Django diagnostics are left at standard defaults but validated against the tree; if specific standard-mode diagnostics fire on legitimate Django dynamic patterns, downgrade only those specific rules to `"warning"` (warnings do not fail the hook by default) rather than weakening the whole mode.
 - Exclude `**/migrations`, `frontend/`, `**/__pycache__`, virtualenvs, and `**/node_modules`.
 
@@ -32,7 +32,7 @@ No `pyproject.toml` exists; adding a standalone `pyrightconfig.json` is the leas
 
 ## Risks / Trade-offs
 
-- **DRF unstubbed** → pyright sees `serializers`, `viewsets`, etc. as partially unknown. At `standard` with stub-missing reports silenced, this yields `Unknown` types rather than errors, so it won't fail the gate. Accepted; can add `djangorestframework-stubs` later.
+- **DRF stubs coverage partial** → `djangorestframework-stubs` was added (cleared 37 of 39 DRF false-positive errors). 2 residual diagnostics (`reportReturnType` on `ReturnDict`, `reportIncompatibleMethodOverride` on framework overrides) are downgraded to warning. Celery/openai/redis remain stubless; `reportMissingTypeStubs`/`reportMissingModuleSource: "none"` silence that noise.
 - **Hook requires manual `pre-commit install`** → not automatic on clone. Documented in README/proposal. Accepted.
 - **Standard mode may surface real latent errors** in current code. If so, the tooling-only scope means we fix them minimally or scope the specific diagnostic to `warning`; we do not mass-annotate.
 
