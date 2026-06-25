@@ -147,4 +147,7 @@ class CompoundSerializer(serializers.ModelSerializer):
         ).data
 
     def get_literature_count(self, obj: Compound) -> int:
-        return len(obj.literature_links.all())
+        count = getattr(obj, "literature_count", None)
+        if count is not None:
+            return count
+        return obj.literature_links.count()
