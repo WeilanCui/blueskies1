@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from django.db import models
 from django.db.models import Q
 
@@ -75,6 +77,11 @@ PRODUCT_FORMULATION_DISCOVERY_PRIORITY = 10
 class LiteratureDiscoveryTarget(models.Model):
     """Queued literature discovery work item for one searchable entity."""
 
+    id: int
+    compound_id: int | None
+    formulation_id: int | None
+    product_id: int | None
+
     target_type = models.CharField(
         max_length=32,
         choices=LiteratureDiscoveryTargetType.choices,
@@ -126,8 +133,8 @@ class LiteratureDiscoveryTarget(models.Model):
         db_table = "core_literaturediscoverytarget"
         ordering = ["-priority", "created_at", "id"]
         constraints = [
-            models.CheckConstraint(
-                check=(
+            models.CheckConstraint(  # pyright: ignore[reportCallIssue]
+                check=(  # pyright: ignore[reportCallIssue]
                     Q(
                         target_type=LiteratureDiscoveryTargetType.COMPOUND,
                         compound__isnull=False,
@@ -200,11 +207,11 @@ class LiteratureDiscoveryTarget(models.Model):
     @property
     def target_id(self) -> int | None:
         if self.target_type == LiteratureDiscoveryTargetType.COMPOUND:
-            return self.compound_id
+            return self.compound_id  # pyright: ignore[reportAttributeAccessIssue]
         if self.target_type == LiteratureDiscoveryTargetType.FORMULATION:
-            return self.formulation_id
+            return self.formulation_id  # pyright: ignore[reportAttributeAccessIssue]
         if self.target_type == LiteratureDiscoveryTargetType.PRODUCT:
-            return self.product_id
+            return self.product_id  # pyright: ignore[reportAttributeAccessIssue]
         return None
 
     def resolved_search_label(self) -> str:
@@ -231,6 +238,11 @@ class LiteratureDiscoveryTarget(models.Model):
 
 class LiteratureDiscoveryEvent(models.Model):
     """Durable outbox event that becomes a literature discovery work item."""
+
+    id: int
+    compound_id: int | None
+    formulation_id: int | None
+    product_id: int | None
 
     event_type = models.CharField(
         max_length=64,
@@ -293,8 +305,8 @@ class LiteratureDiscoveryEvent(models.Model):
         db_table = "core_literaturediscoveryevent"
         ordering = ["created_at", "id"]
         constraints = [
-            models.CheckConstraint(
-                check=(
+            models.CheckConstraint(  # pyright: ignore[reportCallIssue]
+                check=(  # pyright: ignore[reportCallIssue]
                     Q(
                         target_type=LiteratureDiscoveryTargetType.COMPOUND,
                         compound__isnull=False,
@@ -331,11 +343,11 @@ class LiteratureDiscoveryEvent(models.Model):
     @property
     def target_id(self) -> int | None:
         if self.target_type == LiteratureDiscoveryTargetType.COMPOUND:
-            return self.compound_id
+            return self.compound_id  # pyright: ignore[reportAttributeAccessIssue]
         if self.target_type == LiteratureDiscoveryTargetType.FORMULATION:
-            return self.formulation_id
+            return self.formulation_id  # pyright: ignore[reportAttributeAccessIssue]
         if self.target_type == LiteratureDiscoveryTargetType.PRODUCT:
-            return self.product_id
+            return self.product_id  # pyright: ignore[reportAttributeAccessIssue]
         return None
 
     def resolved_search_label(self) -> str:

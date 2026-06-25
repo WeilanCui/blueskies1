@@ -1,3 +1,7 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 
@@ -5,12 +9,38 @@ from core.models.compound import EnrichmentStatus
 from core.models.metadata import SourceType
 from core.models.product import Product
 
+if TYPE_CHECKING:
+    from django.db.models import Manager
+
+    from core.models.daily_checkin import DailyProductUse
+    from core.models.interactions import InteractionAssertion
+    from core.models.literature_discovery_target import (
+        LiteratureDiscoveryEvent,
+        LiteratureDiscoveryTarget,
+    )
+    from core.models.properties import PropertyAssertion
+    from core.models.profiles import ProfileConstraint
+    from core.models.reaction import ReactionEvent
+    from core.models.routine import RoutineItem
+
 
 
 
 
 class Formulation(models.Model):
     """A specific ingredient-list variant for a product."""
+
+    id: int
+    product_id: int
+    ingredients: Manager[FormulationIngredient]
+    literature_discovery_targets: Manager[LiteratureDiscoveryTarget]
+    literature_discovery_events: Manager[LiteratureDiscoveryEvent]
+    property_assertions: Manager[PropertyAssertion]
+    profile_constraints: Manager[ProfileConstraint]
+    interaction_assertions: Manager[InteractionAssertion]
+    daily_product_uses: Manager[DailyProductUse]
+    routine_items: Manager[RoutineItem]
+    reaction_events: Manager[ReactionEvent]
 
     product = models.ForeignKey(
         Product,
@@ -59,6 +89,9 @@ class Formulation(models.Model):
 
 class FormulationIngredient(models.Model):
     """Ordered INCI list entry — position proxies concentration."""
+
+    id: int
+    compound_id: int | None
 
     formulation = models.ForeignKey(
         Formulation,
@@ -112,7 +145,7 @@ class FormulationIngredient(models.Model):
 
     @property
     def inherited_functional_classes(self) -> list[str]:
-        if self.compound_id is None:
+        if self.compound_id is None:  # pyright: ignore[reportAttributeAccessIssue]
             return []
 
         values: list[str] = []

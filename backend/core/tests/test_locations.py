@@ -15,12 +15,12 @@ from core.models import Location, Profile, ProfileLocation, WeatherSnapshot
 class ProfileLocationApiTests(TestCase):
     def setUp(self):
         self.client = APIClient()
-        self.user = get_user_model().objects.create_user(
+        self.user = get_user_model().objects.create_user(  # pyright: ignore[reportAttributeAccessIssue]
             username="location-user",
             email="location@example.com",
             password="strong-test-pass-123",
         )
-        self.other_user = get_user_model().objects.create_user(
+        self.other_user = get_user_model().objects.create_user(  # pyright: ignore[reportAttributeAccessIssue]
             username="other-location-user",
             email="other-location@example.com",
             password="strong-test-pass-123",
@@ -86,7 +86,7 @@ class ProfileLocationApiTests(TestCase):
         profile_location = ProfileLocation.objects.get(profile=self.profile)
         self.assertTrue(profile_location.is_default)
         self.assertEqual(profile_location.location, location)
-        self.assertEqual(response.data["location"]["grid_key"], "postal:us:10001")
+        self.assertEqual(response.data["location"]["grid_key"], "postal:us:10001")  # pyright: ignore[reportAttributeAccessIssue]
 
     def test_multiple_profiles_reuse_same_shared_location_cache_bucket(self):
         shared_location = Location.objects.create(
@@ -137,7 +137,7 @@ class ProfileLocationApiTests(TestCase):
         WeatherSnapshot.objects.create(
             location=location,
             observed_at=timezone.make_aware(datetime(2026, 6, 14, 12, 0)),
-            expires_at=timezone.now() + timezone.timedelta(hours=1),
+            expires_at=timezone.now() + timezone.timedelta(hours=1),  # pyright: ignore[reportAttributeAccessIssue]
             uv_index=Decimal("8.0"),
             uv_max=Decimal("8.0"),
             raw_payload={"UV_INDEX": "8"},
@@ -147,8 +147,8 @@ class ProfileLocationApiTests(TestCase):
             response = self.client.get(reverse("profile-location-current-context"))
 
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.data["profile_location"]["label"], "Home")
-        self.assertEqual(response.data["weather_snapshot"]["uv_index"], "8.0")
+        self.assertEqual(response.data["profile_location"]["label"], "Home")  # pyright: ignore[reportAttributeAccessIssue]
+        self.assertEqual(response.data["weather_snapshot"]["uv_index"], "8.0")  # pyright: ignore[reportAttributeAccessIssue]
         mock_get.assert_not_called()
 
     @patch("core.services.weather.requests.get")
@@ -175,7 +175,7 @@ class ProfileLocationApiTests(TestCase):
         mock_get.return_value = response_mock
 
         response = self.client.post(
-            reverse("profile-location-refresh-weather", args=[profile_location.id]),
+            reverse("profile-location-refresh-weather", args=[profile_location.id]),  # pyright: ignore[reportAttributeAccessIssue]
             format="json",
         )
 
@@ -184,7 +184,7 @@ class ProfileLocationApiTests(TestCase):
         snapshot = WeatherSnapshot.objects.get()
         self.assertEqual(snapshot.location, location)
         self.assertEqual(snapshot.uv_index, Decimal("8.0"))
-        self.assertEqual(response.data["weather_snapshot"]["uv_index"], "8.0")
+        self.assertEqual(response.data["weather_snapshot"]["uv_index"], "8.0")  # pyright: ignore[reportAttributeAccessIssue]
         self.assertIn("/getEnvirofactsUVDAILY/ZIP/10001/JSON", mock_get.call_args.args[0])
 
     def test_refresh_weather_rejects_location_without_weather_sharing(self):
@@ -204,7 +204,7 @@ class ProfileLocationApiTests(TestCase):
         )
 
         response = self.client.post(
-            reverse("profile-location-refresh-weather", args=[profile_location.id]),
+            reverse("profile-location-refresh-weather", args=[profile_location.id]),  # pyright: ignore[reportAttributeAccessIssue]
             format="json",
         )
 

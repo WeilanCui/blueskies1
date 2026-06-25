@@ -1,7 +1,7 @@
 from django.contrib.auth import login as django_login
 from django.contrib.auth import logout as django_logout
 from django.db import connection
-from django.db.models import Prefetch, Q
+from django.db.models import Count, Prefetch, Q
 from django.http import Http404
 from django.middleware.csrf import get_token
 from django.shortcuts import get_object_or_404
@@ -134,12 +134,12 @@ class CompoundViewSet(ReadOnlyResourceViewSet):
     queryset = (
         Compound.objects.all()
         .select_related("structure")
+        .annotate(literature_count=Count("literature_links"))
         .prefetch_related(
             "aliases",
             "identifiers",
             "chemical_class_memberships__chemical_class",
             "property_assertions__property_def",
-            "literature_links",
         )
     )
 
@@ -162,7 +162,7 @@ class FormulationViewSet(viewsets.ModelViewSet):
         )
         return [permission() for permission in permission_classes]
 
-    def get_throttles(self):
+    def get_throttles(self):  # pyright: ignore[reportIncompatibleMethodOverride]
         throttle_classes = (
             [FormulationSubmitRateThrottle] if self.action == "create" else []
         )
@@ -258,7 +258,7 @@ class ProductCatalogViewSet(ReadOnlyResourceViewSet):
         return Response(serialize_catalog_product(product))
 
     def get_object(self):
-        lookup = self.kwargs[self.lookup_url_kwarg]
+        lookup = self.kwargs[self.lookup_url_kwarg]  # pyright: ignore[reportArgumentType]
         queryset = self.get_queryset()
         if lookup.isdigit():
             return get_object_or_404(queryset, pk=int(lookup))
@@ -344,7 +344,7 @@ class IntakeViewSet(viewsets.ModelViewSet):
         profile, _ = Profile.objects.get_or_create(user=request.user)
         status_code = (
             status.HTTP_200_OK
-            if profile.skin_profiles.filter(is_current=True).exists()
+            if profile.skin_profiles.filter(is_current=True).exists()  # pyright: ignore[reportAttributeAccessIssue]
             else status.HTTP_201_CREATED
         )
         return self._save_intake(request, status_code=status_code)
@@ -500,7 +500,7 @@ class RoutineViewSet(viewsets.ModelViewSet):
         return Response(
             {
                 "routine": routine_serializer.data,
-                "item_id": serializer.item.id,
+                "item_id": serializer.item.id,  # pyright: ignore[reportAttributeAccessIssue]
                 "created": serializer.created,
             },
             status=status.HTTP_201_CREATED if serializer.created else status.HTTP_200_OK,
@@ -535,7 +535,7 @@ class DailyCheckInViewSet(viewsets.ReadOnlyModelViewSet):
                 profile=profile,
                 checkin_date=checkin_date,
                 defaults={
-                    "skin_profile": profile.skin_profiles.filter(is_current=True).first(),
+                    "skin_profile": profile.skin_profiles.filter(is_current=True).first(),  # pyright: ignore[reportAttributeAccessIssue]
                 },
             )
             return Response(self.get_serializer(checkin).data)

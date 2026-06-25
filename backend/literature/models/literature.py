@@ -1,6 +1,13 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 from django.db import models
 
 from core.models.metadata import SourceMetadata
+
+if TYPE_CHECKING:
+    from django.db.models import Manager
 
 
 class RelevanceCategory(models.TextChoices):
@@ -38,6 +45,9 @@ class LiteratureEnrichmentStatus(models.TextChoices):
 
 class LiteratureReference(models.Model):
     """A single bibliographic record (currently PubMed) used as evidence."""
+
+    id: int
+    compound_links: Manager[CompoundLiterature]
 
     pmid = models.CharField(max_length=32, unique=True)
     title = models.TextField(blank=True)
@@ -96,6 +106,9 @@ class CompoundLiterature(SourceMetadata):
     Provenance fields are inherited from :class:`SourceMetadata`.
     """
 
+    id: int
+    compound_id: int
+
     compound = models.ForeignKey(
         "core.Compound",
         on_delete=models.CASCADE,
@@ -130,7 +143,7 @@ class CompoundLiterature(SourceMetadata):
     enriched_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
-    class Meta:
+    class Meta:  # pyright: ignore[reportIncompatibleVariableOverride]
         db_table = "core_compoundliterature"
         constraints = [
             models.UniqueConstraint(
@@ -153,6 +166,8 @@ class CompoundRelationship(SourceMetadata):
     Provenance fields are inherited from :class:`SourceMetadata`.
     """
 
+    id: int
+
     compound_a = models.ForeignKey(
         "core.Compound",
         on_delete=models.CASCADE,
@@ -173,7 +188,7 @@ class CompoundRelationship(SourceMetadata):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
-    class Meta:
+    class Meta:  # pyright: ignore[reportIncompatibleVariableOverride]
         db_table = "core_compoundrelationship"
         constraints = [
             models.UniqueConstraint(

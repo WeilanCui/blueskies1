@@ -1,0 +1,75 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## Project
+
+Blueskies is a skincare intelligence prototype: a Django REST API + Celery backend and a Next.js frontend, wired together with Docker Compose. The domain centers on resolving product INCI lists into a canonical **Compound** identity graph, then attaching provenance-backed property/literature/interaction assertions enriched from external sources (INCI API, PubChem, PubMed, OpenAI).
+
+## Commands
+
+All backend commands run inside the `backend` container.
+
+```bash
+# Start full stack (db, redis, backend, celery worker, celery-beat, frontend)
+docker compose up --build
+
+# Migrations
+docker compose run --rm backend python manage.py migrate
+docker compose run --rm backend python manage.py makemigrations
+
+# Superuser
+docker compose run --rm backend python manage.py createsuperuser
+
+# Backend tests (whole suite)
+docker compose run --rm backend python manage.py test core.tests literature.tests
+# Single module / single test
+docker compose run --rm backend python manage.py test core.tests.test_routines
+docker compose run --rm backend python manage.py test core.tests.test_routines.RoutineTestCase.test_method
+```
+
+Frontend (from `frontend/`):
+
+```bash
+npm run dev      # hot reload, daily work
+npm run build && npm start   # production smoke test (standalone output)
+npm run lint     # biome check
+npm run format   # biome format --write
+```
+
+Do not run `npm start` without a fresh `npm run build` — it serves a frozen `.next` with no file watching.
+
+URLs: frontend `http://localhost:3000`, backend health `http://localhost:8000/api/health/`, Django admin `http://localhost:8000/admin/`.
+
+## Backend architecture
+
+Two Django apps: `core` (domain models, API, profiles, services) and `literature` (external ingestion + literature enrichment). Routing: `config/urls.py` → `core/urls.py` mounts a DRF `DefaultRouter` under `/api/` plus explicit paths for `health/`, `intake/`, `contact/`, `formulations/submit/`, `products/scan-barcode/`.
+
+**Compound identity graph** is the heart of the data model (see `.cursor/plans/blueskies_model_diagram_*.plan.md` for the full ER diagram):
+- `Compound` is the canonical ingredient identity (`canonical_inci` unique), with `CompoundAlias`/`CompoundIdentifier`/`CompoundStructure` satellites.
+- `Formulation` → `FormulationIngredient` (position in INCI list) → resolved `Compound` (`SET_NULL`).
+- Claims attach via the abstract `SourceMetadata` provenance mixin (`core/models/metadata.py`): `PropertyAssertion` (compound XOR formulation, supports `superseded_by` versioning), `CompoundLiterature`, `CompoundRelationship`, `InteractionAssertion`.
+- Vocabulary/seed models: `PropertyDefinition`, `GlossaryTerm`, `InteractionRule`.
+
+**Model file layout (enforced by `.cursor/rules/django-model-files.mdc`):** one primary model per file under `core/models/`, re-exported from `core/models/__init__.py`. Do NOT append new models to `profiles.py` or other aggregate files. File-only moves (same app label + class) need no migration.
+
+**Ingestion & enrichment** live in `literature/ingestion/` (`formulation_ingest.py`, `inci_ingest.py`, `ingest.py`, plus `pubchem_client.py`, `pubmed_client.py`, `inci_client.py`) and `literature/enrichment/`. External API bases/keys come from settings (`INCI_API_*`, `SKINCARE_API_BASE`, `EPA_UV_API_BASE`, `OPENAI_*`, `LITERATURE_EXTRACTOR`). Note: the cursor plan references `core/ingestion/` — actual path is `literature/ingestion/`.
+
+**Profiles** (`core/profiles/`): `constraints.py` and `recommendations.py` implement flexible per-user constraint matching (hard exclusions, cautions, penalties, boosts, informational).
+
+**Celery**: app defined in `config/celery.py`, broker/result on Redis. `core/tasks.py` holds `@shared_task`s; `daily_literature_discovery_task` runs nightly via `CELERY_BEAT_SCHEDULE` (configurable through `LITERATURE_DAILY_*` env vars). Keep tasks idempotent and observable.
+
+**API conventions**: DRF throttling is enabled with named scopes (`anon`, `user`, `auth`, `signup`, `contact`, `formulation_submit`) — see `core/throttles.py` and `REST_FRAMEWORK` settings; rates are env-overridable. Auth is session-based via `SessionAuthViewSet`. Keep request/response logic in views/viewsets, domain behavior in model methods.
+
+## Frontend architecture
+
+Next.js 16 App Router under `frontend/app/` (routes: `home`, `login`, `intake`, `compounds`, `skincareApi`, `scan`, `routine`, `reactions`, `experience`; server route handlers under `app/api/`). Stack: HeroUI components, Tailwind v4, TanStack Query, `@zxing/library` for barcode scanning. Lint/format via Biome.
+
+Conventions (from `CODEX.md`):
+- **Mobile-first** is mandatory — every screen must work at phone width with no horizontal overflow; design loading/empty/error/success states explicitly.
+- Use **HeroUI** for buttons/forms/cards/modals; use **TanStack Query** for client-side API fetching/mutations. Raw `fetch` only in route handlers / server-side utilities.
+- Use `var(--panel)` (`#eef6fc`, light blue) for boxed surfaces (cards, panels, list items).
+
+## Conventions reference
+
+`CODEX.md` holds the full engineering checklist (backend, frontend, styling, review). Commit migrations alongside model changes. Update README/docs when setup or behavior changes.

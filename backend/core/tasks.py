@@ -304,7 +304,7 @@ def enrich_formulation_ingredients(
 
     success_count = 0
     error_count = 0
-    for fi in formulation.ingredients.all():
+    for fi in formulation.ingredients.all():  # pyright: ignore[reportAttributeAccessIssue]
         try:
             result = ingest_inci_ingredient(fi.raw_text, asserted_by="barcode_scan")
             if result.errors:

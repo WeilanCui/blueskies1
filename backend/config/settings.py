@@ -11,9 +11,9 @@ env = environ.Env(
 )
 environ.Env.read_env(BASE_DIR.parent / ".env")
 
-SECRET_KEY = env("DJANGO_SECRET_KEY", default="change-me")
+SECRET_KEY = env("DJANGO_SECRET_KEY", default="change-me")  # pyright: ignore[reportArgumentType]
 DEBUG = env("DJANGO_DEBUG")
-ALLOWED_HOSTS = env.list("DJANGO_ALLOWED_HOSTS", default=["localhost", "127.0.0.1"])
+ALLOWED_HOSTS = env.list("DJANGO_ALLOWED_HOSTS", default=["localhost", "127.0.0.1"])  # pyright: ignore[reportArgumentType]
 
 if not DEBUG and SECRET_KEY in {"change-me", "change-me-in-development"}:
     raise ImproperlyConfigured("Set a strong DJANGO_SECRET_KEY before running production.")
@@ -64,11 +64,11 @@ WSGI_APPLICATION = "config.wsgi.application"
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
-        "NAME": env("POSTGRES_DB", default="blueskies"),
-        "USER": env("POSTGRES_USER", default="blueskies"),
-        "PASSWORD": env("POSTGRES_PASSWORD", default="blueskies"),
-        "HOST": env("POSTGRES_HOST", default="db"),
-        "PORT": env("POSTGRES_PORT", default="5432"),
+        "NAME": env("POSTGRES_DB", default="blueskies"),  # pyright: ignore[reportArgumentType]
+        "USER": env("POSTGRES_USER", default="blueskies"),  # pyright: ignore[reportArgumentType]
+        "PASSWORD": env("POSTGRES_PASSWORD", default="blueskies"),  # pyright: ignore[reportArgumentType]
+        "HOST": env("POSTGRES_HOST", default="db"),  # pyright: ignore[reportArgumentType]
+        "PORT": env("POSTGRES_PORT", default="5432"),  # pyright: ignore[reportArgumentType]
     }
 }
 
@@ -89,25 +89,25 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 CORS_ALLOWED_ORIGINS = env.list(
     "DJANGO_CORS_ALLOWED_ORIGINS",
-    default=["http://localhost:3000"],
+    default=["http://localhost:3000"],  # pyright: ignore[reportArgumentType]
 )
-CORS_ALLOW_CREDENTIALS = env.bool("DJANGO_CORS_ALLOW_CREDENTIALS", default=False)
-CSRF_TRUSTED_ORIGINS = env.list("DJANGO_CSRF_TRUSTED_ORIGINS", default=[])
+CORS_ALLOW_CREDENTIALS = env.bool("DJANGO_CORS_ALLOW_CREDENTIALS", default=False)  # pyright: ignore[reportArgumentType]
+CSRF_TRUSTED_ORIGINS = env.list("DJANGO_CSRF_TRUSTED_ORIGINS", default=[])  # pyright: ignore[reportArgumentType]
 
 SESSION_COOKIE_HTTPONLY = True
-SESSION_COOKIE_SAMESITE = env("DJANGO_SESSION_COOKIE_SAMESITE", default="Lax")
-SESSION_COOKIE_SECURE = env.bool("DJANGO_SESSION_COOKIE_SECURE", default=not DEBUG)
+SESSION_COOKIE_SAMESITE = env("DJANGO_SESSION_COOKIE_SAMESITE", default="Lax")  # pyright: ignore[reportArgumentType]
+SESSION_COOKIE_SECURE = env.bool("DJANGO_SESSION_COOKIE_SECURE", default=not DEBUG)  # pyright: ignore[reportArgumentType]
 CSRF_COOKIE_HTTPONLY = False
-CSRF_COOKIE_SAMESITE = env("DJANGO_CSRF_COOKIE_SAMESITE", default="Lax")
-CSRF_COOKIE_SECURE = env.bool("DJANGO_CSRF_COOKIE_SECURE", default=not DEBUG)
+CSRF_COOKIE_SAMESITE = env("DJANGO_CSRF_COOKIE_SAMESITE", default="Lax")  # pyright: ignore[reportArgumentType]
+CSRF_COOKIE_SECURE = env.bool("DJANGO_CSRF_COOKIE_SECURE", default=not DEBUG)  # pyright: ignore[reportArgumentType]
 
-SECURE_SSL_REDIRECT = env.bool("DJANGO_SECURE_SSL_REDIRECT", default=False)
-SECURE_HSTS_SECONDS = env.int("DJANGO_SECURE_HSTS_SECONDS", default=0)
+SECURE_SSL_REDIRECT = env.bool("DJANGO_SECURE_SSL_REDIRECT", default=False)  # pyright: ignore[reportArgumentType]
+SECURE_HSTS_SECONDS = env.int("DJANGO_SECURE_HSTS_SECONDS", default=0)  # pyright: ignore[reportArgumentType]
 SECURE_HSTS_INCLUDE_SUBDOMAINS = env.bool(
     "DJANGO_SECURE_HSTS_INCLUDE_SUBDOMAINS",
-    default=False,
+    default=False,  # pyright: ignore[reportArgumentType]
 )
-SECURE_HSTS_PRELOAD = env.bool("DJANGO_SECURE_HSTS_PRELOAD", default=False)
+SECURE_HSTS_PRELOAD = env.bool("DJANGO_SECURE_HSTS_PRELOAD", default=False)  # pyright: ignore[reportArgumentType]
 SECURE_REFERRER_POLICY = "same-origin"
 SECURE_CONTENT_TYPE_NOSNIFF = True
 X_FRAME_OPTIONS = "DENY"
@@ -121,36 +121,36 @@ REST_FRAMEWORK = {
         "rest_framework.throttling.UserRateThrottle",
     ],
     "DEFAULT_THROTTLE_RATES": {
-        "anon": env("DJANGO_THROTTLE_ANON", default="120/min"),
-        "user": env("DJANGO_THROTTLE_USER", default="600/min"),
-        "auth": env("DJANGO_THROTTLE_AUTH", default="10/min"),
-        "signup": env("DJANGO_THROTTLE_SIGNUP", default="5/hour"),
-        "contact": env("DJANGO_THROTTLE_CONTACT", default="20/min"),
-        "formulation_submit": env("DJANGO_THROTTLE_FORMULATION_SUBMIT", default="20/hour"),
+        "anon": env("DJANGO_THROTTLE_ANON", default="120/min"),  # pyright: ignore[reportArgumentType]
+        "user": env("DJANGO_THROTTLE_USER", default="600/min"),  # pyright: ignore[reportArgumentType]
+        "auth": env("DJANGO_THROTTLE_AUTH", default="10/min"),  # pyright: ignore[reportArgumentType]
+        "signup": env("DJANGO_THROTTLE_SIGNUP", default="5/hour"),  # pyright: ignore[reportArgumentType]
+        "contact": env("DJANGO_THROTTLE_CONTACT", default="20/min"),  # pyright: ignore[reportArgumentType]
+        "formulation_submit": env("DJANGO_THROTTLE_FORMULATION_SUBMIT", default="20/hour"),  # pyright: ignore[reportArgumentType]
     },
 }
 
-INCI_API_KEY = env("INCI_API_KEY", default="")
-INCI_API_BASE = env("INCI_API_BASE", default="https://inciapi.com/v1")
+INCI_API_KEY = env("INCI_API_KEY", default="")  # pyright: ignore[reportArgumentType]
+INCI_API_BASE = env("INCI_API_BASE", default="https://inciapi.com/v1")  # pyright: ignore[reportArgumentType]
 
 SKINCARE_API_BASE = env(
     "SKINCARE_API_BASE",
-    default="https://skincare-api.herokuapp.com",
+    default="https://skincare-api.herokuapp.com",  # pyright: ignore[reportArgumentType]
 )
 
 EPA_UV_API_BASE = env(
     "EPA_UV_API_BASE",
-    default="https://data.epa.gov/efservice",
+    default="https://data.epa.gov/efservice",  # pyright: ignore[reportArgumentType]
 )
-EPA_UV_CACHE_MINUTES = env.int("EPA_UV_CACHE_MINUTES", default=180)
-EPA_UV_REQUEST_TIMEOUT_SECONDS = env.int("EPA_UV_REQUEST_TIMEOUT_SECONDS", default=8)
+EPA_UV_CACHE_MINUTES = env.int("EPA_UV_CACHE_MINUTES", default=180)  # pyright: ignore[reportArgumentType]
+EPA_UV_REQUEST_TIMEOUT_SECONDS = env.int("EPA_UV_REQUEST_TIMEOUT_SECONDS", default=8)  # pyright: ignore[reportArgumentType]
 
-OPENAI_API_KEY = env("OPENAI_API_KEY", default="")
-OPENAI_MODEL = env("OPENAI_MODEL", default="gpt-4o-mini")
-LITERATURE_EXTRACTOR = env("LITERATURE_EXTRACTOR", default="auto")
+OPENAI_API_KEY = env("OPENAI_API_KEY", default="")  # pyright: ignore[reportArgumentType]
+OPENAI_MODEL = env("OPENAI_MODEL", default="gpt-4o-mini")  # pyright: ignore[reportArgumentType]
+LITERATURE_EXTRACTOR = env("LITERATURE_EXTRACTOR", default="auto")  # pyright: ignore[reportArgumentType]
 
-CELERY_BROKER_URL = env("CELERY_BROKER_URL", default="redis://redis:6379/0")
-CELERY_RESULT_BACKEND = env("CELERY_RESULT_BACKEND", default="redis://redis:6379/1")
+CELERY_BROKER_URL = env("CELERY_BROKER_URL", default="redis://redis:6379/0")  # pyright: ignore[reportArgumentType]
+CELERY_RESULT_BACKEND = env("CELERY_RESULT_BACKEND", default="redis://redis:6379/1")  # pyright: ignore[reportArgumentType]
 CELERY_ACCEPT_CONTENT = ["json"]
 CELERY_TASK_SERIALIZER = "json"
 CELERY_RESULT_SERIALIZER = "json"
@@ -158,17 +158,17 @@ CELERY_BEAT_SCHEDULE = {
     "daily-literature-discovery": {
         "task": "core.tasks.daily_literature_discovery_task",
         "schedule": crontab(
-            minute=env.int("LITERATURE_DAILY_MINUTE", default=15),
-            hour=env.int("LITERATURE_DAILY_HOUR", default=3),
+            minute=env.int("LITERATURE_DAILY_MINUTE", default=15),  # pyright: ignore[reportArgumentType]
+            hour=env.int("LITERATURE_DAILY_HOUR", default=3),  # pyright: ignore[reportArgumentType]
         ),
         "kwargs": {
-            "compound_limit": env.int("LITERATURE_DAILY_COMPOUND_LIMIT", default=25),
-            "backfill_limit": env.int("LITERATURE_DAILY_BACKFILL_LIMIT", default=-1),
-            "event_limit": env.int("LITERATURE_DAILY_EVENT_LIMIT", default=100),
-            "drain_countdown": env.int("LITERATURE_DRAIN_COUNTDOWN", default=60),
-            "max_articles": env.int("LITERATURE_DAILY_MAX_ARTICLES", default=5),
-            "max_related": env.int("LITERATURE_DAILY_MAX_RELATED", default=3),
-            "enrich": env.bool("LITERATURE_DAILY_ENRICH", default=False),
+            "compound_limit": env.int("LITERATURE_DAILY_COMPOUND_LIMIT", default=25),  # pyright: ignore[reportArgumentType]
+            "backfill_limit": env.int("LITERATURE_DAILY_BACKFILL_LIMIT", default=-1),  # pyright: ignore[reportArgumentType]
+            "drain_countdown": env.int("LITERATURE_DRAIN_COUNTDOWN", default=60), # pyright: ignore[reportArgumentType]
+            "event_limit": env.int("LITERATURE_DAILY_EVENT_LIMIT", default=100),  # pyright: ignore[reportArgumentType]
+            "max_articles": env.int("LITERATURE_DAILY_MAX_ARTICLES", default=5),  # pyright: ignore[reportArgumentType]
+            "max_related": env.int("LITERATURE_DAILY_MAX_RELATED", default=3),  # pyright: ignore[reportArgumentType]
+            "enrich": env.bool("LITERATURE_DAILY_ENRICH", default=False),  # pyright: ignore[reportArgumentType]
         },
     },
 }

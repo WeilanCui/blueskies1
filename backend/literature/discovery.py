@@ -293,7 +293,7 @@ def emit_literature_discovery_event(
         formulation=formulation,
         product=product,
     )
-    target_id = next(iter(filter_kwargs.values())).pk
+    target_id = next(iter(filter_kwargs.values())).pk  # pyright: ignore[reportAttributeAccessIssue]
     if target_id is None:
         raise ValueError("literature discovery events require saved target objects")
 
@@ -684,8 +684,8 @@ class LiteratureDiscoveryRunner:
             try:
                 target_result = self.process_target(target)
                 queue_results.append(target_result)
-                if target.compound_id is not None:
-                    processed_compound_ids.add(target.compound_id)
+                if target.compound_id is not None:  # pyright: ignore[reportAttributeAccessIssue]
+                    processed_compound_ids.add(target.compound_id)  # pyright: ignore[reportAttributeAccessIssue]
             except Exception as exc:  # noqa: BLE001 - keep the daily crawl moving
                 logger.exception(
                     "Literature discovery failed for target %s",
@@ -775,7 +775,7 @@ class LiteratureDiscoveryRunner:
             return {
                 "target_id": target.pk,
                 "target_type": target.target_type,
-                "compound_id": target.compound_id,
+                "compound_id": target.compound_id,  # pyright: ignore[reportAttributeAccessIssue]
                 "skipped": True,
             }
 
@@ -809,6 +809,7 @@ class LiteratureDiscoveryRunner:
 
         search_name = locked.search_label or compound.display_name or compound.canonical_inci
         try:
+            assert self.ingest_compound_func is not None
             result = self.ingest_compound_func(
                 search_name,
                 with_pubmed=True,
@@ -917,6 +918,7 @@ class LiteratureDiscoveryRunner:
 
     def process_compound(self, compound: Compound) -> dict:
         search_name = compound.display_name or compound.canonical_inci
+        assert self.ingest_compound_func is not None
         result = self.ingest_compound_func(
             search_name,
             with_pubmed=True,
