@@ -123,6 +123,7 @@ class LiteratureDiscoveryTarget(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
+        db_table = "core_literaturediscoverytarget"
         ordering = ["-priority", "created_at", "id"]
         constraints = [
             models.CheckConstraint(
@@ -289,6 +290,7 @@ class LiteratureDiscoveryEvent(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
+        db_table = "core_literaturediscoveryevent"
         ordering = ["created_at", "id"]
         constraints = [
             models.CheckConstraint(

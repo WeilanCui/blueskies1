@@ -18,15 +18,17 @@ from literature.ingestion.relevance import (
 from core.models import (
     Compound,
     CompoundIdentifier,
-    CompoundLiterature,
-    CompoundRelationship,
     CompoundStructure,
     EnrichmentStatus,
-    LiteratureReference,
     PropertyAssertion,
     PropertyDefinition,
-    RelationshipType,
     SourceType,
+)
+from literature.models import (
+    CompoundLiterature,
+    CompoundRelationship,
+    LiteratureReference,
+    RelationshipType,
 )
 
 logger = logging.getLogger(__name__)

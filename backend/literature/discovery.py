@@ -14,19 +14,19 @@ from django.utils import timezone
 
 from core.models import (
     Compound,
-    CompoundLiterature,
     EnrichmentStatus,
     Formulation,
     FormulationIngredient,
-    LiteratureDiscoveryEvent,
     Product,
 )
-from core.models.literature_discovery_target import (
+from literature.models import (
     ACTIVE_DISCOVERY_STATUSES,
+    CompoundLiterature,
     DEFAULT_DISCOVERY_PRIORITY,
     DEFAULT_MAX_DISCOVERY_ATTEMPTS,
     DiscoveryReason,
     DiscoveryTargetStatus,
+    LiteratureDiscoveryEvent,
     LiteratureDiscoveryEventStatus,
     LiteratureDiscoveryEventType,
     LiteratureDiscoveryTarget,

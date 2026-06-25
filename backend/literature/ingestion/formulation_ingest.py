@@ -278,7 +278,7 @@ def resolve_compound(
     )
     if should_queue:
         from core.models import EntityType
-        from core.models.literature_discovery_target import DiscoveryReason
+        from literature.models import DiscoveryReason
         from literature.discovery import emit_literature_discovery_for_compound
 
         reason = (
@@ -300,7 +300,7 @@ def _queue_literature_discovery_for_resolved_compound(
     *,
     canonical: str,
 ) -> None:
-    from core.models.literature_discovery_target import DiscoveryReason
+    from literature.models import DiscoveryReason
     from literature.discovery import emit_literature_discovery_for_compound
 
     emit_literature_discovery_for_compound(

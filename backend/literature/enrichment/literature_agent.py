@@ -15,11 +15,13 @@ from literature.enrichment.extractors import (
 )
 from core.models import (
     Compound,
-    CompoundLiterature,
-    LiteratureEnrichmentStatus,
     PropertyAssertion,
     PropertyDefinition,
     SourceType,
+)
+from literature.models import (
+    CompoundLiterature,
+    LiteratureEnrichmentStatus,
 )
 
 logger = logging.getLogger(__name__)

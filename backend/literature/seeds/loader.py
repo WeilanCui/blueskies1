@@ -6,11 +6,11 @@ from core.models import (
     Compound,
     CompoundAlias,
     GlossaryTerm,
-    InteractionRule,
     PropertyAssertion,
     PropertyDefinition,
     SourceType,
 )
+from literature.models import InteractionRule
 from literature.seeds.chemical_classes import CHEMICAL_CLASSES
 from literature.seeds.glossary_terms import GLOSSARY_TERMS
 from literature.seeds.interaction_rules import INTERACTION_RULES

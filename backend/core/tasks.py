@@ -54,7 +54,7 @@ def enrich_literature_task(
             "extractor": extractor.name,
         }
 
-    from core.models import CompoundLiterature, LiteratureEnrichmentStatus
+    from literature.models import CompoundLiterature, LiteratureEnrichmentStatus
 
     compound_ids = (
         CompoundLiterature.objects.filter(

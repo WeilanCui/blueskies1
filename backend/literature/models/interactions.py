@@ -49,6 +49,7 @@ class InteractionRule(models.Model):
     is_active = models.BooleanField(default=True)
 
     class Meta:
+        db_table = "core_interactionrule"
         ordering = ["key"]
 
     def __str__(self) -> str:
@@ -99,6 +100,7 @@ class InteractionAssertion(SourceMetadata):
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
+        db_table = "core_interactionassertion"
         indexes = [
             models.Index(fields=["formulation", "is_active"]),
             models.Index(fields=["compound_a", "compound_b"]),
