@@ -164,6 +164,7 @@ CELERY_BEAT_SCHEDULE = {
         "kwargs": {
             "compound_limit": env.int("LITERATURE_DAILY_COMPOUND_LIMIT", default=25),  # pyright: ignore[reportArgumentType]
             "backfill_limit": env.int("LITERATURE_DAILY_BACKFILL_LIMIT", default=-1),  # pyright: ignore[reportArgumentType]
+            "drain_countdown": env.int("LITERATURE_DRAIN_COUNTDOWN", default=60), # pyright: ignore[reportArgumentType]
             "event_limit": env.int("LITERATURE_DAILY_EVENT_LIMIT", default=100),  # pyright: ignore[reportArgumentType]
             "max_articles": env.int("LITERATURE_DAILY_MAX_ARTICLES", default=5),  # pyright: ignore[reportArgumentType]
             "max_related": env.int("LITERATURE_DAILY_MAX_RELATED", default=3),  # pyright: ignore[reportArgumentType]

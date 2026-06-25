@@ -610,6 +610,26 @@ def enqueue_pending_compounds_for_literature(
     return enqueued
 
 
+def pending_literature_discovery_target_count(
+    *,
+    product_targets_only: bool = True,
+) -> int:
+    """Count pending discovery work items visible to the queue drainer."""
+    queryset = LiteratureDiscoveryTarget.objects.filter(
+        status=DiscoveryTargetStatus.PENDING,
+    )
+    if product_targets_only:
+        queryset = queryset.filter(product_discovery_target_filter())
+    return queryset.count()
+
+
+def pending_literature_discovery_event_count() -> int:
+    """Count pending outbox events waiting to become discovery work items."""
+    return LiteratureDiscoveryEvent.objects.filter(
+        status=LiteratureDiscoveryEventStatus.PENDING,
+    ).count()
+
+
 def summarize_compound_result(compound: Compound, name: str, result: Any) -> dict:
     """Stable summary shape for compound discovery results."""
     return {
