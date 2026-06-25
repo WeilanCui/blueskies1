@@ -41,33 +41,9 @@ class RoutineItemSerializer(serializers.ModelSerializer):
         attrs = super().validate(attrs)
         product_id = attrs.pop("product_id", None)
         formulation_id = attrs.pop("formulation_id", None)
-        product = None
-        formulation = None
-
-        if product_id is not None:
-            product = Product.objects.filter(pk=product_id).first()
-            if product is None:
-                raise serializers.ValidationError({"product_id": "Product not found."})
-
-        if formulation_id is not None:
-            formulation = Formulation.objects.select_related("product").filter(
-                pk=formulation_id,
-            ).first()
-            if formulation is None:
-                raise serializers.ValidationError(
-                    {"formulation_id": "Formulation not found."}
-                )
-            if product is not None and formulation.product_id != product.id:
-                raise serializers.ValidationError(
-                    {"formulation_id": "Formulation must belong to product."}
-                )
-            product = product or formulation.product
-
-        raw_product_name = attrs.get("raw_product_name", "").strip()
-        if product is None and formulation is None and not raw_product_name:
-            raise serializers.ValidationError(
-                "Routine item needs a product, formulation, or raw_product_name."
-            )
+        product, formulation, raw_product_name = resolve_product_formulation(
+            product_id, formulation_id, attrs.get("raw_product_name", "")
+        )
 
         attrs["product"] = product
         attrs["formulation"] = formulation
@@ -226,6 +202,40 @@ def infer_routine_step_from_product(product: Product | None) -> str:
     return RoutineStep.TREATMENT
 
 
+def resolve_product_formulation(
+    product_id: int | None,
+    formulation_id: int | None,
+    raw_product_name: str,
+) -> tuple[Product | None, Formulation | None, str]:
+    product = None
+    formulation = None
+    if product_id is not None:
+        product = Product.objects.filter(pk=product_id).first()
+        if product is None:
+            raise serializers.ValidationError({"product_id": "Product not found."})
+    if formulation_id is not None:
+        formulation = (
+            Formulation.objects.select_related("product")
+            .filter(pk=formulation_id)
+            .first()
+        )
+        if formulation is None:
+            raise serializers.ValidationError(
+                {"formulation_id": "Formulation not found."}
+            )
+        if product is not None and formulation.product_id != product.id:
+            raise serializers.ValidationError(
+                {"formulation_id": "Formulation must belong to product."}
+            )
+        product = product or formulation.product
+    raw = (raw_product_name or "").strip()
+    if product is None and formulation is None and not raw:
+        raise serializers.ValidationError(
+            "Routine item needs a product, formulation, or raw_product_name."
+        )
+    return product, formulation, raw
+
+
 class RoutineAddProductSerializer(serializers.Serializer):
     routine_id = serializers.IntegerField(required=False, allow_null=True)
     time_of_day = serializers.ChoiceField(
@@ -265,35 +275,9 @@ class RoutineAddProductSerializer(serializers.Serializer):
             if routine is None:
                 raise serializers.ValidationError({"routine_id": "Routine not found."})
 
-        product_id = attrs.get("product_id")
-        formulation_id = attrs.get("formulation_id")
-        product = None
-        formulation = None
-
-        if product_id is not None:
-            product = Product.objects.filter(pk=product_id).first()
-            if product is None:
-                raise serializers.ValidationError({"product_id": "Product not found."})
-
-        if formulation_id is not None:
-            formulation = Formulation.objects.select_related("product").filter(
-                pk=formulation_id,
-            ).first()
-            if formulation is None:
-                raise serializers.ValidationError(
-                    {"formulation_id": "Formulation not found."}
-                )
-            if product is not None and formulation.product_id != product.id:
-                raise serializers.ValidationError(
-                    {"formulation_id": "Formulation must belong to product."}
-                )
-            product = product or formulation.product
-
-        raw_product_name = attrs.get("raw_product_name", "").strip()
-        if product is None and formulation is None and not raw_product_name:
-            raise serializers.ValidationError(
-                "Routine item needs a product, formulation, or raw_product_name."
-            )
+        product, formulation, raw_product_name = resolve_product_formulation(
+            attrs.get("product_id"), attrs.get("formulation_id"), attrs.get("raw_product_name", "")
+        )
 
         time_of_day = attrs.get("time_of_day") or RoutineTimeOfDay.AM
         custom_time_label = attrs.get("custom_time_label", "").strip()

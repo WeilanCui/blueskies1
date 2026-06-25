@@ -376,3 +376,141 @@ class RoutineApiTests(TestCase):
         self.assertEqual(reaction.suspected_trigger, "Retinol")
         self.assertEqual(reaction.symptoms, ["peeling"])
         self.assertEqual(reaction.notes, "Started yesterday.")
+
+    def test_routine_create_rejects_unknown_product_id(self):
+        response = self.client.post(
+            reverse("routine-list"),
+            {
+                "name": "AM Routine",
+                "time_of_day": "am",
+                "items": [
+                    {
+                        "position": 1,
+                        "routine_step": "cleanser",
+                        "product_id": 99999,
+                    },
+                ],
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("Product not found.", str(response.content))
+
+    def test_routine_create_rejects_unknown_formulation_id(self):
+        response = self.client.post(
+            reverse("routine-list"),
+            {
+                "name": "AM Routine",
+                "time_of_day": "am",
+                "items": [
+                    {
+                        "position": 1,
+                        "routine_step": "cleanser",
+                        "formulation_id": 99999,
+                    },
+                ],
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("Formulation not found.", str(response.content))
+
+    def test_routine_create_rejects_formulation_from_different_product(self):
+        other_product = Product.objects.create(name="Other Product")
+        other_formulation = Formulation.objects.create(product=other_product)
+
+        response = self.client.post(
+            reverse("routine-list"),
+            {
+                "name": "AM Routine",
+                "time_of_day": "am",
+                "items": [
+                    {
+                        "position": 1,
+                        "routine_step": "cleanser",
+                        "product_id": self.product.id,
+                        "formulation_id": other_formulation.id,
+                    },
+                ],
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("Formulation must belong to product.", str(response.content))
+
+    def test_routine_create_rejects_missing_product_formulation_and_raw_name(self):
+        response = self.client.post(
+            reverse("routine-list"),
+            {
+                "name": "AM Routine",
+                "time_of_day": "am",
+                "items": [
+                    {
+                        "position": 1,
+                        "routine_step": "cleanser",
+                    },
+                ],
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("Routine item needs a product, formulation, or raw_product_name.", str(response.content))
+
+    def test_add_product_rejects_unknown_product_id(self):
+        response = self.client.post(
+            reverse("routine-add-product"),
+            {
+                "time_of_day": "am",
+                "product_id": 99999,
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("Product not found.", str(response.content))
+
+    def test_add_product_rejects_unknown_formulation_id(self):
+        response = self.client.post(
+            reverse("routine-add-product"),
+            {
+                "time_of_day": "am",
+                "formulation_id": 99999,
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("Formulation not found.", str(response.content))
+
+    def test_add_product_rejects_formulation_from_different_product(self):
+        other_product = Product.objects.create(name="Other Product")
+        other_formulation = Formulation.objects.create(product=other_product)
+
+        response = self.client.post(
+            reverse("routine-add-product"),
+            {
+                "time_of_day": "am",
+                "product_id": self.product.id,
+                "formulation_id": other_formulation.id,
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("Formulation must belong to product.", str(response.content))
+
+    def test_add_product_rejects_missing_product_formulation_and_raw_name(self):
+        response = self.client.post(
+            reverse("routine-add-product"),
+            {
+                "time_of_day": "am",
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("Routine item needs a product, formulation, or raw_product_name.", str(response.content))
