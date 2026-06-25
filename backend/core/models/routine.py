@@ -2,7 +2,7 @@ from django.core.exceptions import ValidationError
 from django.db import models
 
 from core.models.daily_checkin import RoutineStep, RoutineTimeOfDay
-from core.models.profiles import Profile
+from core.models.profile import Profile
 
 
 class Routine(models.Model):

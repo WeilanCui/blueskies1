@@ -7,14 +7,16 @@ from django.test import TestCase
 
 from core.models import (
     Compound,
+    EnrichmentStatus,
+    Formulation,
+    FormulationIngredient,
+)
+from literature.models import (
     DiscoveryReason,
     DiscoveryTargetStatus,
-    EnrichmentStatus,
     LiteratureDiscoveryEvent,
     LiteratureDiscoveryEventStatus,
     LiteratureDiscoveryEventType,
-    Formulation,
-    FormulationIngredient,
     LiteratureDiscoveryTarget,
     LiteratureDiscoveryTargetType,
     PRODUCT_FORMULATION_DISCOVERY_PRIORITY,

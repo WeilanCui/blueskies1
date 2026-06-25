@@ -1,7 +1,8 @@
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 
-from core.models.profiles import Profile, SkinProfile
+from core.models.profile import Profile
+from core.models.skin_profile import SkinProfile
 
 
 class RoutineTimeOfDay(models.TextChoices):

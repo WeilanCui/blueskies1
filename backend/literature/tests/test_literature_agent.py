@@ -13,13 +13,15 @@ from literature.enrichment.extractors import (
 from literature.enrichment.literature_agent import enrich_literature_link
 from core.models import (
     Compound,
+    PropertyAssertion,
+    SourceType,
+)
+from literature.models import (
     CompoundLiterature,
     LiteratureEnrichmentStatus,
     LiteratureReference,
-    PropertyAssertion,
     RelevanceCategory,
     RoleInPaper,
-    SourceType,
 )
 from literature.seeds.loader import upsert_property_definitions
 
