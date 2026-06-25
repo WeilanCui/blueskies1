@@ -8,7 +8,7 @@ The Django backend has only ~43% return-type annotation coverage and **no static
 - Add `django-types` so pyright understands Django ORM/model constructs.
 - Add a `pre-commit` framework config (`.pre-commit-config.yaml`) with a pyright hook that runs on every commit.
 - Add `backend/requirements-dev.txt` capturing the new dev tooling (pyright, django-types, pre-commit).
-- Tune pyright config so the existing codebase passes cleanly at `standard` mode (suppress third-party missing-stub noise for libs without stubs, e.g. DRF/celery; exclude migrations, frontend, virtualenvs). One production-code fix: `formulation_ingest.py` corrects a bare `InciProduct` reference to `inci_client.InciProduct` (the name was never in scope — a latent `NameError` had the annotation ever been evaluated at runtime). No other production code is annotated.
+- Tune pyright config so the existing codebase passes cleanly at `standard` mode (suppress third-party missing-stub noise for libs without stubs, e.g. celery/openai; exclude migrations, frontend, virtualenvs). One production-code fix: `formulation_ingest.py` corrects a bare `InciProduct` reference to `inci_client.InciProduct` (the name was never in scope — a latent `NameError` had the annotation ever been evaluated at runtime). No other production code is annotated.
 
 ## Capabilities
 
