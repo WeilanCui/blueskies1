@@ -1,0 +1,27 @@
+{
+  "include": ["backend"],
+  "extraPaths": ["backend"],
+  "exclude": [
+    "**/migrations",
+    "**/__pycache__",
+    "**/node_modules",
+    "frontend",
+    "**/.venv",
+    "**/venv"
+  ],
+  "typeCheckingMode": "standard",
+  "reportMissingTypeStubs": "none",
+  "reportMissingModuleSource": "none",
+  "reportMissingImports": "none",
+  "reportAssignmentType": "warning",
+  "reportReturnType": "warning",
+  "reportArgumentType": "warning",
+  "reportOptionalMemberAccess": "warning",
+  "reportCallIssue": "warning",
+  "reportAttributeAccessIssue": "warning",
+  "reportIncompatibleVariableOverride": "warning",
+  "reportOptionalCall": "warning",
+  "reportGeneralTypeIssues": "warning",
+  "reportFunctionMemberAccess": "warning",
+  "pythonVersion": "3.11"
+}

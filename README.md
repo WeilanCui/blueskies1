@@ -124,6 +124,17 @@ The backend includes:
 - `ContactSubmission` records from the landing-page contact form, visible in
   Django admin
 
+### Type checking
+
+The repository uses [pyright](https://github.com/microsoft/pyright) for static type checking. To set up:
+
+```bash
+pip install -r backend/requirements-dev.txt
+pre-commit install
+```
+
+The `pyright` hook runs on every commit, configured via `pyrightconfig.json` at standard type-checking mode scoped to the `backend/` directory. See that file for configuration details.
+
 ## Layout
 
 ```text

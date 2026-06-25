@@ -1,0 +1,4 @@
+-r requirements.txt
+pyright>=1.1,<2
+django-types>=0.20
+pre-commit>=3.5,<5
