@@ -231,10 +231,10 @@ class ProfileConstraint(models.Model):
 
     def clean(self) -> None:
         normalized_targets = [
-            self.compound_id,
-            self.chemical_class_id,
-            self.formulation_id,
-            self.property_def_id,
+            self.compound_id,  # pyright: ignore[reportAttributeAccessIssue]
+            self.chemical_class_id,  # pyright: ignore[reportAttributeAccessIssue]
+            self.formulation_id,  # pyright: ignore[reportAttributeAccessIssue]
+            self.property_def_id,  # pyright: ignore[reportAttributeAccessIssue]
         ]
         if sum(bool(target) for target in normalized_targets) > 1:
             raise ValidationError(
@@ -248,13 +248,13 @@ class ProfileConstraint(models.Model):
 
     @property
     def target_type(self) -> str:
-        if self.compound_id:
+        if self.compound_id:  # pyright: ignore[reportAttributeAccessIssue]
             return "compound"
-        if self.chemical_class_id:
+        if self.chemical_class_id:  # pyright: ignore[reportAttributeAccessIssue]
             return "chemical_class"
-        if self.formulation_id:
+        if self.formulation_id:  # pyright: ignore[reportAttributeAccessIssue]
             return "formulation"
-        if self.property_def_id:
+        if self.property_def_id:  # pyright: ignore[reportAttributeAccessIssue]
             return "property"
         return "text"
 

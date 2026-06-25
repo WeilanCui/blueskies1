@@ -28,7 +28,7 @@ class ProductModelTests(TestCase):
             raw_inci_text="Aqua, Glycerin",
         )
 
-        self.assertEqual(product.formulations.count(), 2)
+        self.assertEqual(product.formulations.count(), 2)  # pyright: ignore[reportAttributeAccessIssue]
         self.assertEqual(first.name, "Barrier Cream")
         self.assertEqual(second.brand, "Blueskies")
 

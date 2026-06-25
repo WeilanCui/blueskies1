@@ -57,7 +57,7 @@ def _sync_formulation_ingredients(
     formulation: Formulation,
     ingredient_rows: list[dict],
 ) -> int:
-    formulation.ingredients.all().delete()
+    formulation.ingredients.all().delete()  # pyright: ignore[reportAttributeAccessIssue]
     written = 0
 
     for position, row in enumerate(ingredient_rows, start=1):

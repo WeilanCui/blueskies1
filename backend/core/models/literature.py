@@ -129,7 +129,7 @@ class CompoundLiterature(SourceMetadata):
     enriched_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
-    class Meta:
+    class Meta:  # pyright: ignore[reportIncompatibleVariableOverride]
         constraints = [
             models.UniqueConstraint(
                 fields=["compound", "literature"],
@@ -171,7 +171,7 @@ class CompoundRelationship(SourceMetadata):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
-    class Meta:
+    class Meta:  # pyright: ignore[reportIncompatibleVariableOverride]
         constraints = [
             models.UniqueConstraint(
                 fields=["compound_a", "compound_b", "relationship_type"],

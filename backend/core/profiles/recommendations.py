@@ -102,7 +102,7 @@ class RecommendationMatcher:
                 match.excluded,
                 -match.final_score,
                 match.formulation.product.name.lower(),
-                match.formulation.id,
+                match.formulation.id,  # pyright: ignore[reportAttributeAccessIssue]
             ),
         )
 

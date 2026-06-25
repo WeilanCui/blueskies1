@@ -116,7 +116,7 @@ def get_or_fetch_uv_snapshot(
     except WeatherContextUnavailable:
         return get_latest_fresh_snapshot(location)
 
-    expires_at = timezone.now() + timezone.timedelta(
+    expires_at = timezone.now() + timezone.timedelta(  # pyright: ignore[reportAttributeAccessIssue]
         minutes=settings.EPA_UV_CACHE_MINUTES,
     )
     with transaction.atomic():

@@ -112,7 +112,7 @@ class FormulationIngredient(models.Model):
 
     @property
     def inherited_functional_classes(self) -> list[str]:
-        if self.compound_id is None:
+        if self.compound_id is None:  # pyright: ignore[reportAttributeAccessIssue]
             return []
 
         values: list[str] = []
