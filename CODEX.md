@@ -57,7 +57,8 @@ Use these standards when adding or changing code in this project. Favor clear, m
 - Use consistent spacing scales across related UI.
 - Keep cards, panels, buttons, and form controls visually consistent.
 - Use `var(--panel)` (`#eef6fc`, very light blue) for boxed surfaces: cards, panels, list items, and similar containers.
-- Make contrast strong enough for readability.
+- Make contrast strong enough for readability. When creating or changing color schemes, verify foreground/background pairs meet WCAG AA contrast: at least 4.5:1 for normal text and 3:1 for large text or non-text UI indicators.
+- Check selected, active, hover, disabled, badge, and pill states separately; do not put pale or mid-tone text on tinted backgrounds, even when the hue feels visually related.
 - Avoid decorative UI that competes with core workflows.
 
 ## Frontend dev

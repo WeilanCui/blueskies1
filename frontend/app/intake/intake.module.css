@@ -218,26 +218,6 @@
   background: #3a2114;
 }
 
-.concernSectionStack {
-  display: grid;
-  gap: 14px;
-}
-
-.concernSection {
-  border: none;
-  display: grid;
-  gap: 10px;
-  margin: 0;
-  padding: 0;
-}
-
-.concernSection legend {
-  color: #23313a;
-  font-size: 14px;
-  font-weight: 800;
-  padding: 0;
-}
-
 .sensitivityAdd {
   display: flex;
   flex-wrap: wrap;

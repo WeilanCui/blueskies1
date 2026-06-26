@@ -14,8 +14,44 @@ from core.models import (
 )
 
 
+PRIMARY_CONCERN_SECTIONS = [
+    {
+        "title": "Primary concerns",
+        "items": [
+            {
+                "value": "acne_blemishes",
+                "label": "Acne blemishes: breakouts, post-acne marks",
+            },
+            {"value": "dehydrated_dryness", "label": "Dehydrated / dryness"},
+            {"value": "enlarged_pores", "label": "Enlarged pores"},
+            {"value": "dark_circles", "label": "Dark circles"},
+            {"value": "sun_damage", "label": "Sun damage"},
+            {
+                "value": "uneven_tone_hyperpigmentation_dull_skin",
+                "label": "Uneven skin tone, hyperpigmentation, dull skin",
+            },
+            {
+                "value": "wrinkles_firmness_elasticity",
+                "label": "Wrinkles / firmness / skin elasticity",
+            },
+            {
+                "value": "sensitive_reactive_skin",
+                "label": (
+                    "Sensitive or reactive skin: redness, reactive skin, "
+                    "sensitivity, damaged skin barrier"
+                ),
+            },
+        ],
+    }
+]
+
+
 class IntakeSerializer(serializers.Serializer):
-    skin_type = serializers.ChoiceField(choices=SkinType.choices)
+    skin_types = serializers.ListField(
+        child=serializers.ChoiceField(choices=SkinType.choices),
+        required=False,
+        default=list,
+    )
     fitzpatrick_skin_type = serializers.ChoiceField(
         choices=FitzpatrickSkinType.choices,
         required=False,
@@ -53,6 +89,18 @@ class IntakeSerializer(serializers.Serializer):
 
     def validate_primary_concerns(self, value: list[str]) -> list[str]:
         return self._clean_unique_list(value)
+
+    def validate_skin_types(self, value: list[str]) -> list[str]:
+        return self._clean_unique_list(value)
+
+    def validate(self, attrs: dict) -> dict:
+        attrs = super().validate(attrs)
+        skin_types = attrs.get("skin_types", [])
+
+        if not skin_types:
+            attrs["skin_types"] = [SkinType.UNKNOWN]
+
+        return attrs
 
     def validate_goals(self, value: list[str]) -> list[str]:
         return self._clean_unique_list(value)
@@ -93,7 +141,7 @@ class IntakeSerializer(serializers.Serializer):
         skin_profile_values = {
             "label": "Initial intake",
             "is_current": True,
-            "skin_type": data["skin_type"],
+            "skin_types": data["skin_types"],
             "fitzpatrick_skin_type": data.get(
                 "fitzpatrick_skin_type",
                 FitzpatrickSkinType.NOT_PROVIDED,
@@ -137,11 +185,12 @@ def intake_payload(profile: Profile) -> dict:
     constraints = profile.constraints.filter(source="intake", is_active=True)
     return {
         "profile_id": profile.id,
+        "primary_concern_sections": PRIMARY_CONCERN_SECTIONS,
         "skin_profile": None
         if skin_profile is None
         else {
             "id": skin_profile.id,
-            "skin_type": skin_profile.skin_type,
+            "skin_types": skin_profile.skin_types or [SkinType.UNKNOWN],
             "fitzpatrick_skin_type": skin_profile.fitzpatrick_skin_type,
             "primary_concerns": skin_profile.primary_concerns,
             "goals": skin_profile.goals,

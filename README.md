@@ -105,8 +105,14 @@ cd frontend
 npm run build
 ```
 
-Linting is configured as `npm run lint`, but the script currently expects a
-`biome` binary that is not installed in `frontend/package.json`.
+Lint the frontend:
+
+```bash
+cd frontend
+npm run lint
+```
+
+Biome is configured in `frontend/biome.json` and scoped to `app/`, `components/`, `hooks/`, and `lib/`.
 
 ## Backend Notes
 

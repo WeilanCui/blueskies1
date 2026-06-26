@@ -263,27 +263,31 @@ function ChipQuestion({ question, values, onChange }: ChipQuestionProps) {
         {orderOptions(question.options).map((option) => {
           const isSelected = values.includes(option.id);
           return (
-            <button
-              aria-pressed={isSelected}
+            <label
               className={[styles.answerChip, isSelected ? styles.answerChipSelected : ""]
                 .filter(Boolean)
                 .join(" ")}
               key={option.id}
-              type="button"
-              onClick={() => {
-                if (isSingle) {
-                  onChange([option.id]);
-                  return;
-                }
-                onChange(
-                  isSelected
-                    ? values.filter((value) => value !== option.id)
-                    : [...values, option.id],
-                );
-              }}
             >
+              <input
+                checked={isSelected}
+                name={question.id}
+                type={isSingle ? "radio" : "checkbox"}
+                value={option.id}
+                onChange={() => {
+                  if (isSingle) {
+                    onChange([option.id]);
+                    return;
+                  }
+                  onChange(
+                    isSelected
+                      ? values.filter((value) => value !== option.id)
+                      : [...values, option.id],
+                  );
+                }}
+              />
               {option.label}
-            </button>
+            </label>
           );
         })}
       </div>

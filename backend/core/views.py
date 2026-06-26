@@ -274,7 +274,7 @@ class SessionAuthViewSet(viewsets.ViewSet):
     permission_classes = [AllowAny]
     serializer_class = LoginSerializer
 
-    @action(detail=False, methods=["get"], url_path="me", url_name="me")
+    @action(detail=False, methods=["get", "patch"], url_path="me", url_name="me")
     def me(self, request):
         get_token(request)
         if not request.user.is_authenticated:
@@ -282,6 +282,23 @@ class SessionAuthViewSet(viewsets.ViewSet):
                 {"detail": "Authentication credentials were not provided."},
                 status=status.HTTP_401_UNAUTHORIZED,
             )
+        if request.method == "PATCH":
+            if "display_name" in request.data:
+                display_name = request.data.get("display_name")
+                if not isinstance(display_name, str):
+                    return Response(
+                        {"display_name": "Display name must be a string."},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+                display_name = display_name.strip()
+                if len(display_name) > 128:
+                    return Response(
+                        {"display_name": "Display name must be 128 characters or fewer."},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+                profile, _ = Profile.objects.get_or_create(user=request.user)
+                profile.display_name = display_name
+                profile.save(update_fields=["display_name", "updated_at"])
         return Response({"user": auth_user_payload(request.user)})
 
     @action(

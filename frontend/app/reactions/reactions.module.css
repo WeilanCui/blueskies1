@@ -129,6 +129,61 @@
   color: #7c8da2;
 }
 
+.chipQuestion {
+  border: none;
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+}
+
+.chipQuestion legend {
+  color: #6384a8;
+  font-size: 0.82rem;
+  font-weight: 900;
+  padding: 0;
+}
+
+.chipGrid {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.answerChip {
+  align-items: center;
+  background: rgba(240, 249, 255, 0.58);
+  border: 1px solid rgba(52, 111, 170, 0.18);
+  border-radius: 8px;
+  color: #171412;
+  cursor: pointer;
+  display: flex;
+  font-weight: 800;
+  gap: 10px;
+  min-height: 46px;
+  padding: 10px 13px;
+  width: 100%;
+}
+
+.answerChip input {
+  accent-color: var(--accent-strong);
+  flex: 0 0 auto;
+  height: 16px;
+  margin: 0;
+  width: 16px;
+}
+
+.answerChip:has(input:focus-visible) {
+  border-color: var(--accent-strong);
+  box-shadow: 0 0 0 4px rgba(52, 111, 170, 0.1);
+}
+
+.answerChipSelected {
+  background: #dceffc;
+  border-color: #5aa7e3;
+  color: #346faa;
+}
+
 .formActions {
   align-items: center;
   display: flex;
@@ -285,6 +340,10 @@
   }
 
   .formGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .chipGrid {
     grid-template-columns: 1fr;
   }
 

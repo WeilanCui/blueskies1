@@ -15,36 +15,43 @@
   width: 100%;
 }
 
-.appBrand {
+.brandCluster {
   align-items: center;
-  color: #171412;
   display: inline-flex;
-  font-size: 1.05rem;
-  font-weight: 800;
   gap: 10px;
   min-width: 0;
+}
+
+.appBrand {
+  color: #171412;
+  font-size: 1.05rem;
+  font-weight: 800;
   text-decoration: none;
 }
 
-.brandMark {
+.profileAvatar {
   align-items: center;
-  background: var(--accent-strong);
+  background: #e7f3ff;
+  border: 1px solid rgba(52, 111, 170, 0.18);
   border-radius: 999px;
   box-shadow: 0 10px 24px rgba(52, 111, 170, 0.22);
+  color: var(--accent-strong);
   display: inline-flex;
+  flex: 0 0 34px;
+  font-size: 0.94rem;
+  font-weight: 900;
   height: 34px;
   justify-content: center;
+  line-height: 1;
+  text-decoration: none;
   width: 34px;
 }
 
-.brandMark::before {
-  background: #ffffff;
-  border-radius: 999px 999px 999px 2px;
-  content: "";
-  display: block;
-  height: 13px;
-  transform: rotate(38deg);
-  width: 9px;
+.profileAvatar:hover,
+.profileAvatar:focus-visible {
+  background: #dbeeff;
+  outline: 2px solid rgba(52, 111, 170, 0.28);
+  outline-offset: 2px;
 }
 
 .headerButton {

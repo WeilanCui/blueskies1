@@ -245,8 +245,9 @@ export default function HomePage() {
   const firstName = displayName(user.display_name, user.username).split(" ")[0];
   const primaryConcerns = skinProfile?.primary_concerns ?? [];
   const goals = skinProfile?.goals ?? [];
+  const primarySkinType = skinProfile?.skin_types[0] ?? null;
   const signalCount = [
-    skinProfile?.skin_type,
+    primarySkinType,
     skinProfile?.fitzpatrick_skin_type &&
       skinProfile.fitzpatrick_skin_type !== "not_provided",
     skinProfile?.baseline_sensitivity !== null &&
@@ -260,8 +261,8 @@ export default function HomePage() {
   const profileVitals = [
     {
       label: "Skin type",
-      value: skinProfile
-        ? skinTypeLabels[skinProfile.skin_type] || skinProfile.skin_type
+      value: primarySkinType
+        ? skinTypeLabels[primarySkinType] || primarySkinType
         : "Not saved",
     },
     {

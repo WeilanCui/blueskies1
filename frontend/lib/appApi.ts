@@ -10,6 +10,10 @@ export type AuthResponse = {
   user: AuthUser;
 };
 
+export type UpdateMePayload = {
+  display_name: string;
+};
+
 export type SignupPayload = {
   email: string;
   password: string;
@@ -22,7 +26,7 @@ export type LoginPayload = {
 };
 
 export type IntakePayload = {
-  skin_type: string;
+  skin_types: string[];
   fitzpatrick_skin_type: string;
   baseline_sensitivity: number | null;
   primary_concerns: string[];
@@ -34,11 +38,22 @@ export type IntakePayload = {
   sensitivities: string[];
 };
 
+export type IntakeOption = {
+  value: string;
+  label: string;
+};
+
+export type IntakeOptionSection = {
+  title: string;
+  items: IntakeOption[];
+};
+
 export type IntakeResponse = {
   profile_id: number;
+  primary_concern_sections: IntakeOptionSection[];
   skin_profile: null | {
     id: number;
-    skin_type: string;
+    skin_types: string[];
     fitzpatrick_skin_type: string;
     primary_concerns: string[];
     goals: string[];
@@ -343,6 +358,17 @@ async function requestJson<T>(
 
 export function getMe(): Promise<AuthResponse> {
   return requestJson<AuthResponse>("/api/auth/me", {}, "Please log in.");
+}
+
+export function updateMe(payload: UpdateMePayload): Promise<AuthResponse> {
+  return requestJson<AuthResponse>(
+    "/api/auth/me",
+    {
+      method: "PATCH",
+      body: JSON.stringify(payload),
+    },
+    "Could not update your profile.",
+  );
 }
 
 export function signup(payload: SignupPayload): Promise<AuthResponse> {
