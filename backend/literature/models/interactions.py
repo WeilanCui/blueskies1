@@ -1,6 +1,13 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 from django.db import models
 
 from core.models.metadata import SourceMetadata
+
+if TYPE_CHECKING:
+    from django.db.models import Manager
 
 
 class InteractionType(models.TextChoices):
@@ -24,6 +31,9 @@ class RiskClass(models.TextChoices):
 
 class InteractionRule(models.Model):
     """Deterministic seed rules — matched against formulations to spawn assertions."""
+
+    id: int
+    assertions: Manager[InteractionAssertion]
 
     key = models.SlugField(max_length=64, unique=True)
     label = models.CharField(max_length=256)
@@ -49,6 +59,7 @@ class InteractionRule(models.Model):
     is_active = models.BooleanField(default=True)
 
     class Meta:
+        db_table = "core_interactionrule"
         ordering = ["key"]
 
     def __str__(self) -> str:
@@ -60,6 +71,9 @@ class InteractionAssertion(SourceMetadata):
 
     Provenance fields are inherited from :class:`SourceMetadata`.
     """
+
+    id: int
+    formulation_id: int | None
 
     formulation = models.ForeignKey(
         "core.Formulation",
@@ -98,7 +112,8 @@ class InteractionAssertion(SourceMetadata):
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
-    class Meta:
+    class Meta:  # pyright: ignore[reportIncompatibleVariableOverride]
+        db_table = "core_interactionassertion"
         indexes = [
             models.Index(fields=["formulation", "is_active"]),
             models.Index(fields=["compound_a", "compound_b"]),

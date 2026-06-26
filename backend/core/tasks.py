@@ -54,7 +54,7 @@ def enrich_literature_task(
             "extractor": extractor.name,
         }
 
-    from core.models import CompoundLiterature, LiteratureEnrichmentStatus
+    from literature.models import CompoundLiterature, LiteratureEnrichmentStatus
 
     compound_ids = (
         CompoundLiterature.objects.filter(
@@ -86,27 +86,101 @@ def daily_literature_discovery_task(
     compound_limit: int = 25,
     backfill_limit: int | None = -1,
     event_limit: int = 100,
+    drain_countdown: int = 60,
     max_articles: int = 5,
     max_related: int = 3,
     enrich: bool = False,
 ) -> dict:
-    """Celery wrapper for discovery event dispatch and work-item queue drain."""
+    """Seed discovery targets and kick off the queue drainer."""
+    from literature.discovery import (
+        enqueue_pending_compounds_for_literature,
+        pending_literature_discovery_target_count,
+    )
+
+    seed_limit = (
+        compound_limit
+        if backfill_limit is None or backfill_limit < 0
+        else backfill_limit
+    )
+    seeded = enqueue_pending_compounds_for_literature(
+        seed_limit,
+        formulation_only=True,
+    )
+    pending_before_drain = pending_literature_discovery_target_count()
+
+    drain_literature_discovery_queue.apply_async(
+        kwargs={
+            "compound_limit": compound_limit,
+            "event_limit": event_limit,
+            "drain_countdown": drain_countdown,
+            "max_articles": max_articles,
+            "max_related": max_related,
+            "enrich": enrich,
+        }
+    )
+
+    return {
+        "targets_seeded": seeded,
+        "pending_targets": pending_before_drain,
+        "drain_scheduled": True,
+    }
+
+
+@shared_task
+def drain_literature_discovery_queue(
+    *,
+    compound_limit: int = 25,
+    event_limit: int = 100,
+    drain_countdown: int = 60,
+    max_articles: int = 5,
+    max_related: int = 3,
+    enrich: bool = False,
+    product_targets_only: bool = True,
+) -> dict:
+    """Drain a bounded batch of literature targets and reschedule while work remains."""
     from literature.discovery import (
         LiteratureDiscoveryRunner,
         dispatch_pending_literature_discovery_events,
+        pending_literature_discovery_event_count,
+        pending_literature_discovery_target_count,
     )
 
-    effective_backfill = None if backfill_limit is None or backfill_limit < 0 else backfill_limit
     event_result = dispatch_pending_literature_discovery_events(limit=event_limit)
-
     result = LiteratureDiscoveryRunner(
         compound_limit=compound_limit,
-        backfill_limit=effective_backfill,
+        backfill_limit=0,
         max_articles=max_articles,
         max_related=max_related,
         enrich=enrich,
+        product_targets_only=product_targets_only,
     ).run()
+
+    pending_remaining = pending_literature_discovery_target_count(
+        product_targets_only=product_targets_only,
+    )
+    pending_events_remaining = pending_literature_discovery_event_count()
+    rescheduled = (
+        (pending_remaining > 0 and compound_limit > 0)
+        or (pending_events_remaining > 0 and event_limit > 0)
+    )
+    if rescheduled:
+        drain_literature_discovery_queue.apply_async(
+            kwargs={
+                "compound_limit": compound_limit,
+                "event_limit": event_limit,
+                "drain_countdown": drain_countdown,
+                "max_articles": max_articles,
+                "max_related": max_related,
+                "enrich": enrich,
+                "product_targets_only": product_targets_only,
+            },
+            countdown=drain_countdown,
+        )
+
     result["events"] = event_result
+    result["pending_remaining"] = pending_remaining
+    result["pending_events_remaining"] = pending_events_remaining
+    result["rescheduled"] = rescheduled
     return result
 
 
@@ -230,7 +304,7 @@ def enrich_formulation_ingredients(
 
     success_count = 0
     error_count = 0
-    for fi in formulation.ingredients.all():
+    for fi in formulation.ingredients.all():  # pyright: ignore[reportAttributeAccessIssue]
         try:
             result = ingest_inci_ingredient(fi.raw_text, asserted_by="barcode_scan")
             if result.errors:

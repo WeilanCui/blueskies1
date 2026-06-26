@@ -1,5 +1,6 @@
 from django.core.management.base import BaseCommand, CommandError
 
+from core.tasks import drain_literature_discovery_queue
 from literature.discovery import (
     LiteratureDiscoveryRunner,
     candidate_compounds_for_literature,
@@ -15,9 +16,7 @@ def _require_non_negative(value: int, flag: str) -> int:
 
 
 class Command(BaseCommand):
-    help = (
-        "Run PubChem + PubMed ingestion for queued or pending formulation compounds."
-    )
+    help = "Seed or drain queued literature discovery targets."
 
     def add_arguments(self, parser):
         parser.add_argument(
@@ -36,6 +35,16 @@ class Command(BaseCommand):
             "--enqueue-only",
             action="store_true",
             help="Only enqueue pending compounds; do not run ingestion.",
+        )
+        parser.add_argument(
+            "--queue-celery",
+            action="store_true",
+            help="Schedule the Celery queue drainer after enqueueing targets.",
+        )
+        parser.add_argument(
+            "--execute-now",
+            action="store_true",
+            help="Process targets synchronously in this command for manual/debug runs.",
         )
         parser.add_argument(
             "--event-limit",
@@ -65,14 +74,27 @@ class Command(BaseCommand):
             action="store_true",
             help="Run LLM literature enrichment after ingest.",
         )
+        parser.add_argument(
+            "--drain-countdown",
+            type=int,
+            default=60,
+            help="Seconds before the drainer reschedules itself when backlog remains.",
+        )
 
     def handle(self, *args, **options):
         limit = _require_non_negative(options["limit"], "--limit")
         event_limit = _require_non_negative(options["event_limit"], "--event-limit")
         max_articles = _require_non_negative(options["max_articles"], "--max-articles")
         max_related = _require_non_negative(options["max_related"], "--max-related")
+        drain_countdown = _require_non_negative(
+            options["drain_countdown"],
+            "--drain-countdown",
+        )
         formulation_only = not options["include_non_formulation"]
+        if options["queue_celery"] and options["execute_now"]:
+            raise CommandError("--queue-celery and --execute-now are mutually exclusive.")
 
+        enqueued = 0
         if options["enqueue"] is not None:
             enqueue_limit = _require_non_negative(options["enqueue"], "--enqueue")
             enqueued = enqueue_pending_compounds_for_literature(
@@ -91,6 +113,35 @@ class Command(BaseCommand):
             )
 
         if options["enqueue_only"]:
+            return
+
+        if options["queue_celery"]:
+            drain_literature_discovery_queue.apply_async(
+                kwargs={
+                    "compound_limit": limit,
+                    "event_limit": event_limit,
+                    "drain_countdown": drain_countdown,
+                    "max_articles": max_articles,
+                    "max_related": max_related,
+                    "enrich": options["enrich"],
+                    "product_targets_only": not options["all_targets"],
+                }
+            )
+            self.stdout.write(
+                self.style.SUCCESS(
+                    f"Scheduled literature discovery drainer "
+                    f"(seeded {enqueued} targets)."
+                )
+            )
+            return
+
+        if not options["execute_now"]:
+            self.stdout.write(
+                self.style.WARNING(
+                    "No execution requested. Use --queue-celery to drain via Celery "
+                    "or --execute-now for a synchronous manual run."
+                )
+            )
             return
 
         event_result = dispatch_pending_literature_discovery_events(

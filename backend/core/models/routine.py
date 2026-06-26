@@ -1,12 +1,27 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 from django.core.exceptions import ValidationError
 from django.db import models
 
 from core.models.daily_checkin import RoutineStep, RoutineTimeOfDay
-from core.models.profiles import Profile
+from core.models.profile import Profile
+
+if TYPE_CHECKING:
+    from django.db.models import Manager
+
+    from core.models.daily_checkin import DailyProductUse
+    from core.models.reaction import ReactionEvent
 
 
 class Routine(models.Model):
     """A reusable profile-owned skincare routine template."""
+
+    id: int
+    items: Manager[RoutineItem]
+    daily_product_uses: Manager[DailyProductUse]
+    reaction_events: Manager[ReactionEvent]
 
     profile = models.ForeignKey(
         Profile,
@@ -41,6 +56,12 @@ class Routine(models.Model):
 
 class RoutineItem(models.Model):
     """An ordered product or manual entry in a routine template."""
+
+    id: int
+    product_id: int | None
+    formulation_id: int | None
+    daily_product_uses: Manager[DailyProductUse]
+    reaction_events: Manager[ReactionEvent]
 
     routine = models.ForeignKey(
         Routine,
@@ -85,16 +106,16 @@ class RoutineItem(models.Model):
         ]
 
     def clean(self) -> None:
-        if self.formulation_id and self.product_id and self.formulation.product_id != self.product_id:
+        if self.formulation_id and self.product_id and self.formulation.product_id != self.product_id:  # pyright: ignore[reportAttributeAccessIssue]
             raise ValidationError("Formulation must belong to the selected product.")
-        if not self.product_id and not self.formulation_id and not self.raw_product_name.strip():
+        if not self.product_id and not self.formulation_id and not self.raw_product_name.strip():  # pyright: ignore[reportAttributeAccessIssue]
             raise ValidationError("Routine item needs a product, formulation, or raw_product_name.")
 
     @property
     def display_name(self) -> str:
-        if self.product_id:
+        if self.product_id:  # pyright: ignore[reportAttributeAccessIssue]
             return self.product.display_name or self.product.name
-        if self.formulation_id:
+        if self.formulation_id:  # pyright: ignore[reportAttributeAccessIssue]
             return self.formulation.product.display_name or self.formulation.product.name
         return self.raw_product_name
 

@@ -57,7 +57,7 @@ def _sync_formulation_ingredients(
     formulation: Formulation,
     ingredient_rows: list[dict],
 ) -> int:
-    formulation.ingredients.all().delete()
+    formulation.ingredients.all().delete()  # pyright: ignore[reportAttributeAccessIssue]
     written = 0
 
     for position, row in enumerate(ingredient_rows, start=1):
@@ -274,8 +274,8 @@ def seed_catalog(
     include_reference: bool = True,
     include_csv: bool = True,
     seed_dir=None,
-) -> dict[str, dict[str, int] | int]:
-    results: dict[str, dict[str, int] | int] = {}
+) -> dict[str, dict[str, int]]:
+    results: dict[str, dict[str, int]] = {}
     if include_reference:
         results["reference"] = upsert_catalog()
     if include_csv:

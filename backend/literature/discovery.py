@@ -14,19 +14,19 @@ from django.utils import timezone
 
 from core.models import (
     Compound,
-    CompoundLiterature,
     EnrichmentStatus,
     Formulation,
     FormulationIngredient,
-    LiteratureDiscoveryEvent,
     Product,
 )
-from core.models.literature_discovery_target import (
+from literature.models import (
     ACTIVE_DISCOVERY_STATUSES,
+    CompoundLiterature,
     DEFAULT_DISCOVERY_PRIORITY,
     DEFAULT_MAX_DISCOVERY_ATTEMPTS,
     DiscoveryReason,
     DiscoveryTargetStatus,
+    LiteratureDiscoveryEvent,
     LiteratureDiscoveryEventStatus,
     LiteratureDiscoveryEventType,
     LiteratureDiscoveryTarget,
@@ -293,7 +293,7 @@ def emit_literature_discovery_event(
         formulation=formulation,
         product=product,
     )
-    target_id = next(iter(filter_kwargs.values())).pk
+    target_id = next(iter(filter_kwargs.values())).pk  # pyright: ignore[reportAttributeAccessIssue]
     if target_id is None:
         raise ValueError("literature discovery events require saved target objects")
 
@@ -610,6 +610,26 @@ def enqueue_pending_compounds_for_literature(
     return enqueued
 
 
+def pending_literature_discovery_target_count(
+    *,
+    product_targets_only: bool = True,
+) -> int:
+    """Count pending discovery work items visible to the queue drainer."""
+    queryset = LiteratureDiscoveryTarget.objects.filter(
+        status=DiscoveryTargetStatus.PENDING,
+    )
+    if product_targets_only:
+        queryset = queryset.filter(product_discovery_target_filter())
+    return queryset.count()
+
+
+def pending_literature_discovery_event_count() -> int:
+    """Count pending outbox events waiting to become discovery work items."""
+    return LiteratureDiscoveryEvent.objects.filter(
+        status=LiteratureDiscoveryEventStatus.PENDING,
+    ).count()
+
+
 def summarize_compound_result(compound: Compound, name: str, result: Any) -> dict:
     """Stable summary shape for compound discovery results."""
     return {
@@ -664,8 +684,8 @@ class LiteratureDiscoveryRunner:
             try:
                 target_result = self.process_target(target)
                 queue_results.append(target_result)
-                if target.compound_id is not None:
-                    processed_compound_ids.add(target.compound_id)
+                if target.compound_id is not None:  # pyright: ignore[reportAttributeAccessIssue]
+                    processed_compound_ids.add(target.compound_id)  # pyright: ignore[reportAttributeAccessIssue]
             except Exception as exc:  # noqa: BLE001 - keep the daily crawl moving
                 logger.exception(
                     "Literature discovery failed for target %s",
@@ -755,7 +775,7 @@ class LiteratureDiscoveryRunner:
             return {
                 "target_id": target.pk,
                 "target_type": target.target_type,
-                "compound_id": target.compound_id,
+                "compound_id": target.compound_id,  # pyright: ignore[reportAttributeAccessIssue]
                 "skipped": True,
             }
 
@@ -789,6 +809,7 @@ class LiteratureDiscoveryRunner:
 
         search_name = locked.search_label or compound.display_name or compound.canonical_inci
         try:
+            assert self.ingest_compound_func is not None
             result = self.ingest_compound_func(
                 search_name,
                 with_pubmed=True,
@@ -897,6 +918,7 @@ class LiteratureDiscoveryRunner:
 
     def process_compound(self, compound: Compound) -> dict:
         search_name = compound.display_name or compound.canonical_inci
+        assert self.ingest_compound_func is not None
         result = self.ingest_compound_func(
             search_name,
             with_pubmed=True,

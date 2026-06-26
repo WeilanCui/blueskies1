@@ -6,8 +6,6 @@ from core.models import (
     Compound,
     CompoundAlias,
     CompoundIdentifier,
-    CompoundLiterature,
-    CompoundRelationship,
     CompoundStructure,
     ContactSubmission,
     DailyCheckIn,
@@ -15,11 +13,6 @@ from core.models import (
     Formulation,
     FormulationIngredient,
     GlossaryTerm,
-    InteractionAssertion,
-    InteractionRule,
-    LiteratureDiscoveryEvent,
-    LiteratureReference,
-    LiteratureDiscoveryTarget,
     Location,
     Profile,
     ProfileConstraint,
@@ -34,6 +27,15 @@ from core.models import (
 )
 from core.models.brand import Brand
 from core.models.product import Product
+from literature.models import (
+    CompoundLiterature,
+    CompoundRelationship,
+    InteractionAssertion,
+    InteractionRule,
+    LiteratureDiscoveryEvent,
+    LiteratureReference,
+    LiteratureDiscoveryTarget,
+)
 
 
 class CompoundAliasInline(admin.TabularInline):

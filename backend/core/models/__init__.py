@@ -1,3 +1,4 @@
+from core.models.brand import Brand
 from core.models.compound import (
     ChemicalClass,
     ChemicalClassMembership,
@@ -5,18 +6,23 @@ from core.models.compound import (
     CompoundAlias,
     CompoundIdentifier,
     CompoundStructure,
-    EntityType,
     EnrichmentStatus,
+    EntityType,
 )
-from core.models.contact import ContactSubmission, ContactSubmissionStatus
-from core.models.brand import Brand
+from core.models.contact import (
+    ContactSubmission,
+    ContactSubmissionStatus,
+)
 from core.models.daily_checkin import (
     DailyCheckIn,
     DailyProductUse,
     RoutineStep,
     RoutineTimeOfDay,
 )
-from core.models.formulation import Formulation, FormulationIngredient
+from core.models.formulation import (
+    Formulation,
+    FormulationIngredient,
+)
 from core.models.location import (
     Location,
     LocationPrecision,
@@ -25,35 +31,20 @@ from core.models.location import (
     WeatherSnapshot,
     WeatherSnapshotSource,
 )
+from core.models.metadata import (
+    SourceMetadata,
+    SourceType,
+)
 from core.models.product import Product
-from core.models.reaction import ReactionEvent, ReactionSeverity, ReactionStatus
-from core.models.routine import Routine, RoutineItem
-from core.models.metadata import SourceMetadata, SourceType
-from core.models.interactions import (
-    InteractionAssertion,
-    InteractionRule,
-    InteractionType,
-    RiskClass,
+from core.models.profile import (
+    Profile,
+    ProfileVisibility,
 )
-from core.models.literature import (
-    CompoundLiterature,
-    CompoundRelationship,
-    LiteratureEnrichmentStatus,
-    LiteratureReference,
-    RelationshipType,
-    RelevanceCategory,
-    RoleInPaper,
-)
-from core.models.literature_discovery_target import (
-    DiscoveryReason,
-    DiscoveryTargetStatus,
-    DEFAULT_DISCOVERY_PRIORITY,
-    LiteratureDiscoveryEvent,
-    LiteratureDiscoveryEventStatus,
-    LiteratureDiscoveryEventType,
-    LiteratureDiscoveryTarget,
-    LiteratureDiscoveryTargetType,
-    PRODUCT_FORMULATION_DISCOVERY_PRIORITY,
+from core.models.profile_constraint import (
+    ConstraintEnforcement,
+    ConstraintSeverity,
+    ProfileConstraint,
+    ProfileConstraintKind,
 )
 from core.models.properties import (
     GlossaryTerm,
@@ -62,55 +53,42 @@ from core.models.properties import (
     PropertyDomain,
     ValueType,
 )
-from core.models.profiles import (
-    ConstraintEnforcement,
-    ConstraintSeverity,
+from core.models.reaction import (
+    ReactionEvent,
+    ReactionSeverity,
+    ReactionStatus,
+)
+from core.models.routine import (
+    Routine,
+    RoutineItem,
+)
+from core.models.skin_profile import (
     FitzpatrickSkinType,
     PregnancyStatus,
-    Profile,
-    ProfileConstraint,
-    ProfileConstraintKind,
-    ProfileVisibility,
     SkinProfile,
     SkinType,
 )
 
 __all__ = [
     "Brand",
-    "Compound",
-    "CompoundAlias",
     "ChemicalClass",
     "ChemicalClassMembership",
+    "Compound",
+    "CompoundAlias",
     "CompoundIdentifier",
-    "CompoundLiterature",
-    "CompoundRelationship",
     "CompoundStructure",
-    "ContactSubmission",
-    "ContactSubmissionStatus",
     "ConstraintEnforcement",
     "ConstraintSeverity",
+    "ContactSubmission",
+    "ContactSubmissionStatus",
     "DailyCheckIn",
     "DailyProductUse",
-    "DiscoveryReason",
-    "DiscoveryTargetStatus",
-    "DEFAULT_DISCOVERY_PRIORITY",
-    "PRODUCT_FORMULATION_DISCOVERY_PRIORITY",
-    "EntityType",
     "EnrichmentStatus",
+    "EntityType",
     "FitzpatrickSkinType",
     "Formulation",
     "FormulationIngredient",
     "GlossaryTerm",
-    "InteractionAssertion",
-    "InteractionRule",
-    "InteractionType",
-    "LiteratureEnrichmentStatus",
-    "LiteratureDiscoveryEvent",
-    "LiteratureDiscoveryEventStatus",
-    "LiteratureDiscoveryEventType",
-    "LiteratureDiscoveryTarget",
-    "LiteratureDiscoveryTargetType",
-    "LiteratureReference",
     "Location",
     "LocationPrecision",
     "LocationSource",
@@ -124,13 +102,9 @@ __all__ = [
     "PropertyAssertion",
     "PropertyDefinition",
     "PropertyDomain",
-    "RelationshipType",
-    "RelevanceCategory",
     "ReactionEvent",
     "ReactionSeverity",
     "ReactionStatus",
-    "RiskClass",
-    "RoleInPaper",
     "Routine",
     "RoutineItem",
     "RoutineStep",

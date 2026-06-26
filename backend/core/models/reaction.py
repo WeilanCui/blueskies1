@@ -1,7 +1,9 @@
+from __future__ import annotations
+
 from django.db import models
 from django.utils import timezone
 
-from core.models.profiles import Profile
+from core.models.profile import Profile
 
 
 class ReactionSeverity(models.TextChoices):
@@ -17,6 +19,13 @@ class ReactionStatus(models.TextChoices):
 
 class ReactionEvent(models.Model):
     """A logged adverse reaction or sensitivity event."""
+
+    id: int
+    daily_checkin_id: int | None
+    routine_id: int | None
+    routine_item_id: int | None
+    product_id: int | None
+    formulation_id: int | None
 
     profile = models.ForeignKey(
         Profile,

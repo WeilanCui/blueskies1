@@ -7,14 +7,16 @@ from django.test import TestCase
 
 from core.models import (
     Compound,
+    EnrichmentStatus,
+    Formulation,
+    FormulationIngredient,
+)
+from literature.models import (
     DiscoveryReason,
     DiscoveryTargetStatus,
-    EnrichmentStatus,
     LiteratureDiscoveryEvent,
     LiteratureDiscoveryEventStatus,
     LiteratureDiscoveryEventType,
-    Formulation,
-    FormulationIngredient,
     LiteratureDiscoveryTarget,
     LiteratureDiscoveryTargetType,
     PRODUCT_FORMULATION_DISCOVERY_PRIORITY,
@@ -617,6 +619,7 @@ class LiteratureDiscoveryCommandTests(TestCase):
             "literature_discovery",
             limit=5,
             no_backfill=True,
+            execute_now=True,
             stdout=out,
         )
 
@@ -633,3 +636,62 @@ class LiteratureDiscoveryCommandTests(TestCase):
             asserted_by="literature_discovery_runner",
         )
         self.assertIn("1 events dispatched", out.getvalue())
+
+    @mock.patch(
+        "literature.management.commands.literature_discovery."
+        "drain_literature_discovery_queue.apply_async"
+    )
+    def test_command_schedules_celery_drainer_without_executing(self, mock_apply_async):
+        compound = Compound.objects.create(
+            canonical_inci="RETINOL",
+            display_name="Retinol",
+            enrichment_status=EnrichmentStatus.PENDING,
+        )
+        from core.models import Product
+        from core.models.brand import Brand
+
+        brand = Brand.objects.create(name="Test Brand")
+        product_obj = Product.objects.create(brand=brand, name="Test Serum")
+        formulation = Formulation.objects.create(
+            product=product_obj,
+            raw_inci_text="Retinol",
+        )
+        FormulationIngredient.objects.create(
+            formulation=formulation,
+            position=1,
+            raw_text="Retinol",
+            compound=compound,
+        )
+
+        out = StringIO()
+        call_command(
+            "literature_discovery",
+            enqueue=5,
+            queue_celery=True,
+            drain_countdown=15,
+            stdout=out,
+        )
+
+        target = LiteratureDiscoveryTarget.objects.get(compound=compound)
+        self.assertEqual(target.status, DiscoveryTargetStatus.PENDING)
+        mock_apply_async.assert_called_once_with(
+            kwargs={
+                "compound_limit": 25,
+                "event_limit": 100,
+                "drain_countdown": 15,
+                "max_articles": 5,
+                "max_related": 3,
+                "enrich": False,
+                "product_targets_only": True,
+            }
+        )
+        self.assertIn("Scheduled literature discovery drainer", out.getvalue())
+
+    def test_command_without_execution_only_seeds_targets(self):
+        out = StringIO()
+        call_command(
+            "literature_discovery",
+            stdout=out,
+        )
+
+        self.assertIn("No execution requested", out.getvalue())

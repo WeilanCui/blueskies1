@@ -13,13 +13,15 @@ from literature.enrichment.extractors import (
 from literature.enrichment.literature_agent import enrich_literature_link
 from core.models import (
     Compound,
+    PropertyAssertion,
+    SourceType,
+)
+from literature.models import (
     CompoundLiterature,
     LiteratureEnrichmentStatus,
     LiteratureReference,
-    PropertyAssertion,
     RelevanceCategory,
     RoleInPaper,
-    SourceType,
 )
 from literature.seeds.loader import upsert_property_definitions
 
@@ -131,6 +133,7 @@ class LiteratureAgentTests(TestCase):
     def test_stub_enriches_preservative_fixture(self):
         extraction = enrich_literature_link(self.link, extractor=StubExtractor())
         self.assertIsNotNone(extraction)
+        assert extraction is not None
         self.link.refresh_from_db()
         self.assertEqual(self.link.enrichment_status, LiteratureEnrichmentStatus.ENRICHED)
         self.assertEqual(self.link.enriched_by, "stub")
@@ -180,4 +183,4 @@ class LiteratureAgentTests(TestCase):
             source_ref="pubmed:39153997",
         )
         self.assertFalse(lit.is_active)
-        self.assertEqual(lit.superseded_by_id, human.pk)
+        self.assertEqual(lit.superseded_by_id, human.pk)  # pyright: ignore[reportAttributeAccessIssue]

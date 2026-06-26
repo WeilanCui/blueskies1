@@ -1,10 +1,30 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 from django.db import models
 
 from core.models.metadata import SourceMetadata
 
+if TYPE_CHECKING:
+    from django.db.models import Manager
+
+    from core.models.formulation import FormulationIngredient
+    from core.models.interactions import InteractionAssertion
+    from core.models.literature import CompoundLiterature, CompoundRelationship
+    from core.models.literature_discovery_target import LiteratureDiscoveryEvent, LiteratureDiscoveryTarget
+    from core.models.profiles import ProfileConstraint
+    from core.models.properties import PropertyAssertion
+
 
 class ChemicalClass(models.Model):
     """A reusable chemical family whose properties can be inherited by compounds."""
+
+    id: int
+    children: Manager[ChemicalClass]
+    memberships: Manager[ChemicalClassMembership]
+    property_assertions: Manager[PropertyAssertion]
+    profile_constraints: Manager[ProfileConstraint]
 
     name = models.CharField(max_length=128, unique=True)
     slug = models.SlugField(max_length=128, unique=True)
@@ -48,6 +68,22 @@ class EnrichmentStatus(models.TextChoices):
 
 
 class Compound(models.Model):
+    id: int
+    identifiers: Manager[CompoundIdentifier]
+    property_assertions: Manager[PropertyAssertion]
+    chemical_class_memberships: Manager[ChemicalClassMembership]
+    literature_links: Manager[CompoundLiterature]
+    relationships_as_a: Manager[CompoundRelationship]
+    relationships_as_b: Manager[CompoundRelationship]
+    interactions_as_a: Manager[InteractionAssertion]
+    interactions_as_b: Manager[InteractionAssertion]
+    profile_constraints: Manager[ProfileConstraint]
+    formulation_appearances: Manager[FormulationIngredient]
+    literature_discovery_targets: Manager[LiteratureDiscoveryTarget]
+    literature_discovery_events: Manager[LiteratureDiscoveryEvent]
+    aliases: Manager[CompoundAlias]
+    structure: CompoundStructure
+
     canonical_inci = models.CharField(max_length=512, unique=True)
     display_name = models.CharField(max_length=512, blank=True)
     entity_type = models.CharField(
@@ -76,8 +112,8 @@ class Compound(models.Model):
     def pubchem_url(self) -> str:
         """Link to the PubChem compound page when a CID identifier is stored."""
         ident = (
-            self.identifiers.filter(id_type="pubchem_cid", is_primary=True).first()
-            or self.identifiers.filter(id_type="pubchem_cid").first()
+            self.identifiers.filter(id_type="pubchem_cid", is_primary=True).first()  # pyright: ignore[reportAttributeAccessIssue]
+            or self.identifiers.filter(id_type="pubchem_cid").first()  # pyright: ignore[reportAttributeAccessIssue]
         )
         if ident is None:
             return ""
@@ -87,7 +123,7 @@ class Compound(models.Model):
         """Active class properties that apply when no direct compound claim exists."""
         from core.models.properties import PropertyAssertion
 
-        direct_property_ids = self.property_assertions.filter(
+        direct_property_ids = self.property_assertions.filter(  # pyright: ignore[reportAttributeAccessIssue]
             is_active=True,
         ).values_list("property_def_id", flat=True)
         return (
@@ -103,7 +139,7 @@ class Compound(models.Model):
 
     def effective_property_assertions(self):
         """Direct active compound properties plus inherited class properties."""
-        direct = self.property_assertions.filter(
+        direct = self.property_assertions.filter(  # pyright: ignore[reportAttributeAccessIssue]
             is_active=True,
         ).select_related("property_def")
         return list(direct) + list(self.inherited_property_assertions())
@@ -128,7 +164,7 @@ class ChemicalClassMembership(SourceMetadata):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
-    class Meta:
+    class Meta:  # pyright: ignore[reportIncompatibleVariableOverride]
         ordering = ["chemical_class__name", "compound__canonical_inci"]
         constraints = [
             models.UniqueConstraint(

@@ -13,11 +13,13 @@ from literature.ingestion.relevance import (
 )
 from core.models import (
     Compound,
+    CompoundStructure,
+    PropertyAssertion,
+)
+from literature.models import (
     CompoundLiterature,
     CompoundRelationship,
-    CompoundStructure,
     LiteratureReference,
-    PropertyAssertion,
     RelevanceCategory,
     RoleInPaper,
 )

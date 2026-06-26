@@ -1,7 +1,17 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 
-from core.models.profiles import Profile, SkinProfile
+from core.models.profile import Profile
+from core.models.skin_profile import SkinProfile
+
+if TYPE_CHECKING:
+    from django.db.models import Manager
+
+    from core.models.reaction import ReactionEvent
 
 
 class RoutineTimeOfDay(models.TextChoices):
@@ -25,6 +35,10 @@ class RoutineStep(models.TextChoices):
 
 class DailyCheckIn(models.Model):
     """A dated skin and lifestyle record for day-to-day tracking."""
+
+    id: int
+    product_uses: Manager[DailyProductUse]
+    reaction_events: Manager[ReactionEvent]
 
     profile = models.ForeignKey(
         Profile,
@@ -103,6 +117,12 @@ class DailyCheckIn(models.Model):
 
 class DailyProductUse(models.Model):
     """Product or formulation used as part of a daily check-in."""
+
+    id: int
+    formulation_id: int | None
+    product_id: int | None
+    routine_id: int | None
+    routine_item_id: int | None
 
     checkin = models.ForeignKey(
         DailyCheckIn,

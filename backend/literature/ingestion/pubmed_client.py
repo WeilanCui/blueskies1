@@ -84,7 +84,7 @@ def _parse_article(node: ET.Element) -> PubMedArticle | None:
     pmid_el = node.find(".//MedlineCitation/PMID")
     if pmid_el is None or not (pmid_el.text or "").strip():
         return None
-    pmid = pmid_el.text.strip()
+    pmid = (pmid_el.text or "").strip()
 
     title = _text(node.find(".//Article/ArticleTitle"))
     abstract = _join_abstract(node)
@@ -135,7 +135,7 @@ def _parse_year(node: ET.Element) -> int | None:
     ):
         el = node.find(path)
         if el is not None and (el.text or "").strip().isdigit():
-            return int(el.text.strip())
+            return int((el.text or "").strip())
     return None
 
 

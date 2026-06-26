@@ -131,7 +131,7 @@ def ingest_product_by_barcode(barcode: str) -> BarcodeScanResult:
 
     # After the transaction commits, enqueue async enrichment.
     from core.tasks import enrich_formulation_ingredients  # avoid circular import
-    enrich_formulation_ingredients.delay(formulation.pk)
+    enrich_formulation_ingredients.delay(formulation.pk)  # pyright: ignore[reportFunctionMemberAccess]
 
     return BarcodeScanResult(
         formulation_id=formulation.pk,
@@ -159,7 +159,7 @@ def _get_or_create_brand(name: str) -> Brand | None:
         return Brand.objects.filter(name__iexact=cleaned).first()
 
 
-def _get_or_create_inci_product(product_data: InciProduct, *, barcode: str) -> Product:
+def _get_or_create_inci_product(product_data: inci_client.InciProduct, *, barcode: str) -> Product:
     brand_obj = _get_or_create_brand(product_data.brand)
     product_name = product_data.name.strip() or "Unnamed product"
     product_obj = Product.objects.filter(
@@ -198,9 +198,9 @@ def _barcode_scan_result(
 ) -> BarcodeScanResult:
     return BarcodeScanResult(
         formulation_id=formulation.pk,
-        product_id=formulation.product_id,
+        product_id=formulation.product_id,  # pyright: ignore[reportAttributeAccessIssue]
         barcode=barcode,
-        ingredient_count=formulation.ingredients.count(),
+        ingredient_count=formulation.ingredients.count(),  # pyright: ignore[reportAttributeAccessIssue]
         created=created,
     )
 
@@ -278,7 +278,7 @@ def resolve_compound(
     )
     if should_queue:
         from core.models import EntityType
-        from core.models.literature_discovery_target import DiscoveryReason
+        from literature.models import DiscoveryReason
         from literature.discovery import emit_literature_discovery_for_compound
 
         reason = (
@@ -300,7 +300,7 @@ def _queue_literature_discovery_for_resolved_compound(
     *,
     canonical: str,
 ) -> None:
-    from core.models.literature_discovery_target import DiscoveryReason
+    from literature.models import DiscoveryReason
     from literature.discovery import emit_literature_discovery_for_compound
 
     emit_literature_discovery_for_compound(
@@ -376,7 +376,7 @@ def ingest_formulation_ingredients(
     )
     results: list[IngredientIngestResult] = []
 
-    for row in formulation.ingredients.all():
+    for row in formulation.ingredients.all():  # pyright: ignore[reportAttributeAccessIssue]
         ingredient_result = _ingest_ingredient(
             row,
             with_pubmed=with_pubmed,
@@ -472,7 +472,7 @@ def _ingest_ingredient(
 
 
 def _finalize_formulation_status(formulation: Formulation) -> None:
-    ingredients = list(formulation.ingredients.select_related("compound"))
+    ingredients = list(formulation.ingredients.select_related("compound"))  # pyright: ignore[reportAttributeAccessIssue]
     if not ingredients:
         formulation.enrichment_status = EnrichmentStatus.PENDING
         formulation.save(update_fields=["enrichment_status", "updated_at"])

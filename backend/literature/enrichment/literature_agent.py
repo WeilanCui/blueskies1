@@ -15,11 +15,13 @@ from literature.enrichment.extractors import (
 )
 from core.models import (
     Compound,
-    CompoundLiterature,
-    LiteratureEnrichmentStatus,
     PropertyAssertion,
     PropertyDefinition,
     SourceType,
+)
+from literature.models import (
+    CompoundLiterature,
+    LiteratureEnrichmentStatus,
 )
 
 logger = logging.getLogger(__name__)
@@ -170,7 +172,7 @@ def _merge_literature_functional_classes(
             source_ref=source_ref,
             defaults={**defaults, "is_active": False, "superseded_by": active},
         )
-        if assertion.superseded_by_id != active.pk:
+        if assertion.superseded_by_id != active.pk:  # pyright: ignore[reportAttributeAccessIssue]
             assertion.superseded_by = active
             assertion.is_active = False
             assertion.save(update_fields=["superseded_by", "is_active", "updated_at"])

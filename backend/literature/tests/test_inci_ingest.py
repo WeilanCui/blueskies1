@@ -79,7 +79,7 @@ class InciMappingTests(SimpleTestCase):
         claims = {c.key: c for c in map_ingredient(ingredient)}
 
         self.assertEqual(
-            sorted(claims["functional_class"].value_json),
+            sorted(claims["functional_class"].value_json),  # pyright: ignore[reportArgumentType]
             ["antioxidant", "emollient"],
         )
         self.assertEqual(claims["comedogenic_risk"].value_text, "low")
@@ -94,7 +94,7 @@ class InciMappingTests(SimpleTestCase):
         self.assertEqual(claims["pregnancy_safe"].value_text, "caution")
         self.assertEqual(claims["eu_regulatory_status"].value_text, "allowed")
         self.assertEqual(claims["inci_safety_score"].value_numeric, 6.5)
-        self.assertIn("brightening", claims["efficacy_domain"].value_json)
+        self.assertIn("brightening", claims["efficacy_domain"].value_json)  # pyright: ignore[reportArgumentType]
 
     def test_niacinamide_mapping(self):
         ingredient = parse_ingredient(NIACINAMIDE_RAW)
@@ -104,7 +104,7 @@ class InciMappingTests(SimpleTestCase):
         self.assertEqual(claims["irritation_potential"].value_text, "low")
         self.assertEqual(claims["evidence_strength"].value_text, "strong")
         self.assertEqual(
-            sorted(claims["efficacy_domain"].value_json),
+            sorted(claims["efficacy_domain"].value_json),  # pyright: ignore[reportArgumentType]
             ["anti_acne", "brightening"],
         )
         self.assertEqual(claims["functional_class"].value_json, ["humectant"])
@@ -234,7 +234,7 @@ class ProvenanceTests(TestCase):
         )
         self.assertTrue(human.is_active)
         self.assertFalse(inci.is_active)
-        self.assertEqual(inci.superseded_by_id, human.pk)
+        self.assertEqual(inci.superseded_by_id, human.pk)  # pyright: ignore[reportAttributeAccessIssue]
 
     def test_aggregator_beats_seed_on_ingest(self):
         seed = PropertyAssertion.objects.create(
@@ -257,7 +257,7 @@ class ProvenanceTests(TestCase):
             source_ref=self.source_ref,
         )
         self.assertFalse(seed.is_active)
-        self.assertEqual(seed.superseded_by_id, inci.pk)
+        self.assertEqual(seed.superseded_by_id, inci.pk)  # pyright: ignore[reportAttributeAccessIssue]
         self.assertTrue(inci.is_active)
 
     def test_reingest_is_idempotent(self):
