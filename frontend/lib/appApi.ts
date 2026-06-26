@@ -25,7 +25,7 @@ export type IntakePayload = {
   skin_type: string;
   fitzpatrick_skin_type: string;
   baseline_sensitivity: number | null;
-  primary_concerns: string[];
+  concerns: string[];
   goals: string[];
   goals_text: string;
   pregnancy_status: string;
@@ -34,13 +34,63 @@ export type IntakePayload = {
   sensitivities: string[];
 };
 
+export type ConcernPolicy = {
+  recommendation_policy: string;
+  copy_mode: string;
+  recommendation_allowed: boolean;
+  supportive_only: boolean;
+  refer_out: boolean;
+};
+
+export type SkinConcern = {
+  id: number;
+  slug: string;
+  display_name: string;
+  consumer_label: string;
+  description: string;
+  group: string;
+  group_label: string;
+  concern_type: string;
+  recommendation_policy: string;
+  copy_mode: string;
+  is_common: boolean;
+  is_active: boolean;
+};
+
+export type SelectedSkinConcern = {
+  id: number;
+  concern: SkinConcern;
+  source: string;
+  confidence: number;
+  raw_text: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
+export type SkinConcernGroup = {
+  group: string;
+  label: string;
+  concerns: SkinConcern[];
+};
+
+export type SkinConcernListResponse = {
+  groups: SkinConcernGroup[];
+};
+
+export type SkinConcernSearchResponse = {
+  query: string;
+  results: SkinConcern[];
+};
+
 export type IntakeResponse = {
   profile_id: number;
   skin_profile: null | {
     id: number;
     skin_type: string;
     fitzpatrick_skin_type: string;
-    primary_concerns: string[];
+    concerns: SelectedSkinConcern[];
+    concern_policy: ConcernPolicy;
     goals: string[];
     pregnancy_status: string;
     baseline_sensitivity: number | null;
@@ -387,6 +437,23 @@ export function saveIntake(payload: IntakePayload): Promise<IntakeResponse> {
       body: JSON.stringify(payload),
     },
     "Could not save intake.",
+  );
+}
+
+export function getSkinConcerns(): Promise<SkinConcernListResponse> {
+  return requestJson<SkinConcernListResponse>(
+    "/api/skin-concerns",
+    {},
+    "Could not load skin concerns.",
+  );
+}
+
+export function searchSkinConcerns(query: string): Promise<SkinConcernSearchResponse> {
+  const suffix = query.trim() ? `?q=${encodeURIComponent(query.trim())}` : "";
+  return requestJson<SkinConcernSearchResponse>(
+    `/api/skin-concerns/search${suffix}`,
+    {},
+    "Could not search skin concerns.",
   );
 }
 

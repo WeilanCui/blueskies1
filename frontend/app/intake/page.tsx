@@ -10,7 +10,9 @@ import FaceMap from "../experience/FaceMap";
 import {
   getIntake,
   getMe,
+  getSkinConcerns,
   saveIntake,
+  searchSkinConcerns,
   type AuthResponse,
   type IntakePayload,
 } from "../../lib/appApi";
@@ -77,112 +79,27 @@ const fitzpatrickTypes = [
   },
 ];
 
-const concernSections = [
-  {
-    title: "Breakouts & congestion",
-    items: [
-      ["acne", "Acne"],
-      ["clogged_pores", "Clogged pores"],
-      ["blackheads", "Blackheads"],
-      ["whiteheads", "Whiteheads"],
-    ],
-  },
-  {
-    title: "Sensitivity & inflammation",
-    items: [
-      ["redness", "Redness"],
-      ["stinging", "Stinging or burning"],
-      ["reactive_skin", "Reactive skin"],
-      ["rosacea_prone", "Rosacea-prone"],
-    ],
-  },
-  {
-    title: "Hydration & barrier",
-    items: [
-      ["dryness", "Dryness"],
-      ["dehydration", "Dehydration"],
-      ["flaking", "Flaking"],
-      ["tightness", "Tightness"],
-      ["barrier_damage", "Barrier damage"],
-    ],
-  },
-  {
-    title: "Oil & pores",
-    items: [
-      ["oiliness", "Oiliness"],
-      ["enlarged_pores", "Enlarged pores"],
-      ["shine", "Shine"],
-      ["sebaceous_filaments", "Sebaceous filaments"],
-    ],
-  },
-  {
-    title: "Tone & pigment",
-    items: [
-      ["dark_spots", "Dark spots"],
-      ["hyperpigmentation", "Hyperpigmentation"],
-      ["melasma_prone", "Melasma-prone"],
-      ["post_acne_marks", "Post-acne marks"],
-    ],
-  },
-  {
-    title: "Texture & dullness",
-    items: [
-      ["roughness", "Roughness"],
-      ["bumps", "Bumps"],
-      ["uneven_texture", "Uneven texture"],
-      ["dullness", "Dullness"],
-    ],
-  },
-  {
-    title: "Aging & firmness",
-    items: [
-      ["fine_lines", "Fine lines"],
-      ["wrinkles", "Wrinkles"],
-      ["loss_of_firmness", "Loss of firmness"],
-    ],
-  },
-  {
-    title: "Eye area",
-    items: [
-      ["dark_circles", "Dark circles"],
-      ["puffiness", "Puffiness"],
-      ["eye_fine_lines", "Eye-area fine lines"],
-    ],
-  },
-];
-
 const concernZones: Record<string, string[]> = {
-  acne: ["forehead", "cheeks", "chin"],
+  breakouts: ["forehead", "cheeks", "chin"],
   clogged_pores: ["nose", "chin"],
   blackheads: ["nose", "chin"],
   whiteheads: ["forehead", "chin"],
   redness: ["cheeks", "nose"],
-  stinging: ["cheeks"],
-  reactive_skin: ["cheeks", "forehead"],
-  rosacea_prone: ["cheeks", "nose"],
+  sensitive_skin: ["cheeks", "forehead"],
   dryness: ["cheeks", "lips"],
-  dehydration: ["cheeks", "forehead"],
-  flaking: ["cheeks", "chin"],
-  tightness: ["cheeks"],
   barrier_damage: ["cheeks", "forehead"],
   oiliness: ["forehead", "nose", "chin"],
-  enlarged_pores: ["nose", "cheeks"],
-  shine: ["forehead", "nose"],
-  sebaceous_filaments: ["nose"],
+  eczema_like_patches: ["cheeks", "chin"],
+  seborrheic_flakes: ["forehead", "nose"],
+  psoriasis_like_scaling: ["forehead"],
   dark_spots: ["cheeks", "forehead"],
-  hyperpigmentation: ["cheeks", "forehead"],
-  melasma_prone: ["cheeks", "forehead"],
-  post_acne_marks: ["cheeks", "chin"],
-  roughness: ["cheeks", "forehead"],
-  bumps: ["forehead", "cheeks"],
-  uneven_texture: ["cheeks", "forehead"],
+  uneven_tone: ["cheeks", "forehead"],
   dullness: ["cheeks", "forehead"],
-  fine_lines: ["eyes", "forehead"],
-  wrinkles: ["eyes", "forehead"],
-  loss_of_firmness: ["cheeks", "chin"],
-  dark_circles: ["eyes"],
-  puffiness: ["eyes"],
-  eye_fine_lines: ["eyes"],
+  rough_texture: ["cheeks", "forehead"],
+  razor_bumps: ["chin"],
+  sun_protection: ["forehead", "cheeks", "nose", "chin"],
+  rash_safety: ["cheeks", "forehead"],
+  changing_bleeding_mole: ["cheeks", "forehead"],
 };
 
 const sensitivityOptions = [
@@ -209,6 +126,7 @@ export default function IntakePage() {
   const [fitzpatrickSkinType, setFitzpatrickSkinType] = useState("not_provided");
   const [baselineSensitivity, setBaselineSensitivity] = useState(5);
   const [concerns, setConcerns] = useState<string[]>([]);
+  const [concernSearch, setConcernSearch] = useState("");
   const [goalsText, setGoalsText] = useState("");
   const [pregnancyStatus, setPregnancyStatus] = useState("not_provided");
   const [climate, setClimate] = useState("");
@@ -228,6 +146,17 @@ export default function IntakePage() {
     queryFn: getIntake,
     enabled: meQuery.isSuccess,
     retry: false,
+  });
+  const concernOptionsQuery = useQuery({
+    queryKey: ["skin-concerns"],
+    queryFn: getSkinConcerns,
+    enabled: meQuery.isSuccess,
+  });
+  const concernSearchTerm = concernSearch.trim();
+  const concernSearchQuery = useQuery({
+    queryKey: ["skin-concerns", "search", concernSearchTerm],
+    queryFn: () => searchSkinConcerns(concernSearchTerm),
+    enabled: concernSearchTerm.length >= 2,
   });
   const saveMutation = useMutation({
     mutationFn: saveIntake,
@@ -266,7 +195,7 @@ export default function IntakePage() {
     setSkinType(skinProfile.skin_type);
     setFitzpatrickSkinType(skinProfile.fitzpatrick_skin_type);
     setBaselineSensitivity(skinProfile.baseline_sensitivity ?? 5);
-    setConcerns(skinProfile.primary_concerns);
+    setConcerns(skinProfile.concerns.map((selection) => selection.concern.slug));
     setGoalsText(skinProfile.goals.join(", "));
     setPregnancyStatus(skinProfile.pregnancy_status);
     setClimate(skinProfile.climate);
@@ -299,7 +228,7 @@ export default function IntakePage() {
       skin_type: skinType,
       fitzpatrick_skin_type: fitzpatrickSkinType,
       baseline_sensitivity: baselineSensitivity,
-      primary_concerns: concerns,
+      concerns,
       goals: [],
       goals_text: goalsText,
       pregnancy_status: pregnancyStatus,
@@ -401,21 +330,58 @@ export default function IntakePage() {
 
         <section className={styles.intakeCard}>
           <h2>Skin concerns</h2>
-          <div className={styles.concernSectionStack}>
-            {concernSections.map((section) => (
-              <fieldset className={styles.concernSection} key={section.title}>
-                <legend>{section.title}</legend>
+          <label className="field">
+            <span>Search concerns</span>
+            <input
+              type="search"
+              value={concernSearch}
+              onChange={(event) => setConcernSearch(event.target.value)}
+              placeholder="Pimples, flaky, redness, eczema..."
+            />
+          </label>
+          {concernSearchTerm.length >= 2 && (
+            <fieldset className={styles.concernSection}>
+              <legend>Search results</legend>
+              {concernSearchQuery.isLoading ? (
+                <p className="detail-muted">Searching concerns...</p>
+              ) : concernSearchQuery.data?.results.length ? (
                 <div className="choice-grid">
-                  {section.items.map(([value, label]) => (
-                    <label className="choice-card" key={value}>
+                  {concernSearchQuery.data.results.map((concern) => (
+                    <label className="choice-card" key={concern.slug}>
                       <input
                         type="checkbox"
-                        checked={concerns.includes(value)}
+                        checked={concerns.includes(concern.slug)}
                         onChange={() =>
-                          setConcerns((current) => toggleValue(current, value))
+                          setConcerns((current) => toggleValue(current, concern.slug))
                         }
                       />
-                      <span>{label}</span>
+                      <span>{concern.consumer_label}</span>
+                    </label>
+                  ))}
+                </div>
+              ) : (
+                <p className="detail-muted">No concern matches yet.</p>
+              )}
+            </fieldset>
+          )}
+          <div className={styles.concernSectionStack}>
+            {concernOptionsQuery.isLoading && (
+              <p className="detail-muted">Loading common concerns...</p>
+            )}
+            {concernOptionsQuery.data?.groups.map((section) => (
+              <fieldset className={styles.concernSection} key={section.group}>
+                <legend>{section.label}</legend>
+                <div className="choice-grid">
+                  {section.concerns.map((concern) => (
+                    <label className="choice-card" key={concern.slug}>
+                      <input
+                        type="checkbox"
+                        checked={concerns.includes(concern.slug)}
+                        onChange={() =>
+                          setConcerns((current) => toggleValue(current, concern.slug))
+                        }
+                      />
+                      <span>{concern.consumer_label}</span>
                     </label>
                   ))}
                 </div>

@@ -6,6 +6,8 @@ from django.urls import reverse
 from rest_framework.test import APIClient
 
 from core.models import Profile, ProfileConstraint, SkinProfile
+from skinconcerns.models import SkinConcern, SkinProfileConcern
+from skinconcerns.seeds.loader import seed_skin_concerns
 
 
 class AuthApiTests(TestCase):
@@ -119,6 +121,7 @@ class IntakeApiTests(TestCase):
             email="morgan@example.com",
             password="strong-test-pass-123",
         )
+        seed_skin_concerns()
 
     def test_intake_requires_authentication(self):
         response = self.client.get(reverse("intake"))
@@ -140,7 +143,7 @@ class IntakeApiTests(TestCase):
                 "skin_type": "combination",
                 "fitzpatrick_skin_type": "type_iii",
                 "baseline_sensitivity": 6,
-                "primary_concerns": ["acne", "redness", "acne"],
+                "concerns": ["acne", "redness", "acne"],
                 "goals": ["fewer breakouts"],
                 "goals_text": "stronger barrier",
                 "pregnancy_status": "not_provided",
@@ -159,7 +162,15 @@ class IntakeApiTests(TestCase):
         self.assertEqual(current.skin_type, "combination")
         self.assertEqual(current.fitzpatrick_skin_type, "type_iii")
         self.assertEqual(current.baseline_sensitivity, 6)
-        self.assertEqual(current.primary_concerns, ["acne", "redness"])
+        self.assertEqual(
+            list(
+                current.concerns.filter(is_active=True).values_list(  # pyright: ignore[reportAttributeAccessIssue]
+                    "concern__slug",
+                    flat=True,
+                )
+            ),
+            ["breakouts", "redness"],
+        )
         self.assertEqual(current.goals, ["fewer breakouts", "stronger barrier"])
         self.assertEqual(current.climate, "humid")
 
@@ -170,6 +181,13 @@ class IntakeApiTests(TestCase):
             ["Fragrance", "Retinoids"],
         )
         self.assertEqual(response.data["skin_profile"]["id"], current.id)  # pyright: ignore[reportAttributeAccessIssue]
+        self.assertEqual(
+            [
+                item["concern"]["slug"]
+                for item in response.data["skin_profile"]["concerns"]  # pyright: ignore[reportAttributeAccessIssue]
+            ],
+            ["breakouts", "redness"],
+        )
         self.assertEqual(response.data["sensitivities"], ["Fragrance", "Retinoids"])  # pyright: ignore[reportAttributeAccessIssue]
 
     def test_intake_post_creates_skin_profile_when_none_exists(self):
@@ -195,7 +213,6 @@ class IntakeApiTests(TestCase):
         skin_profile = SkinProfile.objects.create(
             profile=profile,
             skin_type="dry",
-            primary_concerns=["flaking"],
             is_current=True,
         )
 
@@ -203,7 +220,7 @@ class IntakeApiTests(TestCase):
             reverse("intake"),
             {
                 "skin_type": "oily",
-                "primary_concerns": ["shine", "pores"],
+                "concerns": ["oiliness", "clogged_pores"],
                 "sensitivities": ["Fragrance"],
             },
             format="json",
@@ -214,19 +231,30 @@ class IntakeApiTests(TestCase):
         skin_profile.refresh_from_db()
         self.assertTrue(skin_profile.is_current)
         self.assertEqual(skin_profile.skin_type, "oily")
-        self.assertEqual(skin_profile.primary_concerns, ["shine", "pores"])
+        self.assertEqual(
+            list(
+                skin_profile.concerns.filter(is_active=True).values_list(  # pyright: ignore[reportAttributeAccessIssue]
+                    "concern__slug",
+                    flat=True,
+                )
+            ),
+            ["clogged_pores", "oiliness"],
+        )
         self.assertEqual(response.data["skin_profile"]["id"], skin_profile.id)  # pyright: ignore[reportAttributeAccessIssue]
         self.assertEqual(response.data["sensitivities"], ["Fragrance"])  # pyright: ignore[reportAttributeAccessIssue]
 
     def test_intake_get_returns_existing_profile_state(self):
         self.client.force_authenticate(user=self.user)  # pyright: ignore[reportAttributeAccessIssue]
         profile = Profile.objects.create(user=self.user)
-        SkinProfile.objects.create(
+        skin_profile = SkinProfile.objects.create(
             profile=profile,
             skin_type="oily",
-            primary_concerns=["oiliness"],
             goals=["less shine"],
             is_current=True,
+        )
+        SkinProfileConcern.objects.create(
+            skin_profile=skin_profile,
+            concern=SkinConcern.objects.get(slug="oiliness"),
         )
         ProfileConstraint.objects.create(
             profile=profile,
