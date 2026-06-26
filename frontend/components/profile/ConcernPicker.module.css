@@ -78,7 +78,7 @@
   background: #e0f1ff;
   border-color: #5aa7e3;
   box-shadow: inset 0 0 0 1px #5aa7e3;
-  color: #4aa3df;
+  color: #155a8a;
 }
 
 .pillOption:has(input:focus-visible) {
