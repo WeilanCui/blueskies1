@@ -112,7 +112,7 @@ cd frontend
 npm run lint
 ```
 
-Biome is configured in `frontend/biome.json` and scoped to `app/`, `components/`, and `lib/`.
+Biome is configured in `frontend/biome.json` and scoped to `app/`, `components/`, `hooks/`, and `lib/`.
 
 ## Backend Notes
 
