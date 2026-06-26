@@ -12,6 +12,9 @@ from core.models import (
     SkinProfile,
     SkinType,
 )
+from skinconcerns.models import ProfileConcernSource
+from skinconcerns.serializers import SkinProfileConcernSerializer
+from skinconcerns.services import ConcernPolicyService, ConcernSelectionService
 
 
 class IntakeSerializer(serializers.Serializer):
@@ -27,7 +30,7 @@ class IntakeSerializer(serializers.Serializer):
         required=False,
         allow_null=True,
     )
-    primary_concerns = serializers.ListField(
+    concerns = serializers.ListField(
         child=serializers.CharField(max_length=64),
         required=False,
         default=list,
@@ -51,7 +54,7 @@ class IntakeSerializer(serializers.Serializer):
         default=list,
     )
 
-    def validate_primary_concerns(self, value: list[str]) -> list[str]:
+    def validate_concerns(self, value: list[str]) -> list[str]:
         return self._clean_unique_list(value)
 
     def validate_goals(self, value: list[str]) -> list[str]:
@@ -98,7 +101,6 @@ class IntakeSerializer(serializers.Serializer):
                 "fitzpatrick_skin_type",
                 FitzpatrickSkinType.NOT_PROVIDED,
             ),
-            "primary_concerns": data.get("primary_concerns", []),
             "goals": goals,
             "pregnancy_status": data.get(
                 "pregnancy_status",
@@ -118,6 +120,12 @@ class IntakeSerializer(serializers.Serializer):
                 setattr(skin_profile, field, value)
             skin_profile.save(update_fields=[*skin_profile_values.keys()])
 
+        ConcernSelectionService().set_skin_profile_concerns(
+            skin_profile,
+            data.get("concerns", []),
+            source=ProfileConcernSource.USER_SELECTED,
+        )
+
         profile.constraints.filter(source="intake").delete()
         for sensitivity in data.get("sensitivities", []):
             ProfileConstraint.objects.create(
@@ -135,6 +143,13 @@ class IntakeSerializer(serializers.Serializer):
 def intake_payload(profile: Profile) -> dict:
     skin_profile = profile.skin_profiles.filter(is_current=True).first()
     constraints = profile.constraints.filter(source="intake", is_active=True)
+    concern_service = ConcernSelectionService()
+    concern_policy_service = ConcernPolicyService()
+    concern_selections = (
+        []
+        if skin_profile is None
+        else list(concern_service.active_for_skin_profile(skin_profile))
+    )
     return {
         "profile_id": profile.id,
         "skin_profile": None
@@ -143,7 +158,13 @@ def intake_payload(profile: Profile) -> dict:
             "id": skin_profile.id,
             "skin_type": skin_profile.skin_type,
             "fitzpatrick_skin_type": skin_profile.fitzpatrick_skin_type,
-            "primary_concerns": skin_profile.primary_concerns,
+            "concerns": SkinProfileConcernSerializer(
+                concern_selections,
+                many=True,
+            ).data,
+            "concern_policy": concern_policy_service.policy_for_concerns(
+                selection.concern for selection in concern_selections
+            ),
             "goals": skin_profile.goals,
             "pregnancy_status": skin_profile.pregnancy_status,
             "baseline_sensitivity": skin_profile.baseline_sensitivity,

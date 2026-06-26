@@ -56,7 +56,6 @@ class SkinProfile(models.Model):
         choices=FitzpatrickSkinType.choices,
         default=FitzpatrickSkinType.NOT_PROVIDED,
     )
-    primary_concerns = models.JSONField(default=list, blank=True)
     goals = models.JSONField(default=list, blank=True)
     current_routine = models.JSONField(default=dict, blank=True)
     pregnancy_status = models.CharField(
