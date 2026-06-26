@@ -6,17 +6,17 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('core', '0017_literaturediscoverytarget_literaturediscoveryevent_and_more'),
+        ("core", "0018_remove_compoundrelationship_compound_a_and_more"),
     ]
 
     operations = [
         migrations.RemoveField(
-            model_name='skinprofile',
-            name='skin_type',
+            model_name="skinprofile",
+            name="skin_type",
         ),
         migrations.AddField(
-            model_name='skinprofile',
-            name='skin_types',
+            model_name="skinprofile",
+            name="skin_types",
             field=models.JSONField(blank=True, default=list),
         ),
     ]
