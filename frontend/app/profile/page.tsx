@@ -29,9 +29,12 @@ import {
 import {
   cleanList,
   concernLabelMap,
+  concernSectionsFromGroups,
   formatToken,
   getSavedSkinTypes,
   intakeToPayload,
+  selectedConcernLabel,
+  selectedConcernSlugs,
   skinTypeLabels,
   toggleValue,
 } from "../../lib/profileForm";
@@ -150,9 +153,7 @@ export default function ProfilePage() {
     setDisplayNameDraft(user ? profileName(user) : "");
     setSkinTypesDraft(getSavedSkinTypes(skinProfile));
     setGoalDraft(skinProfile?.goals[0] ?? "");
-    setConcernsDraft(
-      skinProfile?.concerns.map((selection) => selection.concern.slug) ?? [],
-    );
+    setConcernsDraft(selectedConcernSlugs(skinProfile?.concerns));
     setSensitivitiesDraft(intakeQuery.data?.sensitivities ?? []);
     setCustomSensitivity("");
     setMessage(null);
@@ -186,14 +187,7 @@ export default function ProfilePage() {
   }
 
   const primaryConcernOptions = useMemo(
-    () =>
-      concernOptionsQuery.data?.groups.map((group) => ({
-        title: group.label,
-        items: group.concerns.map((concern) => ({
-          value: concern.slug,
-          label: concern.consumer_label || concern.display_name,
-        })),
-      })) ?? [],
+    () => concernSectionsFromGroups(concernOptionsQuery.data?.groups),
     [concernOptionsQuery.data],
   );
 
@@ -417,10 +411,7 @@ export default function ProfilePage() {
             {(skinProfile?.concerns ?? []).length > 0 ? (
               skinProfile?.concerns.map((selection) => (
                 <span className={styles.valuePill} key={selection.concern.slug}>
-                  {primaryConcernLabelMap[selection.concern.slug] ||
-                    selection.concern.consumer_label ||
-                    selection.concern.display_name ||
-                    formatToken(selection.concern.slug)}
+                  {selectedConcernLabel(selection, primaryConcernLabelMap)}
                 </span>
               ))
             ) : (

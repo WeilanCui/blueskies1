@@ -13,7 +13,6 @@ from skinconcerns.serializers import (
     SkinProfileConcernSerializer,
 )
 from skinconcerns.services import (
-    ConcernPolicyService,
     ConcernSearchService,
     ConcernSelectionService,
 )
@@ -98,12 +97,9 @@ class SkinProfileConcernView(APIView):
         )
 
     def _payload(self, skin_profile: SkinProfile) -> dict:
-        selections = list(ConcernSelectionService().active_for_skin_profile(skin_profile))
-        policy = ConcernPolicyService().policy_for_concerns(
-            selection.concern for selection in selections
-        )
+        selections = list(skin_profile.active_concern_selections())
         return {
             "skin_profile_id": skin_profile.id,
             "concerns": SkinProfileConcernSerializer(selections, many=True).data,
-            "policy": policy,
+            "policy": skin_profile.concern_policy,
         }

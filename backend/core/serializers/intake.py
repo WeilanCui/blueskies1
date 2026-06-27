@@ -14,7 +14,7 @@ from core.models import (
 )
 from skinconcerns.models import ProfileConcernSource
 from skinconcerns.serializers import SkinProfileConcernSerializer
-from skinconcerns.services import ConcernPolicyService, ConcernSelectionService
+from skinconcerns.services import ConcernSelectionService
 
 
 class IntakeSerializer(serializers.Serializer):
@@ -157,14 +157,12 @@ class IntakeSerializer(serializers.Serializer):
 
 
 def intake_payload(profile: Profile) -> dict:
-    skin_profile = profile.skin_profiles.filter(is_current=True).first()
+    skin_profile = profile.current_skin_profile
     constraints = profile.constraints.filter(source="intake", is_active=True)
-    concern_service = ConcernSelectionService()
-    concern_policy_service = ConcernPolicyService()
     concern_selections = (
         []
         if skin_profile is None
-        else list(concern_service.active_for_skin_profile(skin_profile))
+        else list(skin_profile.active_concern_selections())
     )
     return {
         "profile_id": profile.id,
@@ -178,9 +176,7 @@ def intake_payload(profile: Profile) -> dict:
                 concern_selections,
                 many=True,
             ).data,
-            "concern_policy": concern_policy_service.policy_for_concerns(
-                selection.concern for selection in concern_selections
-            ),
+            "concern_policy": skin_profile.concern_policy,
             "goals": skin_profile.goals,
             "pregnancy_status": skin_profile.pregnancy_status,
             "baseline_sensitivity": skin_profile.baseline_sensitivity,

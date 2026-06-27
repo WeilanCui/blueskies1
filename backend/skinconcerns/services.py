@@ -235,11 +235,4 @@ class ConcernSelectionService:
         return selections
 
     def active_for_skin_profile(self, skin_profile: SkinProfile):
-        return (
-            SkinProfileConcern.objects.filter(
-                skin_profile=skin_profile,
-                is_active=True,
-            )
-            .select_related("concern")
-            .order_by("concern__group", "concern__display_name")
-        )
+        return skin_profile.active_concern_selections()

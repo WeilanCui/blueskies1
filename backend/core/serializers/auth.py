@@ -22,7 +22,7 @@ def auth_user_payload(user) -> dict:
         "username": user.get_username(),
         "email": user.email,
         "display_name": profile.display_name,
-        "has_completed_intake": profile.skin_profiles.filter(is_current=True).exists(),
+        "has_completed_intake": profile.current_skin_profile is not None,
     }
 
 

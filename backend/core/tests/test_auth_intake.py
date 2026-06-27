@@ -223,6 +223,7 @@ class IntakeApiTests(TestCase):
 
         current = profile.skin_profiles.get(is_current=True)  # pyright: ignore[reportAttributeAccessIssue]
         self.assertEqual(current.id, skin_profile.id)  # pyright: ignore[reportAttributeAccessIssue]
+        self.assertEqual(profile.current_skin_profile, current)
         self.assertEqual(current.primary_skin_type, "combination")
         self.assertEqual(current.skin_types, ["combination", "oily"])
         self.assertEqual(current.fitzpatrick_skin_type, "type_iii")
@@ -235,6 +236,11 @@ class IntakeApiTests(TestCase):
                 )
             ),
             ["breakouts", "redness"],
+        )
+        self.assertEqual(current.selected_concern_slugs, ["breakouts", "redness"])
+        self.assertEqual(
+            current.concern_policy["recommendation_policy"],
+            "supportive_only",
         )
         self.assertEqual(current.goals, ["fewer breakouts", "stronger barrier"])
         self.assertEqual(current.climate, "humid")

@@ -86,3 +86,24 @@ class SkinProfile(models.Model):
     @property
     def primary_skin_type(self) -> str:
         return (self.skin_types or [SkinType.UNKNOWN])[0]
+
+    def active_concern_selections(self):
+        return (
+            self.concerns.filter(is_active=True)
+            .select_related("concern")
+            .order_by("concern__group", "concern__display_name")
+        )
+
+    @property
+    def selected_skin_concerns(self) -> list:
+        return [selection.concern for selection in self.active_concern_selections()]
+
+    @property
+    def selected_concern_slugs(self) -> list[str]:
+        return [concern.slug for concern in self.selected_skin_concerns]
+
+    @property
+    def concern_policy(self) -> dict:
+        from skinconcerns.services import ConcernPolicyService
+
+        return ConcernPolicyService().policy_for_concerns(self.selected_skin_concerns)
