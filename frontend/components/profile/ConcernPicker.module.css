@@ -1,0 +1,87 @@
+.stack {
+  display: grid;
+  gap: 14px;
+}
+
+.fieldset {
+  border: none;
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+}
+
+.fieldset legend {
+  color: #23313a;
+  font-size: 14px;
+  font-weight: 800;
+  padding: 0;
+}
+
+.grid {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: 1fr;
+}
+
+.visuallyHiddenInput {
+  height: 1px;
+  margin: -1px;
+  opacity: 0;
+  overflow: hidden;
+  position: absolute;
+  width: 1px;
+}
+
+.cardOption {
+  align-items: center;
+  background: var(--background);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  cursor: pointer;
+  display: flex;
+  gap: 10px;
+  min-height: 52px;
+  padding: 12px 14px;
+}
+
+.cardOption:has(input:checked) {
+  border-color: var(--accent);
+  box-shadow: inset 0 0 0 1px var(--accent);
+}
+
+.cardOption:has(input:focus-visible) {
+  outline: 3px solid rgba(52, 111, 170, 0.24);
+  outline-offset: 2px;
+}
+
+.pillOption {
+  align-items: center;
+  background: #eef8ff;
+  border: 1px solid #b8def7;
+  border-radius: 18px;
+  color: #101827;
+  cursor: pointer;
+  display: flex;
+  gap: 8px;
+  min-height: 52px;
+  padding: 10px 12px;
+}
+
+.pillOption span {
+  font-size: 0.9rem;
+  font-weight: 750;
+  line-height: 1.1;
+}
+
+.pillOption:has(input:checked) {
+  background: #e0f1ff;
+  border-color: #5aa7e3;
+  box-shadow: inset 0 0 0 1px #5aa7e3;
+  color: #155a8a;
+}
+
+.pillOption:has(input:focus-visible) {
+  outline: 3px solid rgba(52, 111, 170, 0.24);
+  outline-offset: 2px;
+}

@@ -249,8 +249,9 @@ export default function HomePage() {
         selection.concern.consumer_label || selection.concern.display_name,
     ) ?? [];
   const goals = skinProfile?.goals ?? [];
+  const primarySkinType = skinProfile?.skin_types[0] ?? null;
   const signalCount = [
-    skinProfile?.skin_type,
+    primarySkinType,
     skinProfile?.fitzpatrick_skin_type &&
       skinProfile.fitzpatrick_skin_type !== "not_provided",
     skinProfile?.baseline_sensitivity !== null &&
@@ -264,8 +265,8 @@ export default function HomePage() {
   const profileVitals = [
     {
       label: "Skin type",
-      value: skinProfile
-        ? skinTypeLabels[skinProfile.skin_type] || skinProfile.skin_type
+      value: primarySkinType
+        ? skinTypeLabels[primarySkinType] || primarySkinType
         : "Not saved",
     },
     {

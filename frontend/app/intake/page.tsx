@@ -3,127 +3,45 @@
 import { Input, Label, TextArea, TextField } from "@heroui/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 
 import { Button } from "../../components/Button";
-import FaceMap from "../experience/FaceMap";
+import { SensitivityOptions } from "../../components/profile/SensitivityOptions";
+import { SkinTypeSelector } from "../../components/profile/SkinTypeSelector";
+import { useConcernZones } from "../../hooks/useConcernZones";
 import {
+  type AuthResponse,
   getIntake,
   getMe,
   getSkinConcerns,
+  type IntakePayload,
   saveIntake,
   searchSkinConcerns,
-  type AuthResponse,
-  type IntakePayload,
 } from "../../lib/appApi";
+import {
+  type FitzpatrickStyleKey,
+  fitzpatrickTypeOptions,
+  toggleValue,
+} from "../../lib/profileForm";
+import FaceMap from "../experience/FaceMap";
 import styles from "./intake.module.css";
 
-const skinTypes = [
-  ["dry", "Dry"],
-  ["oily", "Oily"],
-  ["combination", "Combination"],
-  ["normal", "Normal"],
-  ["sensitive", "Sensitive"],
-  ["unknown", "Not sure"],
-];
-
-const fitzpatrickTypes = [
-  {
-    value: "not_provided",
-    label: "Not sure",
-    tone: "Skip for now",
-    response: "You can update this later.",
-    className: styles.fitzpatrickTileNotProvided,
-  },
-  {
-    value: "type_i",
-    label: "Type I",
-    tone: "Ivory",
-    response: "Always freckles, always burns or peels, never tans.",
-    className: styles.fitzpatrickTileTypeI,
-  },
-  {
-    value: "type_ii",
-    label: "Type II",
-    tone: "Pale or fair",
-    response: "Usually freckles, often burns or peels, rarely tans.",
-    className: styles.fitzpatrickTileTypeII,
-  },
-  {
-    value: "type_iii",
-    label: "Type III",
-    tone: "Fair to beige",
-    response: "Might freckle, burns on occasion, sometimes tans.",
-    className: styles.fitzpatrickTileTypeIII,
-  },
-  {
-    value: "type_iv",
-    label: "Type IV",
-    tone: "Olive or light brown",
-    response: "Doesn't really freckle, rarely burns, often tans.",
-    className: styles.fitzpatrickTileTypeIV,
-  },
-  {
-    value: "type_v",
-    label: "Type V",
-    tone: "Dark brown",
-    response: "Rarely freckles, almost never burns, always tans.",
-    className: styles.fitzpatrickTileTypeV,
-  },
-  {
-    value: "type_vi",
-    label: "Type VI",
-    tone: "Deep brown",
-    response: "Never freckles, never burns, always tans.",
-    className: styles.fitzpatrickTileTypeVI,
-  },
-];
-
-const concernZones: Record<string, string[]> = {
-  breakouts: ["forehead", "cheeks", "chin"],
-  clogged_pores: ["nose", "chin"],
-  blackheads: ["nose", "chin"],
-  whiteheads: ["forehead", "chin"],
-  redness: ["cheeks", "nose"],
-  sensitive_skin: ["cheeks", "forehead"],
-  dryness: ["cheeks", "lips"],
-  barrier_damage: ["cheeks", "forehead"],
-  oiliness: ["forehead", "nose", "chin"],
-  eczema_like_patches: ["cheeks", "chin"],
-  seborrheic_flakes: ["forehead", "nose"],
-  psoriasis_like_scaling: ["forehead"],
-  dark_spots: ["cheeks", "forehead"],
-  uneven_tone: ["cheeks", "forehead"],
-  dullness: ["cheeks", "forehead"],
-  rough_texture: ["cheeks", "forehead"],
-  razor_bumps: ["chin"],
-  sun_protection: ["forehead", "cheeks", "nose", "chin"],
-  rash_safety: ["cheeks", "forehead"],
-  changing_bleeding_mole: ["cheeks", "forehead"],
+const fitzpatrickTileClasses: Record<FitzpatrickStyleKey, string> = {
+  notProvided: styles.fitzpatrickTileNotProvided,
+  typeI: styles.fitzpatrickTileTypeI,
+  typeII: styles.fitzpatrickTileTypeII,
+  typeIII: styles.fitzpatrickTileTypeIII,
+  typeIV: styles.fitzpatrickTileTypeIV,
+  typeV: styles.fitzpatrickTileTypeV,
+  typeVI: styles.fitzpatrickTileTypeVI,
 };
-
-const sensitivityOptions = [
-  "Fragrance",
-  "Essential oils",
-  "Denatured alcohol",
-  "Retinoids",
-  "AHAs / BHAs",
-  "Benzoyl peroxide",
-  "Sulfates",
-  "Lanolin",
-];
-
-function toggleValue(values: string[], value: string): string[] {
-  return values.includes(value)
-    ? values.filter((item) => item !== value)
-    : [...values, value];
-}
 
 export default function IntakePage() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const [skinType, setSkinType] = useState("combination");
-  const [fitzpatrickSkinType, setFitzpatrickSkinType] = useState("not_provided");
+  const [fitzpatrickSkinType, setFitzpatrickSkinType] =
+    useState("not_provided");
   const [baselineSensitivity, setBaselineSensitivity] = useState(5);
   const [concerns, setConcerns] = useState<string[]>([]);
   const [concernSearch, setConcernSearch] = useState("");
@@ -177,7 +95,11 @@ export default function IntakePage() {
       setError(null);
     },
     onError: (saveError) => {
-      setError(saveError instanceof Error ? saveError.message : "Could not save intake.");
+      setError(
+        saveError instanceof Error
+          ? saveError.message
+          : "Could not save intake.",
+      );
       setMessage(null);
     },
   });
@@ -192,10 +114,12 @@ export default function IntakePage() {
     if (!skinProfile) {
       return;
     }
-    setSkinType(skinProfile.skin_type);
+    setSkinType(skinProfile.skin_types[0] ?? "unknown");
     setFitzpatrickSkinType(skinProfile.fitzpatrick_skin_type);
     setBaselineSensitivity(skinProfile.baseline_sensitivity ?? 5);
-    setConcerns(skinProfile.concerns.map((selection) => selection.concern.slug));
+    setConcerns(
+      skinProfile.concerns.map((selection) => selection.concern.slug),
+    );
     setGoalsText(skinProfile.goals.join(", "));
     setPregnancyStatus(skinProfile.pregnancy_status);
     setClimate(skinProfile.climate);
@@ -203,15 +127,7 @@ export default function IntakePage() {
     setSensitivities(intakeQuery.data?.sensitivities ?? []);
   }, [intakeQuery.data]);
 
-  const activeZones = useMemo(() => {
-    const zones = new Set<string>();
-    for (const concern of concerns) {
-      for (const zone of concernZones[concern] ?? []) {
-        zones.add(zone);
-      }
-    }
-    return Array.from(zones);
-  }, [concerns]);
+  const activeZones = useConcernZones(concerns);
 
   function addCustomSensitivity() {
     const value = customSensitivity.trim();
@@ -225,7 +141,7 @@ export default function IntakePage() {
   function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const payload: IntakePayload = {
-      skin_type: skinType,
+      skin_types: [skinType],
       fitzpatrick_skin_type: fitzpatrickSkinType,
       baseline_sensitivity: baselineSensitivity,
       concerns,
@@ -255,13 +171,16 @@ export default function IntakePage() {
       </section>
 
       <form className={styles.intakeForm} onSubmit={submit}>
-        <section className={[styles.intakeCard, styles.facialPlaceholder].join(" ")}>
+        <section
+          className={[styles.intakeCard, styles.facialPlaceholder].join(" ")}
+        >
           <div>
             <p className="landing-eyebrow">Coming soon</p>
             <h2>Facial analysis plugin</h2>
             <p>
               Photo-based analysis will map tone, texture, breakouts, and
-              barrier signals. This will feed into the intake form instead of manual entry. For now, your answers below light up the face map.
+              barrier signals. This will feed into the intake form instead of
+              manual entry. For now, your answers below light up the face map.
             </p>
           </div>
           <FaceMap activeZones={activeZones} />
@@ -271,30 +190,23 @@ export default function IntakePage() {
           <h2>Skin basics</h2>
           <fieldset className="choice-group">
             <legend>Skin type</legend>
-            <div className={styles.skinTypeGrid}>
-              {skinTypes.map(([value, label]) => (
-                <label className={["choice-card", styles.skinTypeTile].join(" ")} key={value}>
-                  <input
-                    type="radio"
-                    name="skin_type"
-                    value={value}
-                    checked={skinType === value}
-                    onChange={() => setSkinType(value)}
-                  />
-                  <span>{label}</span>
-                </label>
-              ))}
-            </div>
+            <SkinTypeSelector
+              className={styles.skinTypeGrid}
+              name="skin_type"
+              optionClassName={["choice-card", styles.skinTypeTile].join(" ")}
+              values={[skinType]}
+              onChange={(values) => setSkinType(values[0] ?? "unknown")}
+            />
           </fieldset>
           <fieldset className="choice-group">
             <legend>Fitzpatrick skin type</legend>
             <div className={styles.fitzpatrickGrid}>
-              {fitzpatrickTypes.map((type) => (
+              {fitzpatrickTypeOptions.map((type) => (
                 <label
                   className={[
                     "choice-card",
                     styles.fitzpatrickTile,
-                    type.className,
+                    fitzpatrickTileClasses[type.styleKey],
                   ].join(" ")}
                   key={type.value}
                 >
@@ -323,7 +235,9 @@ export default function IntakePage() {
               min="0"
               max="10"
               value={baselineSensitivity}
-              onChange={(event) => setBaselineSensitivity(Number(event.target.value))}
+              onChange={(event) =>
+                setBaselineSensitivity(Number(event.target.value))
+              }
             />
           </label>
         </section>
@@ -352,7 +266,9 @@ export default function IntakePage() {
                         type="checkbox"
                         checked={concerns.includes(concern.slug)}
                         onChange={() =>
-                          setConcerns((current) => toggleValue(current, concern.slug))
+                          setConcerns((current) =>
+                            toggleValue(current, concern.slug),
+                          )
                         }
                       />
                       <span>{concern.consumer_label}</span>
@@ -378,7 +294,9 @@ export default function IntakePage() {
                         type="checkbox"
                         checked={concerns.includes(concern.slug)}
                         onChange={() =>
-                          setConcerns((current) => toggleValue(current, concern.slug))
+                          setConcerns((current) =>
+                            toggleValue(current, concern.slug),
+                          )
                         }
                       />
                       <span>{concern.consumer_label}</span>
@@ -392,7 +310,11 @@ export default function IntakePage() {
 
         <section className={styles.intakeCard}>
           <h2>Goals and context</h2>
-          <TextField className="contact-field" onChange={setGoalsText} value={goalsText}>
+          <TextField
+            className="contact-field"
+            onChange={setGoalsText}
+            value={goalsText}
+          >
             <Label>Goals in your own words</Label>
             <TextArea
               placeholder="Fewer breakouts, calmer redness, stronger barrier..."
@@ -413,11 +335,22 @@ export default function IntakePage() {
               <option value="nursing">Nursing</option>
             </select>
           </label>
-          <TextField className="contact-field" onChange={setClimate} value={climate}>
+          <TextField
+            className="contact-field"
+            onChange={setClimate}
+            value={climate}
+          >
             <Label>Climate or environment</Label>
-            <Input placeholder="Humid, dry winter air, city pollution..." variant="secondary" />
+            <Input
+              placeholder="Humid, dry winter air, city pollution..."
+              variant="secondary"
+            />
           </TextField>
-          <TextField className="contact-field" onChange={setRoutineNotes} value={routineNotes}>
+          <TextField
+            className="contact-field"
+            onChange={setRoutineNotes}
+            value={routineNotes}
+          >
             <Label>Routine notes</Label>
             <TextArea
               placeholder="What are you using now? What has helped or irritated your skin?"
@@ -429,20 +362,14 @@ export default function IntakePage() {
 
         <section className={styles.intakeCard}>
           <h2>Sensitivities and avoid list</h2>
-          <div className="choice-grid">
-            {sensitivityOptions.map((item) => (
-              <label className="choice-card" key={item}>
-                <input
-                  type="checkbox"
-                  checked={sensitivities.includes(item)}
-                  onChange={() =>
-                    setSensitivities((current) => toggleValue(current, item))
-                  }
-                />
-                <span>{item}</span>
-              </label>
-            ))}
-          </div>
+          <SensitivityOptions
+            gridClassName="choice-grid"
+            optionClassName="choice-card"
+            values={sensitivities}
+            onToggle={(item) =>
+              setSensitivities((current) => toggleValue(current, item))
+            }
+          />
           <div className={styles.sensitivityAdd}>
             <input
               type="text"
@@ -450,7 +377,11 @@ export default function IntakePage() {
               onChange={(event) => setCustomSensitivity(event.target.value)}
               placeholder="Add a custom sensitivity"
             />
-            <Button type="button" variant="ghost" onPress={addCustomSensitivity}>
+            <Button
+              type="button"
+              variant="ghost"
+              onPress={addCustomSensitivity}
+            >
               Add
             </Button>
           </div>

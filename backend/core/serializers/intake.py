@@ -18,7 +18,11 @@ from skinconcerns.services import ConcernPolicyService, ConcernSelectionService
 
 
 class IntakeSerializer(serializers.Serializer):
-    skin_type = serializers.ChoiceField(choices=SkinType.choices)
+    skin_types = serializers.ListField(
+        child=serializers.ChoiceField(choices=SkinType.choices),
+        required=False,
+        default=list,
+    )
     fitzpatrick_skin_type = serializers.ChoiceField(
         choices=FitzpatrickSkinType.choices,
         required=False,
@@ -56,6 +60,18 @@ class IntakeSerializer(serializers.Serializer):
 
     def validate_concerns(self, value: list[str]) -> list[str]:
         return self._clean_unique_list(value)
+
+    def validate_skin_types(self, value: list[str]) -> list[str]:
+        return self._clean_unique_list(value)
+
+    def validate(self, attrs: dict) -> dict:
+        attrs = super().validate(attrs)
+        skin_types = attrs.get("skin_types", [])
+
+        if not skin_types:
+            attrs["skin_types"] = [SkinType.UNKNOWN]
+
+        return attrs
 
     def validate_goals(self, value: list[str]) -> list[str]:
         return self._clean_unique_list(value)
@@ -96,7 +112,7 @@ class IntakeSerializer(serializers.Serializer):
         skin_profile_values = {
             "label": "Initial intake",
             "is_current": True,
-            "skin_type": data["skin_type"],
+            "skin_types": data["skin_types"],
             "fitzpatrick_skin_type": data.get(
                 "fitzpatrick_skin_type",
                 FitzpatrickSkinType.NOT_PROVIDED,
@@ -156,7 +172,7 @@ def intake_payload(profile: Profile) -> dict:
         if skin_profile is None
         else {
             "id": skin_profile.id,
-            "skin_type": skin_profile.skin_type,
+            "skin_types": skin_profile.skin_types or [SkinType.UNKNOWN],
             "fitzpatrick_skin_type": skin_profile.fitzpatrick_skin_type,
             "concerns": SkinProfileConcernSerializer(
                 concern_selections,
