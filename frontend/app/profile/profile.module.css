@@ -103,7 +103,7 @@
   background: #dceffc;
   border: 3px solid #aad8f6;
   border-radius: 999px;
-  color: #4aa3df;
+  color: #346faa;
   display: inline-flex;
   flex: 0 0 92px;
   font-family: Georgia, "Times New Roman", serif;
@@ -181,7 +181,7 @@
 .goalPill {
   background: #dff7f2;
   border-color: #b9e9df;
-  color: #68cdbc;
+  color: #0f766e;
 }
 
 .emptyState {
