@@ -22,6 +22,7 @@ export default function LoginPage() {
   const [displayName, setDisplayName] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [touched, setTouched] = useState({ email: false, password: false });
 
   const trimmedEmail = email.trim();
   const emailError =
@@ -32,6 +33,8 @@ export default function LoginPage() {
         : "";
   const passwordError = password.length === 0 ? "Password is required." : "";
   const canSubmit = !emailError && !passwordError;
+  const showEmailError = touched.email ? emailError : "";
+  const showPasswordError = touched.password ? passwordError : "";
 
   const meQuery = useQuery({
     queryKey: ["me"],
@@ -62,6 +65,7 @@ export default function LoginPage() {
 
   function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    setTouched({ email: true, password: true });
     if (!canSubmit || authMutation.isPending) {
       return;
     }
@@ -133,7 +137,9 @@ export default function LoginPage() {
           </div>
           <div className={styles.authCopy}>
             <p className="landing-eyebrow">Your skin profile</p>
-            <h2>{mode === "signup" ? "Create your account." : "Welcome back."}</h2>
+            <h2>
+              {mode === "signup" ? "Create your account." : "Welcome back."}
+            </h2>
             <p>
               {mode === "signup"
                 ? "Start with a mobile-friendly intake that can grow into product scans, tracking, and recommendations."
@@ -192,44 +198,50 @@ export default function LoginPage() {
 
             <TextField
               className="contact-field"
-              isInvalid={Boolean(emailError)}
+              isInvalid={Boolean(showEmailError)}
               isRequired
               name="email"
+              onBlur={() => setTouched((prev) => ({ ...prev, email: true }))}
               onChange={setEmail}
               type="email"
               value={email}
-          >
-            <Label>Email</Label>
-            <Input
-              autoComplete="email"
-              inputMode="email"
-              name="email"
-              placeholder="you@example.com"
-              type="email"
-              variant="secondary"
-            />
-            {emailError && <FieldError>{emailError}</FieldError>}
-          </TextField>
+            >
+              <Label>Email</Label>
+              <Input
+                autoComplete="email"
+                inputMode="email"
+                name="email"
+                placeholder="you@example.com"
+                type="email"
+                variant="secondary"
+              />
+              {showEmailError && <FieldError>{showEmailError}</FieldError>}
+            </TextField>
 
             <TextField
               className="contact-field"
-              isInvalid={Boolean(passwordError)}
+              isInvalid={Boolean(showPasswordError)}
               isRequired
               name="password"
+              onBlur={() => setTouched((prev) => ({ ...prev, password: true }))}
               onChange={setPassword}
               type="password"
               value={password}
-          >
-            <Label>Password</Label>
-            <Input
-              autoComplete={mode === "signup" ? "new-password" : "current-password"}
-              name={mode === "signup" ? "new-password" : "current-password"}
-              placeholder="Password"
-              type="password"
-              variant="secondary"
-            />
-            {passwordError && <FieldError>{passwordError}</FieldError>}
-          </TextField>
+            >
+              <Label>Password</Label>
+              <Input
+                autoComplete={
+                  mode === "signup" ? "new-password" : "current-password"
+                }
+                name={mode === "signup" ? "new-password" : "current-password"}
+                placeholder="Password"
+                type="password"
+                variant="secondary"
+              />
+              {showPasswordError && (
+                <FieldError>{showPasswordError}</FieldError>
+              )}
+            </TextField>
 
             <Button
               type="submit"
