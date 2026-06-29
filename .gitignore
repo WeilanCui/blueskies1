@@ -19,3 +19,4 @@ postgres_data/
 redis_data/
 .venv/
 .worktrees/
+.gstack/
