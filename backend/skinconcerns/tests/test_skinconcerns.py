@@ -8,11 +8,15 @@ from rest_framework.test import APIClient
 from core.models import Profile, SkinProfile
 from skinconcerns.models import (
     ConcernAlias,
+    ConcernEvidence,
+    ConcernReferralTrigger,
     ConcernRule,
+    EvidenceType,
     RecommendationPolicy,
     RuleTargetType,
     SkinConcern,
     SkinProfileConcern,
+    TriggerSeverity,
 )
 from skinconcerns.normalization import normalize_search_text
 from skinconcerns.seeds.loader import seed_skin_concerns
@@ -201,6 +205,63 @@ class SkinConcernSeedAndServiceTests(TestCase):
         self.assertEqual(policy["recommendation_policy"], RecommendationPolicy.SUPPRESS)
         self.assertTrue(policy["refer_out"])
         self.assertFalse(policy["supportive_only"])
+
+    def test_seed_deactivates_removed_catalog_entries(self):
+        concern = SkinConcern.objects.get(slug="dark_spots")
+        stale_concern = SkinConcern.objects.create(
+            slug="obsolete_concern",
+            display_name="Obsolete concern",
+            consumer_label="Obsolete concern",
+        )
+        stale_alias = ConcernAlias.objects.create(
+            concern=concern,
+            alias_text="obsolete alias",
+        )
+        stale_rule = ConcernRule.objects.create(
+            concern=concern,
+            key="obsolete-rule",
+            label="Obsolete rule",
+            target_type=RuleTargetType.FREE_TEXT,
+            raw_target="obsolete target",
+        )
+        stale_evidence = ConcernEvidence.objects.create(
+            concern=concern,
+            key="obsolete-evidence",
+            source_name="Obsolete source",
+            citation_label="Obsolete citation",
+            evidence_type=EvidenceType.PUBLIC_GUIDANCE,
+        )
+        stale_trigger = ConcernReferralTrigger.objects.create(
+            concern=concern,
+            key="obsolete-trigger",
+            trigger_text="obsolete trigger",
+            severity=TriggerSeverity.URGENT,
+        )
+
+        counts = seed_skin_concerns()
+
+        stale_concern.refresh_from_db()
+        stale_alias.refresh_from_db()
+        stale_rule.refresh_from_db()
+        stale_evidence.refresh_from_db()
+        stale_trigger.refresh_from_db()
+        self.assertFalse(stale_concern.is_active)
+        self.assertFalse(stale_alias.is_active)
+        self.assertFalse(stale_rule.is_active)
+        self.assertFalse(stale_evidence.is_active)
+        self.assertFalse(stale_trigger.is_active)
+        self.assertEqual(counts["concerns_deactivated"], 1)
+        self.assertEqual(counts["aliases_deactivated"], 1)
+        self.assertEqual(counts["rules_deactivated"], 1)
+        self.assertEqual(counts["evidence_deactivated"], 1)
+        self.assertEqual(counts["triggers_deactivated"], 1)
+        self.assertEqual(ConcernSearchService().search("obsolete alias"), [])
+        self.assertEqual(
+            ConcernResolutionService().referral_triggers_for_text(
+                "I saw an obsolete trigger"
+            ),
+            [],
+        )
 
 
 class SkinConcernApiTests(TestCase):

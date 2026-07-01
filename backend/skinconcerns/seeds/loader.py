@@ -18,6 +18,14 @@ def _alias_payload(alias) -> tuple[str, str]:
     return alias, "consumer"
 
 
+def _deactivate_stale(model, field_name: str, active_values: set[str]) -> int:
+    return (
+        model.objects.filter(is_active=True)
+        .exclude(**{f"{field_name}__in": active_values})
+        .update(is_active=False)
+    )
+
+
 @transaction.atomic
 def seed_skin_concerns() -> dict[str, int]:
     counts = {
@@ -27,8 +35,18 @@ def seed_skin_concerns() -> dict[str, int]:
         "rules_written": 0,
         "evidence_written": 0,
         "triggers_written": 0,
+        "concerns_deactivated": 0,
+        "aliases_deactivated": 0,
+        "rules_deactivated": 0,
+        "evidence_deactivated": 0,
+        "triggers_deactivated": 0,
     }
     concerns_by_slug: dict[str, SkinConcern] = {}
+    active_concern_slugs = {row["slug"] for row in CONCERNS}
+    active_aliases: set[str] = set()
+    active_rule_keys: set[str] = set()
+    active_evidence_keys: set[str] = set()
+    active_trigger_keys = {trigger[1] for trigger in REFERRAL_TRIGGERS}
 
     for row in CONCERNS:
         concern, was_created = SkinConcern.objects.update_or_create(
@@ -53,6 +71,7 @@ def seed_skin_concerns() -> dict[str, int]:
 
         for alias in row.get("aliases", []):
             alias_text, alias_type = _alias_payload(alias)
+            active_aliases.add(normalize_search_text(alias_text))
             ConcernAlias.objects.update_or_create(
                 normalized_alias=normalize_search_text(alias_text),
                 defaults={
@@ -65,6 +84,7 @@ def seed_skin_concerns() -> dict[str, int]:
             counts["aliases_written"] += 1
 
         for rule_row in row.get("rules", []):
+            active_rule_keys.add(rule_row["key"])
             ConcernRule.objects.update_or_create(
                 key=rule_row["key"],
                 defaults={
@@ -85,9 +105,11 @@ def seed_skin_concerns() -> dict[str, int]:
             counts["rules_written"] += 1
 
         for source_key in row.get("sources", []):
+            evidence_key = f"{concern.slug}-{source_key}"
+            active_evidence_keys.add(evidence_key)
             source = SOURCES[source_key]
             ConcernEvidence.objects.update_or_create(
-                key=f"{concern.slug}-{source_key}",
+                key=evidence_key,
                 defaults={
                     "concern": concern,
                     "source_name": source["source_name"],
@@ -113,5 +135,31 @@ def seed_skin_concerns() -> dict[str, int]:
             },
         )
         counts["triggers_written"] += 1
+
+    counts["concerns_deactivated"] = _deactivate_stale(
+        SkinConcern,
+        "slug",
+        active_concern_slugs,
+    )
+    counts["aliases_deactivated"] = _deactivate_stale(
+        ConcernAlias,
+        "normalized_alias",
+        active_aliases,
+    )
+    counts["rules_deactivated"] = _deactivate_stale(
+        ConcernRule,
+        "key",
+        active_rule_keys,
+    )
+    counts["evidence_deactivated"] = _deactivate_stale(
+        ConcernEvidence,
+        "key",
+        active_evidence_keys,
+    )
+    counts["triggers_deactivated"] = _deactivate_stale(
+        ConcernReferralTrigger,
+        "key",
+        active_trigger_keys,
+    )
 
     return counts
