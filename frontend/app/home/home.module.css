@@ -120,7 +120,11 @@
   align-items: center;
   aspect-ratio: 16 / 9;
   background:
-    linear-gradient(135deg, rgba(236, 252, 203, 0.62), rgba(240, 249, 255, 0.82)),
+    linear-gradient(
+      135deg,
+      rgba(236, 252, 203, 0.62),
+      rgba(240, 249, 255, 0.82)
+    ),
     #f8fafb;
   border: 1px dashed rgba(52, 111, 170, 0.24);
   border-radius: 8px;
@@ -241,7 +245,7 @@
 .refreshButton {
   flex: 0 0 auto;
   gap: 6px;
-  min-height: 34px;
+  min-height: 44px;
   padding-inline: 10px;
 }
 
@@ -505,7 +509,11 @@
 }
 
 .mobileActionDock {
-  background: linear-gradient(180deg, rgba(251, 253, 255, 0), rgba(251, 253, 255, 0.95) 28%);
+  background: linear-gradient(
+    180deg,
+    rgba(251, 253, 255, 0),
+    rgba(251, 253, 255, 0.95) 28%
+  );
   bottom: 0;
   left: 0;
   padding: 18px 16px;
