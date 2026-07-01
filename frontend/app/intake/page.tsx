@@ -36,6 +36,20 @@ const fitzpatrickTileClasses: Record<FitzpatrickStyleKey, string> = {
   typeVI: styles.fitzpatrickTileTypeVI,
 };
 
+function useDebouncedValue(value: string, delayMs: number) {
+  const [debouncedValue, setDebouncedValue] = useState(value);
+
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delayMs);
+
+    return () => clearTimeout(timeoutId);
+  }, [value, delayMs]);
+
+  return debouncedValue;
+}
+
 export default function IntakePage() {
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -71,11 +85,16 @@ export default function IntakePage() {
     enabled: meQuery.isSuccess,
   });
   const concernSearchTerm = concernSearch.trim();
+  const debouncedConcernSearchTerm = useDebouncedValue(concernSearchTerm, 300);
   const concernSearchQuery = useQuery({
-    queryKey: ["skin-concerns", "search", concernSearchTerm],
-    queryFn: () => searchSkinConcerns(concernSearchTerm),
-    enabled: concernSearchTerm.length >= 2,
+    queryKey: ["skin-concerns", "search", debouncedConcernSearchTerm],
+    queryFn: () => searchSkinConcerns(debouncedConcernSearchTerm),
+    enabled: debouncedConcernSearchTerm.length >= 2,
   });
+  const isConcernSearchPending =
+    concernSearchTerm.length >= 2 &&
+    (concernSearchTerm !== debouncedConcernSearchTerm ||
+      concernSearchQuery.isFetching);
   const saveMutation = useMutation({
     mutationFn: saveIntake,
     onSuccess: (data) => {
@@ -256,7 +275,7 @@ export default function IntakePage() {
           {concernSearchTerm.length >= 2 && (
             <fieldset className={styles.concernSection}>
               <legend>Search results</legend>
-              {concernSearchQuery.isLoading ? (
+              {isConcernSearchPending ? (
                 <p className="detail-muted">Searching concerns...</p>
               ) : concernSearchQuery.data?.results.length ? (
                 <div className="choice-grid">
