@@ -8,7 +8,7 @@ import {
 } from "@heroicons/react/24/outline";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { Button } from "../../components/Button";
 import { ConcernPicker } from "../../components/profile/ConcernPicker";
@@ -16,21 +16,25 @@ import { ProfileSection } from "../../components/profile/ProfileSection";
 import { SensitivityOptions } from "../../components/profile/SensitivityOptions";
 import { SkinTypeSelector } from "../../components/profile/SkinTypeSelector";
 import {
-  getIntake,
-  getMe,
-  saveIntake,
-  updateMe,
   type AuthResponse,
   type AuthUser,
+  getIntake,
+  getMe,
+  getSkinConcerns,
   type IntakePayload,
   type IntakeResponse,
+  saveIntake,
+  updateMe,
 } from "../../lib/appApi";
 import {
   cleanList,
   concernLabelMap,
+  concernSectionsFromGroups,
   formatToken,
   getSavedSkinTypes,
   intakeToPayload,
+  selectedConcernLabel,
+  selectedConcernSlugs,
   skinTypeLabels,
   toggleValue,
 } from "../../lib/profileForm";
@@ -61,7 +65,9 @@ function initialsFor(user: AuthUser): string {
 export default function ProfilePage() {
   const router = useRouter();
   const queryClient = useQueryClient();
-  const [editingSection, setEditingSection] = useState<EditableSection | null>(null);
+  const [editingSection, setEditingSection] = useState<EditableSection | null>(
+    null,
+  );
   const [displayNameDraft, setDisplayNameDraft] = useState("");
   const [skinTypesDraft, setSkinTypesDraft] = useState<string[]>([]);
   const [goalDraft, setGoalDraft] = useState("");
@@ -82,6 +88,11 @@ export default function ProfilePage() {
     enabled: meQuery.isSuccess,
     retry: false,
   });
+  const concernOptionsQuery = useQuery({
+    queryKey: ["skin-concerns"],
+    queryFn: getSkinConcerns,
+    enabled: meQuery.isSuccess,
+  });
 
   const identityMutation = useMutation({
     mutationFn: updateMe,
@@ -93,7 +104,9 @@ export default function ProfilePage() {
     },
     onError: (updateError) => {
       setError(
-        updateError instanceof Error ? updateError.message : "Could not update your profile.",
+        updateError instanceof Error
+          ? updateError.message
+          : "Could not update your profile.",
       );
       setMessage(null);
     },
@@ -119,7 +132,11 @@ export default function ProfilePage() {
       setError(null);
     },
     onError: (saveError) => {
-      setError(saveError instanceof Error ? saveError.message : "Could not save this section.");
+      setError(
+        saveError instanceof Error
+          ? saveError.message
+          : "Could not save this section.",
+      );
       setMessage(null);
     },
   });
@@ -136,7 +153,7 @@ export default function ProfilePage() {
     setDisplayNameDraft(user ? profileName(user) : "");
     setSkinTypesDraft(getSavedSkinTypes(skinProfile));
     setGoalDraft(skinProfile?.goals[0] ?? "");
-    setConcernsDraft(skinProfile?.primary_concerns ?? []);
+    setConcernsDraft(selectedConcernSlugs(skinProfile?.concerns));
     setSensitivitiesDraft(intakeQuery.data?.sensitivities ?? []);
     setCustomSensitivity("");
     setMessage(null);
@@ -169,6 +186,11 @@ export default function ProfilePage() {
     setCustomSensitivity("");
   }
 
+  const primaryConcernOptions = useMemo(
+    () => concernSectionsFromGroups(concernOptionsQuery.data?.groups),
+    [concernOptionsQuery.data],
+  );
+
   if (meQuery.isLoading || meQuery.isError || !meQuery.data) {
     return <p className="detail-muted">Loading your session...</p>;
   }
@@ -179,8 +201,6 @@ export default function ProfilePage() {
   const isSaving = identityMutation.isPending || intakeMutation.isPending;
   const primaryGoal = skinProfile?.goals[0] ?? "";
   const savedSkinTypes = getSavedSkinTypes(skinProfile);
-  const primaryConcernOptions =
-    intakeQuery.data?.primary_concern_sections ?? [];
   const primaryConcernLabelMap = concernLabelMap(primaryConcernOptions);
   const savedSkinTypeLabel =
     savedSkinTypes.length > 0
@@ -209,7 +229,9 @@ export default function ProfilePage() {
         <h1>My Profile</h1>
       </header>
 
-      <section className={[styles.profileSection, styles.identitySection].join(" ")}>
+      <section
+        className={[styles.profileSection, styles.identitySection].join(" ")}
+      >
         <div className={styles.identitySummary}>
           <div className={styles.avatar} aria-hidden="true">
             {initialsFor(user)}
@@ -345,7 +367,9 @@ export default function ProfilePage() {
             </form>
           }
         >
-          <span className={styles.goalPill}>{primaryGoal || "No goal saved"}</span>
+          <span className={styles.goalPill}>
+            {primaryGoal || "No goal saved"}
+          </span>
         </ProfileSection>
 
         <ProfileSection
@@ -363,7 +387,7 @@ export default function ProfilePage() {
             <form
               className={styles.editor}
               onSubmit={(event) =>
-                saveIntakeSection(event, { primary_concerns: concernsDraft })
+                saveIntakeSection(event, { concerns: concernsDraft })
               }
             >
               <ConcernPicker
@@ -384,10 +408,10 @@ export default function ProfilePage() {
           }
         >
           <div className={styles.tagList}>
-            {(skinProfile?.primary_concerns ?? []).length > 0 ? (
-              skinProfile?.primary_concerns.map((concern) => (
-                <span className={styles.valuePill} key={concern}>
-                  {primaryConcernLabelMap[concern] || formatToken(concern)}
+            {(skinProfile?.concerns ?? []).length > 0 ? (
+              skinProfile?.concerns.map((selection) => (
+                <span className={styles.valuePill} key={selection.concern.slug}>
+                  {selectedConcernLabel(selection, primaryConcernLabelMap)}
                 </span>
               ))
             ) : (
@@ -411,12 +435,14 @@ export default function ProfilePage() {
             <form
               className={styles.editor}
               onSubmit={(event) =>
-                saveIntakeSection(event, { sensitivities: cleanList(sensitivitiesDraft) })
+                saveIntakeSection(event, {
+                  sensitivities: cleanList(sensitivitiesDraft),
+                })
               }
             >
               <p className={styles.sectionHelp}>
-                We will flag these in ingredient analysis and exclude products containing
-                them from recommendations.
+                We will flag these in ingredient analysis and exclude products
+                containing them from recommendations.
               </p>
               <SensitivityOptions
                 gridClassName={styles.choiceGrid}
@@ -433,7 +459,11 @@ export default function ProfilePage() {
                   placeholder="e.g. Sodium Lauryl Sulfate"
                   onChange={(event) => setCustomSensitivity(event.target.value)}
                 />
-                <Button type="button" variant="secondary" onPress={addCustomSensitivity}>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onPress={addCustomSensitivity}
+                >
                   <PlusIcon aria-hidden="true" />
                   Add
                 </Button>
@@ -469,8 +499,8 @@ export default function ProfilePage() {
           }
         >
           <p className={styles.sectionHelp}>
-            We will flag these in ingredient analysis and exclude products containing them
-            from recommendations.
+            We will flag these in ingredient analysis and exclude products
+            containing them from recommendations.
           </p>
           {sensitivities.length > 0 ? (
             <div className={styles.tagList}>

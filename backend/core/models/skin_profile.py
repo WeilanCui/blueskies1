@@ -52,7 +52,6 @@ class SkinProfile(models.Model):
         choices=FitzpatrickSkinType.choices,
         default=FitzpatrickSkinType.NOT_PROVIDED,
     )
-    primary_concerns = models.JSONField(default=list, blank=True)
     goals = models.JSONField(default=list, blank=True)
     current_routine = models.JSONField(default=dict, blank=True)
     pregnancy_status = models.CharField(
@@ -87,3 +86,35 @@ class SkinProfile(models.Model):
     @property
     def primary_skin_type(self) -> str:
         return (self.skin_types or [SkinType.UNKNOWN])[0]
+
+    def active_concern_selections(self):
+        return (
+            self.concerns.filter(is_active=True)
+            .select_related("concern")
+            .order_by("concern__group", "concern__display_name")
+        )
+
+    @property
+    def selected_skin_concerns(self) -> list:
+        return [selection.concern for selection in self.active_concern_selections()]
+
+    @property
+    def selected_concern_slugs(self) -> list[str]:
+        return [concern.slug for concern in self.selected_skin_concerns]
+
+    @staticmethod
+    def skin_concerns_from_selections(concern_selections) -> list:
+        return [selection.concern for selection in concern_selections]
+
+    def concern_policy_for_selections(self, concern_selections) -> dict:
+        from skinconcerns.services import ConcernPolicyService
+
+        return ConcernPolicyService().policy_for_concerns(
+            self.skin_concerns_from_selections(concern_selections)
+        )
+
+    @property
+    def concern_policy(self) -> dict:
+        from skinconcerns.services import ConcernPolicyService
+
+        return ConcernPolicyService().policy_for_concerns(self.selected_skin_concerns)

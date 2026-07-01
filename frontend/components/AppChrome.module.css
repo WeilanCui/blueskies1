@@ -37,14 +37,14 @@
   box-shadow: 0 10px 24px rgba(52, 111, 170, 0.22);
   color: var(--accent-strong);
   display: inline-flex;
-  flex: 0 0 34px;
+  flex: 0 0 44px;
   font-size: 0.94rem;
   font-weight: 900;
-  height: 34px;
+  height: 44px;
   justify-content: center;
   line-height: 1;
   text-decoration: none;
-  width: 34px;
+  width: 44px;
 }
 
 .profileAvatar:hover,

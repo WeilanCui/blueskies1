@@ -29,7 +29,7 @@ export type IntakePayload = {
   skin_types: string[];
   fitzpatrick_skin_type: string;
   baseline_sensitivity: number | null;
-  primary_concerns: string[];
+  concerns: string[];
   goals: string[];
   goals_text: string;
   pregnancy_status: string;
@@ -38,24 +38,63 @@ export type IntakePayload = {
   sensitivities: string[];
 };
 
-export type IntakeOption = {
-  value: string;
-  label: string;
+export type ConcernPolicy = {
+  recommendation_policy: string;
+  copy_mode: string;
+  recommendation_allowed: boolean;
+  supportive_only: boolean;
+  refer_out: boolean;
 };
 
-export type IntakeOptionSection = {
-  title: string;
-  items: IntakeOption[];
+export type SkinConcern = {
+  id: number;
+  slug: string;
+  display_name: string;
+  consumer_label: string;
+  description: string;
+  group: string;
+  group_label: string;
+  concern_type: string;
+  recommendation_policy: string;
+  copy_mode: string;
+  is_common: boolean;
+  is_active: boolean;
+};
+
+export type SelectedSkinConcern = {
+  id: number;
+  concern: SkinConcern;
+  source: string;
+  confidence: number;
+  raw_text: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
+export type SkinConcernGroup = {
+  group: string;
+  label: string;
+  concerns: SkinConcern[];
+};
+
+export type SkinConcernListResponse = {
+  groups: SkinConcernGroup[];
+};
+
+export type SkinConcernSearchResponse = {
+  query: string;
+  results: SkinConcern[];
 };
 
 export type IntakeResponse = {
   profile_id: number;
-  primary_concern_sections: IntakeOptionSection[];
   skin_profile: null | {
     id: number;
     skin_types: string[];
     fitzpatrick_skin_type: string;
-    primary_concerns: string[];
+    concerns: SelectedSkinConcern[];
+    concern_policy: ConcernPolicy;
     goals: string[];
     pregnancy_status: string;
     baseline_sensitivity: number | null;
@@ -322,7 +361,8 @@ function getErrorMessage(data: unknown, fallback: string): string {
     if (typeof detail === "string") {
       return detail;
     }
-    const nonField = "non_field_errors" in data ? data.non_field_errors : undefined;
+    const nonField =
+      "non_field_errors" in data ? data.non_field_errors : undefined;
     if (Array.isArray(nonField) && typeof nonField[0] === "string") {
       return nonField[0];
     }
@@ -402,7 +442,11 @@ export function logout(): Promise<{ detail: string }> {
 }
 
 export function getIntake(): Promise<IntakeResponse> {
-  return requestJson<IntakeResponse>("/api/intake", {}, "Could not load intake.");
+  return requestJson<IntakeResponse>(
+    "/api/intake",
+    {},
+    "Could not load intake.",
+  );
 }
 
 export function saveIntake(payload: IntakePayload): Promise<IntakeResponse> {
@@ -413,6 +457,25 @@ export function saveIntake(payload: IntakePayload): Promise<IntakeResponse> {
       body: JSON.stringify(payload),
     },
     "Could not save intake.",
+  );
+}
+
+export function getSkinConcerns(): Promise<SkinConcernListResponse> {
+  return requestJson<SkinConcernListResponse>(
+    "/api/skin-concerns",
+    {},
+    "Could not load skin concerns.",
+  );
+}
+
+export function searchSkinConcerns(
+  query: string,
+): Promise<SkinConcernSearchResponse> {
+  const suffix = query.trim() ? `?q=${encodeURIComponent(query.trim())}` : "";
+  return requestJson<SkinConcernSearchResponse>(
+    `/api/skin-concerns/search${suffix}`,
+    {},
+    "Could not search skin concerns.",
   );
 }
 
@@ -435,7 +498,11 @@ export function getCatalogProduct(id: string): Promise<CatalogProduct> {
 
 export function getRoutines(activeOnly = true): Promise<Routine[]> {
   const suffix = activeOnly ? "?active=true" : "";
-  return requestJson<Routine[]>(`/api/routines${suffix}`, {}, "Could not load routines.");
+  return requestJson<Routine[]>(
+    `/api/routines${suffix}`,
+    {},
+    "Could not load routines.",
+  );
 }
 
 export function createRoutine(payload: RoutinePayload): Promise<Routine> {
@@ -449,7 +516,10 @@ export function createRoutine(payload: RoutinePayload): Promise<Routine> {
   );
 }
 
-export function updateRoutine(id: number, payload: RoutinePayload): Promise<Routine> {
+export function updateRoutine(
+  id: number,
+  payload: RoutinePayload,
+): Promise<Routine> {
   return requestJson<Routine>(
     `/api/routines/${id}`,
     {
@@ -516,7 +586,9 @@ export function updateProfileLocation(
   );
 }
 
-export function setDefaultProfileLocation(id: number): Promise<ProfileLocation> {
+export function setDefaultProfileLocation(
+  id: number,
+): Promise<ProfileLocation> {
   return requestJson<ProfileLocation>(
     `/api/profile-locations/${id}/set-default`,
     { method: "POST" },
@@ -532,7 +604,9 @@ export function getCurrentLocationContext(): Promise<LocationContext> {
   );
 }
 
-export function refreshProfileLocationWeather(id: number): Promise<LocationContext> {
+export function refreshProfileLocationWeather(
+  id: number,
+): Promise<LocationContext> {
   return requestJson<LocationContext>(
     `/api/profile-locations/${id}/refresh-weather`,
     { method: "POST" },
@@ -556,7 +630,9 @@ export function getDailyCheckIns(): Promise<DailyCheckIn[]> {
   );
 }
 
-export function saveTodayCheckIn(payload: TodayCheckInPayload): Promise<DailyCheckIn> {
+export function saveTodayCheckIn(
+  payload: TodayCheckInPayload,
+): Promise<DailyCheckIn> {
   return requestJson<DailyCheckIn>(
     "/api/daily-checkins/today",
     {
@@ -568,10 +644,16 @@ export function saveTodayCheckIn(payload: TodayCheckInPayload): Promise<DailyChe
 }
 
 export function getReactions(): Promise<ReactionEvent[]> {
-  return requestJson<ReactionEvent[]>("/api/reactions", {}, "Could not load reactions.");
+  return requestJson<ReactionEvent[]>(
+    "/api/reactions",
+    {},
+    "Could not load reactions.",
+  );
 }
 
-export function createReaction(payload: ReactionPayload): Promise<ReactionEvent> {
+export function createReaction(
+  payload: ReactionPayload,
+): Promise<ReactionEvent> {
   return requestJson<ReactionEvent>(
     "/api/reactions",
     {

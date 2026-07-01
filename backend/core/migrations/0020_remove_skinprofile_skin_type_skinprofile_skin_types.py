@@ -6,7 +6,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("core", "0018_remove_compoundrelationship_compound_a_and_more"),
+        ("core", "0019_remove_skinprofile_primary_concerns"),
     ]
 
     operations = [

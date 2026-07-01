@@ -35,5 +35,13 @@ class Profile(models.Model):
     class Meta:
         ordering = ["user__username"]
 
+    @property
+    def current_skin_profile(self):
+        return (
+            self.skin_profiles.filter(is_current=True)
+            .order_by("-captured_at", "-id")
+            .first()
+        )
+
     def __str__(self) -> str:
         return self.display_name or self.handle or self.user.get_username()

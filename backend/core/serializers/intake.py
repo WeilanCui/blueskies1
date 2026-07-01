@@ -12,38 +12,9 @@ from core.models import (
     SkinProfile,
     SkinType,
 )
-
-
-PRIMARY_CONCERN_SECTIONS = [
-    {
-        "title": "Primary concerns",
-        "items": [
-            {
-                "value": "acne_blemishes",
-                "label": "Acne blemishes: breakouts, post-acne marks",
-            },
-            {"value": "dehydrated_dryness", "label": "Dehydrated / dryness"},
-            {"value": "enlarged_pores", "label": "Enlarged pores"},
-            {"value": "dark_circles", "label": "Dark circles"},
-            {"value": "sun_damage", "label": "Sun damage"},
-            {
-                "value": "uneven_tone_hyperpigmentation_dull_skin",
-                "label": "Uneven skin tone, hyperpigmentation, dull skin",
-            },
-            {
-                "value": "wrinkles_firmness_elasticity",
-                "label": "Wrinkles / firmness / skin elasticity",
-            },
-            {
-                "value": "sensitive_reactive_skin",
-                "label": (
-                    "Sensitive or reactive skin: redness, reactive skin, "
-                    "sensitivity, damaged skin barrier"
-                ),
-            },
-        ],
-    }
-]
+from skinconcerns.models import ProfileConcernSource
+from skinconcerns.serializers import SkinProfileConcernSerializer
+from skinconcerns.services import ConcernSelectionService
 
 
 class IntakeSerializer(serializers.Serializer):
@@ -63,7 +34,7 @@ class IntakeSerializer(serializers.Serializer):
         required=False,
         allow_null=True,
     )
-    primary_concerns = serializers.ListField(
+    concerns = serializers.ListField(
         child=serializers.CharField(max_length=64),
         required=False,
         default=list,
@@ -87,7 +58,7 @@ class IntakeSerializer(serializers.Serializer):
         default=list,
     )
 
-    def validate_primary_concerns(self, value: list[str]) -> list[str]:
+    def validate_concerns(self, value: list[str]) -> list[str]:
         return self._clean_unique_list(value)
 
     def validate_skin_types(self, value: list[str]) -> list[str]:
@@ -146,7 +117,6 @@ class IntakeSerializer(serializers.Serializer):
                 "fitzpatrick_skin_type",
                 FitzpatrickSkinType.NOT_PROVIDED,
             ),
-            "primary_concerns": data.get("primary_concerns", []),
             "goals": goals,
             "pregnancy_status": data.get(
                 "pregnancy_status",
@@ -166,6 +136,12 @@ class IntakeSerializer(serializers.Serializer):
                 setattr(skin_profile, field, value)
             skin_profile.save(update_fields=[*skin_profile_values.keys()])
 
+        ConcernSelectionService().set_skin_profile_concerns(
+            skin_profile,
+            data.get("concerns", []),
+            source=ProfileConcernSource.USER_SELECTED,
+        )
+
         profile.constraints.filter(source="intake").delete()
         for sensitivity in data.get("sensitivities", []):
             ProfileConstraint.objects.create(
@@ -181,18 +157,28 @@ class IntakeSerializer(serializers.Serializer):
 
 
 def intake_payload(profile: Profile) -> dict:
-    skin_profile = profile.skin_profiles.filter(is_current=True).first()
+    skin_profile = profile.current_skin_profile
     constraints = profile.constraints.filter(source="intake", is_active=True)
+    concern_selections = (
+        []
+        if skin_profile is None
+        else list(skin_profile.active_concern_selections())
+    )
     return {
         "profile_id": profile.id,
-        "primary_concern_sections": PRIMARY_CONCERN_SECTIONS,
         "skin_profile": None
         if skin_profile is None
         else {
             "id": skin_profile.id,
             "skin_types": skin_profile.skin_types or [SkinType.UNKNOWN],
             "fitzpatrick_skin_type": skin_profile.fitzpatrick_skin_type,
-            "primary_concerns": skin_profile.primary_concerns,
+            "concerns": SkinProfileConcernSerializer(
+                concern_selections,
+                many=True,
+            ).data,
+            "concern_policy": skin_profile.concern_policy_for_selections(
+                concern_selections
+            ),
             "goals": skin_profile.goals,
             "pregnancy_status": skin_profile.pregnancy_status,
             "baseline_sensitivity": skin_profile.baseline_sensitivity,

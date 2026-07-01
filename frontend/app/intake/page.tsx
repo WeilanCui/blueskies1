@@ -6,23 +6,24 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import { Button } from "../../components/Button";
-import { ConcernPicker } from "../../components/profile/ConcernPicker";
 import { SensitivityOptions } from "../../components/profile/SensitivityOptions";
 import { SkinTypeSelector } from "../../components/profile/SkinTypeSelector";
 import { useConcernZones } from "../../hooks/useConcernZones";
-import FaceMap from "../experience/FaceMap";
 import {
+  type AuthResponse,
   getIntake,
   getMe,
-  saveIntake,
-  type AuthResponse,
+  getSkinConcerns,
   type IntakePayload,
+  saveIntake,
+  searchSkinConcerns,
 } from "../../lib/appApi";
 import {
+  type FitzpatrickStyleKey,
   fitzpatrickTypeOptions,
   toggleValue,
-  type FitzpatrickStyleKey,
 } from "../../lib/profileForm";
+import FaceMap from "../experience/FaceMap";
 import styles from "./intake.module.css";
 
 const fitzpatrickTileClasses: Record<FitzpatrickStyleKey, string> = {
@@ -35,13 +36,29 @@ const fitzpatrickTileClasses: Record<FitzpatrickStyleKey, string> = {
   typeVI: styles.fitzpatrickTileTypeVI,
 };
 
+function useDebouncedValue(value: string, delayMs: number) {
+  const [debouncedValue, setDebouncedValue] = useState(value);
+
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delayMs);
+
+    return () => clearTimeout(timeoutId);
+  }, [value, delayMs]);
+
+  return debouncedValue;
+}
+
 export default function IntakePage() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const [skinType, setSkinType] = useState("combination");
-  const [fitzpatrickSkinType, setFitzpatrickSkinType] = useState("not_provided");
+  const [fitzpatrickSkinType, setFitzpatrickSkinType] =
+    useState("not_provided");
   const [baselineSensitivity, setBaselineSensitivity] = useState(5);
   const [concerns, setConcerns] = useState<string[]>([]);
+  const [concernSearch, setConcernSearch] = useState("");
   const [goalsText, setGoalsText] = useState("");
   const [pregnancyStatus, setPregnancyStatus] = useState("not_provided");
   const [climate, setClimate] = useState("");
@@ -62,6 +79,22 @@ export default function IntakePage() {
     enabled: meQuery.isSuccess,
     retry: false,
   });
+  const concernOptionsQuery = useQuery({
+    queryKey: ["skin-concerns"],
+    queryFn: getSkinConcerns,
+    enabled: meQuery.isSuccess,
+  });
+  const concernSearchTerm = concernSearch.trim();
+  const debouncedConcernSearchTerm = useDebouncedValue(concernSearchTerm, 300);
+  const concernSearchQuery = useQuery({
+    queryKey: ["skin-concerns", "search", debouncedConcernSearchTerm],
+    queryFn: () => searchSkinConcerns(debouncedConcernSearchTerm),
+    enabled: debouncedConcernSearchTerm.length >= 2,
+  });
+  const isConcernSearchPending =
+    concernSearchTerm.length >= 2 &&
+    (concernSearchTerm !== debouncedConcernSearchTerm ||
+      concernSearchQuery.isFetching);
   const saveMutation = useMutation({
     mutationFn: saveIntake,
     onSuccess: (data) => {
@@ -81,7 +114,11 @@ export default function IntakePage() {
       setError(null);
     },
     onError: (saveError) => {
-      setError(saveError instanceof Error ? saveError.message : "Could not save intake.");
+      setError(
+        saveError instanceof Error
+          ? saveError.message
+          : "Could not save intake.",
+      );
       setMessage(null);
     },
   });
@@ -99,7 +136,9 @@ export default function IntakePage() {
     setSkinType(skinProfile.skin_types[0] ?? "unknown");
     setFitzpatrickSkinType(skinProfile.fitzpatrick_skin_type);
     setBaselineSensitivity(skinProfile.baseline_sensitivity ?? 5);
-    setConcerns(skinProfile.primary_concerns);
+    setConcerns(
+      skinProfile.concerns.map((selection) => selection.concern.slug),
+    );
     setGoalsText(skinProfile.goals.join(", "));
     setPregnancyStatus(skinProfile.pregnancy_status);
     setClimate(skinProfile.climate);
@@ -108,8 +147,6 @@ export default function IntakePage() {
   }, [intakeQuery.data]);
 
   const activeZones = useConcernZones(concerns);
-  const primaryConcernOptions =
-    intakeQuery.data?.primary_concern_sections ?? [];
 
   function addCustomSensitivity() {
     const value = customSensitivity.trim();
@@ -126,7 +163,7 @@ export default function IntakePage() {
       skin_types: [skinType],
       fitzpatrick_skin_type: fitzpatrickSkinType,
       baseline_sensitivity: baselineSensitivity,
-      primary_concerns: concerns,
+      concerns,
       goals: [],
       goals_text: goalsText,
       pregnancy_status: pregnancyStatus,
@@ -153,13 +190,16 @@ export default function IntakePage() {
       </section>
 
       <form className={styles.intakeForm} onSubmit={submit}>
-        <section className={[styles.intakeCard, styles.facialPlaceholder].join(" ")}>
+        <section
+          className={[styles.intakeCard, styles.facialPlaceholder].join(" ")}
+        >
           <div>
             <p className="landing-eyebrow">Coming soon</p>
             <h2>Facial analysis plugin</h2>
             <p>
               Photo-based analysis will map tone, texture, breakouts, and
-              barrier signals. This will feed into the intake form instead of manual entry. For now, your answers below light up the face map.
+              barrier signals. This will feed into the intake form instead of
+              manual entry. For now, your answers below light up the face map.
             </p>
           </div>
           <FaceMap activeZones={activeZones} />
@@ -214,24 +254,86 @@ export default function IntakePage() {
               min="0"
               max="10"
               value={baselineSensitivity}
-              onChange={(event) => setBaselineSensitivity(Number(event.target.value))}
+              onChange={(event) =>
+                setBaselineSensitivity(Number(event.target.value))
+              }
             />
           </label>
         </section>
 
         <section className={styles.intakeCard}>
-          <h2>Primary concerns</h2>
-          <ConcernPicker
-            variant="card"
-            sections={primaryConcernOptions}
-            values={concerns}
-            onChange={setConcerns}
-          />
+          <h2>Skin concerns</h2>
+          <label className="field">
+            <span>Search concerns</span>
+            <input
+              type="search"
+              value={concernSearch}
+              onChange={(event) => setConcernSearch(event.target.value)}
+              placeholder="Pimples, flaky, redness, eczema..."
+            />
+          </label>
+          {concernSearchTerm.length >= 2 && (
+            <fieldset className={styles.concernSection}>
+              <legend>Search results</legend>
+              {isConcernSearchPending ? (
+                <p className="detail-muted">Searching concerns...</p>
+              ) : concernSearchQuery.data?.results.length ? (
+                <div className="choice-grid">
+                  {concernSearchQuery.data.results.map((concern) => (
+                    <label className="choice-card" key={concern.slug}>
+                      <input
+                        type="checkbox"
+                        checked={concerns.includes(concern.slug)}
+                        onChange={() =>
+                          setConcerns((current) =>
+                            toggleValue(current, concern.slug),
+                          )
+                        }
+                      />
+                      <span>{concern.consumer_label}</span>
+                    </label>
+                  ))}
+                </div>
+              ) : (
+                <p className="detail-muted">No concern matches yet.</p>
+              )}
+            </fieldset>
+          )}
+          <div className={styles.concernSectionStack}>
+            {concernOptionsQuery.isLoading && (
+              <p className="detail-muted">Loading common concerns...</p>
+            )}
+            {concernOptionsQuery.data?.groups.map((section) => (
+              <fieldset className={styles.concernSection} key={section.group}>
+                <legend>{section.label}</legend>
+                <div className="choice-grid">
+                  {section.concerns.map((concern) => (
+                    <label className="choice-card" key={concern.slug}>
+                      <input
+                        type="checkbox"
+                        checked={concerns.includes(concern.slug)}
+                        onChange={() =>
+                          setConcerns((current) =>
+                            toggleValue(current, concern.slug),
+                          )
+                        }
+                      />
+                      <span>{concern.consumer_label}</span>
+                    </label>
+                  ))}
+                </div>
+              </fieldset>
+            ))}
+          </div>
         </section>
 
         <section className={styles.intakeCard}>
           <h2>Goals and context</h2>
-          <TextField className="contact-field" onChange={setGoalsText} value={goalsText}>
+          <TextField
+            className="contact-field"
+            onChange={setGoalsText}
+            value={goalsText}
+          >
             <Label>Goals in your own words</Label>
             <TextArea
               placeholder="Fewer breakouts, calmer redness, stronger barrier..."
@@ -252,11 +354,22 @@ export default function IntakePage() {
               <option value="nursing">Nursing</option>
             </select>
           </label>
-          <TextField className="contact-field" onChange={setClimate} value={climate}>
+          <TextField
+            className="contact-field"
+            onChange={setClimate}
+            value={climate}
+          >
             <Label>Climate or environment</Label>
-            <Input placeholder="Humid, dry winter air, city pollution..." variant="secondary" />
+            <Input
+              placeholder="Humid, dry winter air, city pollution..."
+              variant="secondary"
+            />
           </TextField>
-          <TextField className="contact-field" onChange={setRoutineNotes} value={routineNotes}>
+          <TextField
+            className="contact-field"
+            onChange={setRoutineNotes}
+            value={routineNotes}
+          >
             <Label>Routine notes</Label>
             <TextArea
               placeholder="What are you using now? What has helped or irritated your skin?"
@@ -283,7 +396,11 @@ export default function IntakePage() {
               onChange={(event) => setCustomSensitivity(event.target.value)}
               placeholder="Add a custom sensitivity"
             />
-            <Button type="button" variant="ghost" onPress={addCustomSensitivity}>
+            <Button
+              type="button"
+              variant="ghost"
+              onPress={addCustomSensitivity}
+            >
               Add
             </Button>
           </div>

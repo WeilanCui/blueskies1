@@ -243,7 +243,11 @@ export default function HomePage() {
     },
   ].filter((item) => item.value !== null);
   const firstName = displayName(user.display_name, user.username).split(" ")[0];
-  const primaryConcerns = skinProfile?.primary_concerns ?? [];
+  const primaryConcerns =
+    skinProfile?.concerns.map(
+      (selection) =>
+        selection.concern.consumer_label || selection.concern.display_name,
+    ) ?? [];
   const goals = skinProfile?.goals ?? [];
   const primarySkinType = skinProfile?.skin_types[0] ?? null;
   const signalCount = [

@@ -1,4 +1,9 @@
-import type { IntakePayload, IntakeResponse } from "./appApi";
+import type {
+  IntakePayload,
+  IntakeResponse,
+  SelectedSkinConcern,
+  SkinConcernGroup,
+} from "./appApi";
 
 export type ProfileOption = readonly [value: string, label: string];
 export type ConcernOption = {
@@ -98,6 +103,38 @@ export function concernLabelMap(
     sections.flatMap((section) =>
       section.items.map((item) => [item.value, item.label]),
     ),
+  );
+}
+
+export function concernSectionsFromGroups(
+  groups: SkinConcernGroup[] | undefined,
+): ConcernSection[] {
+  return (
+    groups?.map((group) => ({
+      title: group.label,
+      items: group.concerns.map((concern) => ({
+        value: concern.slug,
+        label: concern.consumer_label || concern.display_name,
+      })),
+    })) ?? []
+  );
+}
+
+export function selectedConcernSlugs(
+  selections: SelectedSkinConcern[] | undefined,
+): string[] {
+  return selections?.map((selection) => selection.concern.slug) ?? [];
+}
+
+export function selectedConcernLabel(
+  selection: SelectedSkinConcern,
+  labels: Record<string, string>,
+): string {
+  return (
+    labels[selection.concern.slug] ||
+    selection.concern.consumer_label ||
+    selection.concern.display_name ||
+    formatToken(selection.concern.slug)
   );
 }
 
@@ -211,7 +248,7 @@ export function intakeToPayload(
     skin_types: skinTypes.length > 0 ? skinTypes : ["unknown"],
     fitzpatrick_skin_type: skinProfile?.fitzpatrick_skin_type ?? "not_provided",
     baseline_sensitivity: skinProfile?.baseline_sensitivity ?? null,
-    primary_concerns: skinProfile?.primary_concerns ?? [],
+    concerns: selectedConcernSlugs(skinProfile?.concerns),
     goals: skinProfile?.goals ?? [],
     goals_text: "",
     pregnancy_status: skinProfile?.pregnancy_status ?? "not_provided",
