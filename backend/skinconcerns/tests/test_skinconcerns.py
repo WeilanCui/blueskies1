@@ -188,6 +188,7 @@ class SkinConcernSeedAndServiceTests(TestCase):
         self.assertEqual(search.search("zits")[0].slug, "breakouts")
         self.assertEqual(search.search("eczema")[0].slug, "eczema_like_patches")
         self.assertEqual(search.search("rosacea")[0].slug, "redness")
+        self.assertEqual(search.search("rosácea")[0].slug, "redness")
         self.assertEqual(search.search("flaky")[0].slug, "dryness")
         self.assertEqual(search.search("rash")[0].slug, "rash_safety")
         self.assertEqual(search.search("melasma")[0].slug, "melasma_like_pigmentation")
@@ -233,6 +234,22 @@ class SkinConcernSeedAndServiceTests(TestCase):
             {trigger.key for trigger in bleeding_mole_triggers},
         )
         self.assertEqual(thrash_triggers, [])
+
+    def test_referral_trigger_detection_ignores_negated_phrases(self):
+        triggers = ConcernResolutionService().referral_triggers_for_text(
+            "No painful rash and not a bleeding mole."
+        )
+
+        self.assertEqual(triggers, [])
+
+        positive_triggers = ConcernResolutionService().referral_triggers_for_text(
+            "I do have a painful rash."
+        )
+
+        self.assertIn(
+            "painful-rash",
+            {trigger.key for trigger in positive_triggers},
+        )
 
     def test_policy_service_uses_strictest_concern_policy(self):
         concerns = SkinConcern.objects.filter(
