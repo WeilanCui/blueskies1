@@ -16,7 +16,11 @@ from skinconcerns.models import (
 )
 from skinconcerns.normalization import normalize_search_text
 from skinconcerns.seeds.loader import seed_skin_concerns
-from skinconcerns.services import ConcernPolicyService, ConcernSearchService
+from skinconcerns.services import (
+    ConcernPolicyService,
+    ConcernResolutionService,
+    ConcernSearchService,
+)
 
 
 class SkinConcernModelTests(TestCase):
@@ -176,6 +180,16 @@ class SkinConcernSeedAndServiceTests(TestCase):
             RecommendationPolicy.SUPPORTIVE_ONLY,
         )
         self.assertTrue(policy["supportive_only"])
+
+    def test_new_changing_spot_referral_trigger_matches_free_text(self):
+        triggers = ConcernResolutionService().referral_triggers_for_text(
+            "I noticed a new changing spot near my cheek."
+        )
+
+        self.assertIn(
+            "new-changing-spot",
+            {trigger.key for trigger in triggers},
+        )
 
     def test_policy_service_uses_strictest_concern_policy(self):
         concerns = SkinConcern.objects.filter(

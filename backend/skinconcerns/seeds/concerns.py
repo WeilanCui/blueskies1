@@ -597,5 +597,5 @@ REFERRAL_TRIGGERS = [
     ("changing_bleeding_mole", "changing-mole", "changing mole", TriggerSeverity.URGENT),
     ("changing_bleeding_mole", "irregular-border", "irregular border", TriggerSeverity.URGENT),
     ("changing_bleeding_mole", "multiple-colors", "multiple colors", TriggerSeverity.URGENT),
-    ("changing_bleeding_mole", "new-changing-spot", "new spot changing", TriggerSeverity.URGENT),
+    ("changing_bleeding_mole", "new-changing-spot", "new changing spot", TriggerSeverity.URGENT),
 ]
