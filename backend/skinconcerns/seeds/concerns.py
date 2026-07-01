@@ -378,7 +378,13 @@ CONCERNS = [
         "concern_type": ConcernType.COSMETIC,
         "recommendation_policy": RecommendationPolicy.ALLOW,
         "copy_mode": CopyMode.NORMAL,
-        "aliases": ["hyperpigmentation", "post acne marks", "post-breakout marks", "dark marks", "brown spots", "melasma"],
+        "aliases": [
+            "hyperpigmentation",
+            "post acne marks",
+            "post-breakout marks",
+            "dark marks",
+            "brown spots",
+        ],
         "rules": [
             {
                 "key": "dark-spots-recommend-sunscreen-brightening",
@@ -390,6 +396,33 @@ CONCERNS = [
             }
         ],
         "sources": ["aad_melasma"],
+    },
+    {
+        "slug": "melasma_like_pigmentation",
+        "display_name": "Melasma-like patches",
+        "consumer_label": "Brown or gray-brown patches",
+        "description": "Brown or gray-brown facial patches that may resemble melasma.",
+        "group": ConcernGroup.PIGMENT,
+        "concern_type": ConcernType.MEDICAL_ADJACENT,
+        "recommendation_policy": RecommendationPolicy.SUPPORTIVE_ONLY,
+        "copy_mode": CopyMode.CAREFUL,
+        "aliases": [
+            ("melasma", AliasType.MEDICAL_TERM),
+            "mask of pregnancy",
+            "gray brown patches",
+            "brown patches on face",
+        ],
+        "rules": [
+            {
+                "key": "melasma-like-supportive-only",
+                "label": "Supportive-only routing for melasma-like pigmentation",
+                "rule_kind": RuleKind.REFER,
+                "target_type": RuleTargetType.FREE_TEXT,
+                "raw_target": "melasma-like pigmentation should use clinician-safe wording",
+                "weight": -30,
+            }
+        ],
+        "sources": ["aad_melasma", "fda_cosmetic_drug"],
     },
     {
         "slug": "uneven_tone",

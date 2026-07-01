@@ -144,7 +144,16 @@ class SkinConcernSeedAndServiceTests(TestCase):
     def test_seed_includes_key_search_aliases(self):
         aliases = set(ConcernAlias.objects.values_list("normalized_alias", flat=True))
 
-        for alias in ["zits", "pimples", "acne", "eczema", "rosacea", "flaky", "rash"]:
+        for alias in [
+            "zits",
+            "pimples",
+            "acne",
+            "eczema",
+            "rosacea",
+            "flaky",
+            "rash",
+            "melasma",
+        ]:
             self.assertIn(normalize_search_text(alias), aliases)
 
     def test_search_resolves_common_and_medical_terms(self):
@@ -155,6 +164,18 @@ class SkinConcernSeedAndServiceTests(TestCase):
         self.assertEqual(search.search("rosacea")[0].slug, "redness")
         self.assertEqual(search.search("flaky")[0].slug, "dryness")
         self.assertEqual(search.search("rash")[0].slug, "rash_safety")
+        self.assertEqual(search.search("melasma")[0].slug, "melasma_like_pigmentation")
+
+    def test_melasma_search_uses_supportive_only_policy(self):
+        concern = ConcernSearchService().search("melasma")[0]
+
+        policy = ConcernPolicyService().policy_for_concerns([concern])
+
+        self.assertEqual(
+            policy["recommendation_policy"],
+            RecommendationPolicy.SUPPORTIVE_ONLY,
+        )
+        self.assertTrue(policy["supportive_only"])
 
     def test_policy_service_uses_strictest_concern_policy(self):
         concerns = SkinConcern.objects.filter(
