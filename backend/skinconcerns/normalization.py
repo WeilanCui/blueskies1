@@ -14,6 +14,23 @@ NEGATION_TOKENS = frozenset(
         "hardly",
         "barely",
         "scarcely",
+        "cant",
+        "cannot",
+        # Normalized contraction stems, e.g. "don't" -> "don t".
+        "don",
+        "doesn",
+        "didn",
+        "isn",
+        "aren",
+        "wasn",
+        "weren",
+        "haven",
+        "hasn",
+        "hadn",
+        "won",
+        "wouldn",
+        "couldn",
+        "shouldn",
     }
 )
 
@@ -36,6 +53,54 @@ SKIP_TOKENS = frozenset(
     }
 )
 
+CONNECTOR_TOKENS = frozenset(
+    {
+        "of",
+        "from",
+        "with",
+        "for",
+        "to",
+        "in",
+        "on",
+        "at",
+        "by",
+        "about",
+        "sign",
+        "signs",
+        "symptom",
+        "symptoms",
+        "have",
+        "has",
+        "had",
+        "having",
+        "get",
+        "gets",
+        "got",
+        "getting",
+        "experience",
+        "experiences",
+        "experiencing",
+        "suffer",
+        "suffers",
+        "suffering",
+        "see",
+        "sees",
+        "seeing",
+        "saw",
+        "notice",
+        "notices",
+        "noticing",
+        "noticed",
+        "show",
+        "shows",
+        "showing",
+        "shown",
+        "t",
+    }
+)
+
+NEGATION_LOOKBACK_LIMIT = 6
+
 
 def normalize_search_text(value: str) -> str:
     """Normalize user concern text for exact alias lookup."""
@@ -46,17 +111,18 @@ def normalize_search_text(value: str) -> str:
 
 
 def _phrase_is_negated(text_tokens: list[str], start_index: int) -> bool:
-    """Return True when a phrase match is immediately preceded by negation."""
+    """Return True when a phrase match is preceded by negation."""
     if start_index == 0:
         return False
 
+    skippable = SKIP_TOKENS | CONNECTOR_TOKENS
     index = start_index - 1
     steps = 0
-    while index >= 0 and steps < 3:
+    while index >= 0 and steps < NEGATION_LOOKBACK_LIMIT:
         token = text_tokens[index]
         if token in NEGATION_TOKENS:
             return True
-        if token not in SKIP_TOKENS:
+        if token not in skippable:
             break
         index -= 1
         steps += 1

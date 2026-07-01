@@ -44,6 +44,44 @@ class NormalizedPhraseMatchingTests(SimpleTestCase):
                 "No fever with rash today.",
             )
         )
+        self.assertFalse(
+            normalized_phrase_in_text(
+                "painful rash",
+                "I don't have a painful rash.",
+            )
+        )
+        self.assertFalse(
+            normalized_phrase_in_text(
+                "fever with rash",
+                "She doesn't have a fever with rash.",
+            )
+        )
+        self.assertFalse(
+            normalized_phrase_in_text(
+                "painful rash",
+                "No sign of painful rash right now.",
+            )
+        )
+        self.assertFalse(
+            normalized_phrase_in_text(
+                "bleeding mole",
+                "Not suffering from a bleeding mole.",
+            )
+        )
+
+    def test_still_matches_positive_phrases_with_connectors(self):
+        self.assertTrue(
+            normalized_phrase_in_text(
+                "painful rash",
+                "I have a sign of painful rash on my arm.",
+            )
+        )
+        self.assertTrue(
+            normalized_phrase_in_text(
+                "painful rash",
+                "I do have a painful rash.",
+            )
+        )
 
     def test_still_avoids_substring_false_positives(self):
         self.assertFalse(
