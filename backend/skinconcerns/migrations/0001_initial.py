@@ -458,12 +458,6 @@ class Migration(migrations.Migration):
             ),
         ),
         migrations.AddIndex(
-            model_name="concernreferraltrigger",
-            index=models.Index(
-                fields=["normalized_trigger"], name="skinconcern_normali_deeef9_idx"
-            ),
-        ),
-        migrations.AddIndex(
             model_name="concernevidence",
             index=models.Index(
                 fields=["evidence_type", "is_active"],
@@ -474,12 +468,6 @@ class Migration(migrations.Migration):
             model_name="concernevidence",
             index=models.Index(
                 fields=["concern", "is_active"], name="skinconcern_concern_a03181_idx"
-            ),
-        ),
-        migrations.AddIndex(
-            model_name="concernalias",
-            index=models.Index(
-                fields=["normalized_alias"], name="skinconcern_normali_eff64c_idx"
             ),
         ),
         migrations.AddIndex(

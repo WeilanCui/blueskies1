@@ -26,7 +26,6 @@ class ConcernAlias(models.Model):
     class Meta:
         ordering = ["alias_text"]
         indexes = [
-            models.Index(fields=["normalized_alias"]),
             models.Index(fields=["alias_type", "is_active"]),
         ]
 

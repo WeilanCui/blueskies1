@@ -15,7 +15,7 @@ from skinconcerns.models import (
     SkinConcern,
     SkinProfileConcern,
 )
-from skinconcerns.normalization import normalize_search_text
+from skinconcerns.normalization import normalize_search_text, normalized_phrase_in_text
 
 
 GROUP_ORDER = [choice[0] for choice in ConcernGroup.choices]
@@ -136,7 +136,7 @@ class ConcernResolutionService:
             trigger
             for trigger in triggers
             if trigger.normalized_trigger
-            and trigger.normalized_trigger in normalized
+            and normalized_phrase_in_text(trigger.normalized_trigger, normalized)
         ]
 
     def _exact_match(self, raw_text: str) -> SkinConcern | None:

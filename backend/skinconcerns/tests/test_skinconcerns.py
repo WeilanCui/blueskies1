@@ -72,6 +72,24 @@ class SkinConcernModelTests(TestCase):
         with self.assertRaises(ValidationError):
             too_many_targets.full_clean()
 
+        with self.assertRaises(ValidationError):
+            ConcernRule.objects.create(
+                concern=self.concern,
+                key="missing-target-db",
+                label="Missing target",
+                target_type=RuleTargetType.PRODUCT_CATEGORY,
+            )
+
+        with self.assertRaises(ValidationError):
+            ConcernRule.objects.create(
+                concern=self.concern,
+                key="too-many-targets-db",
+                label="Too many targets",
+                target_type=RuleTargetType.PRODUCT_CATEGORY,
+                product_category="cleanser",
+                raw_target="retinoids",
+            )
+
     def test_skin_profile_concern_is_unique_per_active_profile_concern(self):
         user = get_user_model().objects.create_user(username="alex")
         profile = Profile.objects.create(user=user)
@@ -194,6 +212,27 @@ class SkinConcernSeedAndServiceTests(TestCase):
             "new-changing-spot",
             {trigger.key for trigger in triggers},
         )
+
+    def test_referral_trigger_detection_uses_phrase_boundaries(self):
+        reopen_sores_triggers = ConcernResolutionService().referral_triggers_for_text(
+            "Please reopen sores clinic hours."
+        )
+        bleeding_mole_triggers = ConcernResolutionService().referral_triggers_for_text(
+            "My bleeding molecules research is unrelated."
+        )
+        thrash_triggers = ConcernResolutionService().referral_triggers_for_text(
+            "I only listen to thrash metal."
+        )
+
+        self.assertNotIn(
+            "open-sores",
+            {trigger.key for trigger in reopen_sores_triggers},
+        )
+        self.assertNotIn(
+            "bleeding-mole",
+            {trigger.key for trigger in bleeding_mole_triggers},
+        )
+        self.assertEqual(thrash_triggers, [])
 
     def test_policy_service_uses_strictest_concern_policy(self):
         concerns = SkinConcern.objects.filter(

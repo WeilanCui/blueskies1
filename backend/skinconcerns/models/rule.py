@@ -75,6 +75,10 @@ class ConcernRule(models.Model):
         if sum(targets.values()) != 1:
             raise ValidationError("Set exactly one rule target.")
 
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
+
     @property
     def target_label(self) -> str:
         target = self.chemical_class or self.compound or self.property_def

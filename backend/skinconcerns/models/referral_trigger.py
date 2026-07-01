@@ -36,7 +36,6 @@ class ConcernReferralTrigger(models.Model):
         ordering = ["severity", "trigger_text"]
         indexes = [
             models.Index(fields=["severity", "is_active"]),
-            models.Index(fields=["normalized_trigger"]),
         ]
 
     def save(self, *args, **kwargs):
