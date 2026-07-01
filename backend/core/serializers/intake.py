@@ -176,7 +176,9 @@ def intake_payload(profile: Profile) -> dict:
                 concern_selections,
                 many=True,
             ).data,
-            "concern_policy": skin_profile.concern_policy,
+            "concern_policy": skin_profile.concern_policy_for_selections(
+                concern_selections
+            ),
             "goals": skin_profile.goals,
             "pregnancy_status": skin_profile.pregnancy_status,
             "baseline_sensitivity": skin_profile.baseline_sensitivity,

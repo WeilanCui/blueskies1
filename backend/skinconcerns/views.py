@@ -101,5 +101,5 @@ class SkinProfileConcernView(APIView):
         return {
             "skin_profile_id": skin_profile.id,
             "concerns": SkinProfileConcernSerializer(selections, many=True).data,
-            "policy": skin_profile.concern_policy,
+            "policy": skin_profile.concern_policy_for_selections(selections),
         }

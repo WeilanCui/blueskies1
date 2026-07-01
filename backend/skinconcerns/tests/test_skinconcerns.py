@@ -80,6 +80,34 @@ class SkinConcernModelTests(TestCase):
                     concern=self.concern,
                 )
 
+    def test_concern_policy_for_loaded_selections_does_not_query(self):
+        medical_adjacent = SkinConcern.objects.create(
+            slug="eczema_like_patches",
+            display_name="Eczema-like patches",
+            consumer_label="Dry, itchy patches",
+            recommendation_policy=RecommendationPolicy.SUPPORTIVE_ONLY,
+        )
+        user = get_user_model().objects.create_user(username="taylor")
+        profile = Profile.objects.create(user=user)
+        skin_profile = SkinProfile.objects.create(profile=profile)
+        SkinProfileConcern.objects.create(
+            skin_profile=skin_profile,
+            concern=self.concern,
+        )
+        SkinProfileConcern.objects.create(
+            skin_profile=skin_profile,
+            concern=medical_adjacent,
+        )
+        selections = list(skin_profile.active_concern_selections())
+
+        with self.assertNumQueries(0):
+            policy = skin_profile.concern_policy_for_selections(selections)
+
+        self.assertEqual(
+            policy["recommendation_policy"],
+            RecommendationPolicy.SUPPORTIVE_ONLY,
+        )
+
 
 class SkinConcernSeedAndServiceTests(TestCase):
     def setUp(self):

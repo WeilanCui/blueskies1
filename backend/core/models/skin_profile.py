@@ -102,6 +102,17 @@ class SkinProfile(models.Model):
     def selected_concern_slugs(self) -> list[str]:
         return [concern.slug for concern in self.selected_skin_concerns]
 
+    @staticmethod
+    def skin_concerns_from_selections(concern_selections) -> list:
+        return [selection.concern for selection in concern_selections]
+
+    def concern_policy_for_selections(self, concern_selections) -> dict:
+        from skinconcerns.services import ConcernPolicyService
+
+        return ConcernPolicyService().policy_for_concerns(
+            self.skin_concerns_from_selections(concern_selections)
+        )
+
     @property
     def concern_policy(self) -> dict:
         from skinconcerns.services import ConcernPolicyService
