@@ -61,10 +61,10 @@ class ConcernRuleEvaluator:
                 if not self._matches_rule_target(rule, formulation):
                     continue
 
-                # Calculate delta
-                # Negative weights are bad data; clamp so rule_kind alone
-                # controls the direction of the score change.
-                delta = round(max(rule.weight, 0) * link_confidence)
+                # Calculate delta. `weight` is a magnitude — its sign in seed
+                # data is incidental (e.g. PENALIZE stores -10); `rule_kind`
+                # alone controls the direction below, so take the magnitude.
+                delta = round(abs(rule.weight) * link_confidence)
 
                 # Determine enforcement and score_delta based on rule kind
                 if rule.rule_kind == "penalize":

@@ -160,6 +160,44 @@ class ConcernRuleEvaluatorTests(TestCase):
         self.assertEqual(impacts[0].concern_slug, "acne")
         self.assertEqual(impacts[0].source, "concern")
 
+    def test_negative_seed_weight_still_lowers_score(self):
+        """PENALIZE rule with a negative stored weight lowers the score.
+
+        Seed data stores signed weights (e.g. PENALIZE = -10); weight is a
+        magnitude and rule_kind controls direction, so a -10 penalize rule
+        must still produce a -10 delta (not 0).
+        """
+        ConcernRule.objects.create(
+            concern=self.acne_concern,
+            key="avoid-retinol-signed",
+            label="Avoid Retinol",
+            rule_kind=RuleKind.PENALIZE,
+            target_type=RuleTargetType.COMPOUND,
+            compound=self.retinol,
+            weight=-10,
+            rationale="Retinol can cause irritation.",
+        )
+        SkinProfileConcern.objects.create(
+            skin_profile=self.skin_profile,
+            concern=self.acne_concern,
+            confidence=1.0,
+        )
+
+        context = self.evaluator.prepare(self.profile)
+        result = self.evaluator.evaluate(
+            self.profile, self.formulation_with_retinol, context=context
+        )
+        # evaluate() returns either a list of impacts (bridge) or a
+        # (impacts, coverage) tuple (once coverage scoring lands); tolerate both.
+        impacts = result[0] if isinstance(result, tuple) else result
+
+        self.assertEqual(len(impacts), 1)
+        self.assertEqual(impacts[0].enforcement, "penalize")
+        # A negatively-stored weight must still LOWER the score (the bug was
+        # max(weight,0) zeroing it). Exact magnitude varies down the stack as
+        # later changes add multipliers, so assert direction, not a value.
+        self.assertLess(impacts[0].score_delta, 0)
+
     def test_boost_rule_raises_score(self):
         """BOOST rule produces positive delta."""
         rule = ConcernRule.objects.create(
