@@ -36,25 +36,25 @@ def evidence_multiplier(rule: ConcernRule) -> tuple[float, int]:
     """
     Compute evidence multiplier for a rule based on its active evidence.
 
-    Only counts rule-scoped evidence (rule_id is not null), not concern-scoped evidence.
+    Only counts rule-scoped evidence, not concern-scoped evidence.
     Deduplicates by distinct literature_reference_id (each reference counts its type weight once).
+    Consumes prefetch cache to avoid additional database queries.
 
     Returns:
         Tuple of (multiplier, evidence_count) where:
         - multiplier: float in [0.6, 1.3]
         - evidence_count: int number of distinct references
     """
-    # Get active rule-scoped evidence (rule_id is not null), distinct by literature_reference
-    evidence_rows = rule.evidence_links.filter(
-        is_active=True,
-        rule_id__isnull=False,
-    ).values("literature_reference_id", "evidence_type").distinct()
-
     # Deduplicate by literature_reference_id, taking max weight per reference
+    # Iterate over prefetched cache (rule.evidence_links.all() hits cache, not DB)
     refs_weights = {}
-    for row in evidence_rows:
-        ref_id = row["literature_reference_id"]
-        evidence_type = row["evidence_type"]
+    for evidence in rule.evidence_links.all():
+        # Filter in Python so both the prefetched path (already active-only)
+        # and direct calls on non-prefetched rules exclude inactive rows.
+        if not evidence.is_active:
+            continue
+        ref_id = evidence.literature_reference_id
+        evidence_type = evidence.evidence_type
         weight = EVIDENCE_TYPE_WEIGHTS.get(evidence_type, 0.0)
 
         # If this ref already seen, keep the max weight
@@ -149,19 +149,31 @@ class ConcernRuleEvaluator:
                 # Check if rule target matches formulation
                 match_result = self._matches_rule_target(rule, formulation)
 
-                # Calculate base delta (without evidence multiplier yet).
-                # `weight` is a magnitude — its sign in seed data is incidental
-                # (e.g. PENALIZE stores -10); `rule_kind` controls direction.
-                delta = round(abs(rule.weight) * link_confidence)
-
                 # Get evidence multiplier for this rule
                 evidence_mult, evidence_count = rule_multipliers.get(rule.id, (EVIDENCE_MULT_MIN, 0))
 
-                # Apply evidence multiplier to delta for concern-sourced rules
-                delta = round(delta * evidence_mult)
+                # Position factor applies only to dose-dependent kinds on
+                # ingredient targets. AVOID/REFER are position-immune (safety /
+                # informational signals must not fade with concentration).
+                pos_factor = None
+                needs_position_factor = (
+                    rule.rule_kind in ("penalize", "boost", "recommend")
+                    and rule.target_type
+                    in (RuleTargetType.COMPOUND, RuleTargetType.CHEMICAL_CLASS)
+                )
+
+                # Compute delta with single round: all multiplicative factors,
+                # then round, then sign/floor. `weight` is a magnitude — its
+                # sign in seed data is incidental (PENALIZE stores -10); the
+                # rule_kind below controls direction, so take abs().
+                base_multiplier = abs(rule.weight) * link_confidence * evidence_mult
+                if match_result.matched and needs_position_factor:
+                    pos_factor = position_factor(match_result)
+                    base_multiplier = base_multiplier * pos_factor
+
+                delta = round(base_multiplier)
 
                 # Determine enforcement and score_delta based on rule kind
-                pos_factor = None
                 score_delta = 0
                 enforcement = None
 
@@ -169,20 +181,12 @@ class ConcernRuleEvaluator:
                     if match_result.matched:
                         enforcement = "penalize"
                         score_delta = -delta
-                        # Apply position_factor for ingredient-targeted PENALIZE
-                        if rule.target_type in (RuleTargetType.COMPOUND, RuleTargetType.CHEMICAL_CLASS):
-                            pos_factor = position_factor(match_result)
-                            score_delta = round(score_delta * pos_factor)
                     else:
                         continue
                 elif rule.rule_kind == "boost":
                     if match_result.matched:
                         enforcement = "boost"
                         score_delta = max(1, delta)
-                        # Apply position_factor for ingredient-targeted BOOST
-                        if rule.target_type in (RuleTargetType.COMPOUND, RuleTargetType.CHEMICAL_CLASS):
-                            pos_factor = position_factor(match_result)
-                            score_delta = max(1, round(score_delta * pos_factor))
                     else:
                         continue
                 elif rule.rule_kind == "avoid":
@@ -207,10 +211,6 @@ class ConcernRuleEvaluator:
                         # Matched RECOMMEND produces boost impact
                         enforcement = "boost"
                         score_delta = max(1, delta)
-                        # Apply position_factor for ingredient-targeted RECOMMEND
-                        if rule.target_type in (RuleTargetType.COMPOUND, RuleTargetType.CHEMICAL_CLASS):
-                            pos_factor = position_factor(match_result)
-                            score_delta = max(1, round(score_delta * pos_factor))
                     else:
                         unmatched_labels.append(rule.label)
                         continue

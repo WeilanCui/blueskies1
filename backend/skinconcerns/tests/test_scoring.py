@@ -1072,9 +1072,9 @@ class EvidenceScoringIntegrationTests(TestCase):
             self.profile, self.formulation, context=context
         )
 
-        # Expected: round(10 * 1.0 * 0.75) = 7 (0.6 + 0.15), then negated = -7
+        # Expected: round(10 * 1.0 * 0.75) = round(7.5) = 8 (banker's rounding), negated = -8
         self.assertEqual(len(impacts), 1)
-        self.assertEqual(impacts[0].score_delta, -8)  # round(10 * 0.75) = round(7.5) = 8
+        self.assertEqual(impacts[0].score_delta, -8)
         self.assertEqual(impacts[0].evidence_count, 1)
         self.assertAlmostEqual(impacts[0].evidence_multiplier, 0.75)
 
