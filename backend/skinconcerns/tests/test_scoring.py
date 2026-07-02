@@ -86,13 +86,13 @@ class ConcernRuleEvaluatorTests(TestCase):
         FormulationIngredient.objects.create(
             formulation=self.formulation_with_retinol,
             position=1,
-            raw_text="Water",
+            raw_text="Retinol",
+            compound=self.retinol,
         )
         FormulationIngredient.objects.create(
             formulation=self.formulation_with_retinol,
             position=2,
-            raw_text="Retinol",
-            compound=self.retinol,
+            raw_text="Water",
         )
 
         # Formulation with glycerin
@@ -107,13 +107,13 @@ class ConcernRuleEvaluatorTests(TestCase):
         FormulationIngredient.objects.create(
             formulation=self.formulation_with_glycerin,
             position=1,
-            raw_text="Water",
+            raw_text="Glycerin",
+            compound=self.glycerin,
         )
         FormulationIngredient.objects.create(
             formulation=self.formulation_with_glycerin,
             position=2,
-            raw_text="Glycerin",
-            compound=self.glycerin,
+            raw_text="Water",
         )
 
         # Create test skin concerns
