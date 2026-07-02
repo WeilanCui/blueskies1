@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 import { AppPageHeader } from "../../components/AppPageHeader";
 import { Button } from "../../components/Button";
+import { Panel } from "../../components/Panel";
 import { ScoreBadge } from "../../components/ScoreBadge";
 import { getMe, getRankedRecommendations } from "../../lib/appApi";
 import styles from "./recommendations.module.css";
@@ -62,9 +63,8 @@ function RecommendationsContent() {
   }
 
   const recommendations = recommendationsQuery.data?.results ?? [];
-  const pageCount = recommendationsQuery.data
-    ? Math.ceil(recommendationsQuery.data.count / 20)
-    : 0;
+  const hasNext = !!recommendationsQuery.data?.next;
+  const hasPrev = !!recommendationsQuery.data?.previous;
 
   return (
     <div className={styles.layout}>
@@ -104,7 +104,11 @@ function RecommendationsContent() {
           >
             <ul className={styles.list}>
               {recommendations.map((match) => (
-                <li key={match.formulation_id} className={styles.listItem}>
+                <Panel
+                  as="li"
+                  key={match.formulation_id}
+                  className={styles.listItem}
+                >
                   <div className={styles.productInfo}>
                     <div>
                       <span className={styles.brand}>{match.brand_name}</span>
@@ -121,29 +125,25 @@ function RecommendationsContent() {
                     excluded={match.excluded}
                     hasWarnings={match.warnings.length > 0}
                   />
-                </li>
+                </Panel>
               ))}
             </ul>
           </section>
 
-          {pageCount > 1 && (
+          {(hasNext || hasPrev) && (
             <section className={styles.paginationSection}>
               <Button
                 variant="secondary"
                 onPress={() => setPage((p) => Math.max(1, p - 1))}
-                isDisabled={page === 1 || recommendationsQuery.isLoading}
+                isDisabled={!hasPrev || recommendationsQuery.isLoading}
               >
                 Previous
               </Button>
-              <span className={styles.pageIndicator}>
-                Page {page} of {pageCount}
-              </span>
+              <span className={styles.pageIndicator}>Page {page}</span>
               <Button
                 variant="secondary"
-                onPress={() => setPage((p) => Math.min(pageCount, p + 1))}
-                isDisabled={
-                  page === pageCount || recommendationsQuery.isLoading
-                }
+                onPress={() => setPage((p) => p + 1)}
+                isDisabled={!hasNext || recommendationsQuery.isLoading}
               >
                 Next
               </Button>

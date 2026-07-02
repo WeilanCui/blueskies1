@@ -20,6 +20,14 @@
   --field-border: #cfd9df;
   --field-hover: #f8fafc;
   --field-focus: #346faa;
+  --status-excluded-bg: #fee2e2;
+  --status-excluded-border: #fca5a5;
+  --status-excluded-text: #991b1b;
+  --status-excluded-label: #7f1d1d;
+  --status-caution-bg: #fef3c7;
+  --status-caution-border: #fcd34d;
+  --status-caution-text: #92400e;
+  --status-caution-label: #78350f;
 }
 
 * {

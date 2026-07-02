@@ -26,8 +26,8 @@ export function ScoreBadge({
   return (
     <div
       className={className}
-      title={`Score: ${score.toFixed(1)}`}
-      aria-label={`${label}, score ${score.toFixed(1)}`}
+      title={`Score: ${score.toFixed(0)}`}
+      aria-label={`${label}, score ${score.toFixed(0)}`}
       role="img"
     >
       <span className={styles.score}>{score.toFixed(0)}</span>

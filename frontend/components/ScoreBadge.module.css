@@ -4,7 +4,7 @@
   align-items: center;
   justify-content: center;
   gap: 2px;
-  padding: 8px 12px;
+  padding: 6px 10px;
   border-radius: 8px;
   background-color: var(--panel);
   border: 1px solid var(--accent);
@@ -13,32 +13,32 @@
 }
 
 .badge.excluded {
-  background-color: #fee2e2;
-  border-color: #fca5a5;
+  background-color: var(--status-excluded-bg);
+  border-color: var(--status-excluded-border);
 }
 
 .badge.cautioned {
-  background-color: #fef3c7;
-  border-color: #fcd34d;
+  background-color: var(--status-caution-bg);
+  border-color: var(--status-caution-border);
 }
 
 .score {
   font-weight: 700;
-  font-size: 18px;
+  font-size: 16px;
   line-height: 1;
   color: var(--foreground);
 }
 
 .badge.excluded .score {
-  color: #991b1b;
+  color: var(--status-excluded-text);
 }
 
 .badge.cautioned .score {
-  color: #92400e;
+  color: var(--status-caution-text);
 }
 
 .label {
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -46,24 +46,24 @@
 }
 
 .badge.excluded .label {
-  color: #7f1d1d;
+  color: var(--status-excluded-label);
 }
 
 .badge.cautioned .label {
-  color: #78350f;
+  color: var(--status-caution-label);
 }
 
-/* Mobile first: ensure good spacing */
-@media (max-width: 640px) {
+/* Desktop enhancement */
+@media (min-width: 640px) {
   .badge {
-    padding: 6px 10px;
+    padding: 8px 12px;
   }
 
   .score {
-    font-size: 16px;
+    font-size: 18px;
   }
 
   .label {
-    font-size: 10px;
+    font-size: 11px;
   }
 }

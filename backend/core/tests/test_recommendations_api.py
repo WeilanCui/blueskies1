@@ -90,7 +90,7 @@ class RecommendationScoreAPITests(APITestCase):
         )
 
         # Add exclude constraint
-        constraint = ProfileConstraint.objects.create(
+        ProfileConstraint.objects.create(
             profile=self.profile,
             kind=ProfileConstraintKind.ALLERGY,
             enforcement=ConstraintEnforcement.EXCLUDE,
@@ -330,7 +330,7 @@ class RecommendationListAPITests(APITestCase):
 
         # Create a new user with no products
         other_user = User.objects.create_user(username="otheruser")
-        other_profile = Profile.objects.create(user=other_user, handle="otheruser")
+        Profile.objects.create(user=other_user, handle="otheruser")
 
         # Delete all products
         Product.objects.all().delete()

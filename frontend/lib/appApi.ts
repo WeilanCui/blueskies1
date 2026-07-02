@@ -752,13 +752,13 @@ export type PaginatedRecommendations = {
 };
 
 export function scoreFormulation(
-  formulation_id: number,
+  formulationId: number,
 ): Promise<RecommendationMatch> {
   return requestJson<RecommendationMatch>(
     "/api/recommendations/score/",
     {
       method: "POST",
-      body: JSON.stringify({ formulation_id }),
+      body: JSON.stringify({ formulation_id: formulationId }),
     },
     "Could not score that formulation.",
   );
