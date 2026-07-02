@@ -62,7 +62,9 @@ class ConcernRuleEvaluator:
                     continue
 
                 # Calculate delta
-                delta = round(rule.weight * link_confidence)
+                # Negative weights are bad data; clamp so rule_kind alone
+                # controls the direction of the score change.
+                delta = round(max(rule.weight, 0) * link_confidence)
 
                 # Determine enforcement and score_delta based on rule kind
                 if rule.rule_kind == "penalize":

@@ -61,7 +61,7 @@ class RecommendationMatcher:
         *,
         base_score: int = 100,
         constraints: Iterable[ProfileConstraint] | None = None,
-        context: dict | None = None,
+        contexts: dict[int, object] | None = None,
     ) -> RecommendationMatch:
         evaluation = self.evaluator.evaluate_formulation(
             profile,
@@ -69,9 +69,14 @@ class RecommendationMatcher:
             constraints=constraints,
         )
 
-        # Merge impacts from extra evaluators
-        for evaluator in self.extra_evaluators:
-            extra_impacts = evaluator.evaluate(profile, formulation, context=context)
+        # Merge impacts from extra evaluators. Contexts are namespaced by
+        # evaluator index so multiple evaluators' prepare() results never
+        # collide under a shared key.
+        for index, evaluator in enumerate(self.extra_evaluators):
+            evaluator_context = None if contexts is None else contexts.get(index)
+            extra_impacts = evaluator.evaluate(
+                profile, formulation, context=evaluator_context
+            )
             for impact in extra_impacts:
                 evaluation.matched_constraints.append(impact)
 
@@ -106,13 +111,12 @@ class RecommendationMatcher:
             else list(constraints)
         )
 
-        # Prepare context once per run for all evaluators
-        context: dict = {}
-        for evaluator in self.extra_evaluators:
+        # Prepare per-evaluator context once per run, namespaced by index so
+        # one evaluator's context can never clobber another's.
+        contexts: dict[int, object] = {}
+        for index, evaluator in enumerate(self.extra_evaluators):
             if hasattr(evaluator, "prepare"):
-                prepare_context = evaluator.prepare(profile)
-                if prepare_context is not None:
-                    context.update(prepare_context if isinstance(prepare_context, dict) else {"context": prepare_context})
+                contexts[index] = evaluator.prepare(profile)
 
         matches = [
             self.match_formulation(
@@ -120,7 +124,7 @@ class RecommendationMatcher:
                 formulation,
                 base_score=base_score,
                 constraints=constraints_for_run,
-                context=context,
+                contexts=contexts,
             )
             for formulation in formulations
         ]
