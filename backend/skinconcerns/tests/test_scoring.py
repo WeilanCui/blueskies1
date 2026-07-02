@@ -249,7 +249,11 @@ class ConcernRuleEvaluatorTests(TestCase):
 
         self.assertEqual(len(impacts), 1)
         self.assertEqual(impacts[0].enforcement, "warn")
+        # AVOID is position-immune: retinol is the last ingredient (factor
+        # would be 0.3 if scaled), but the delta stays the full -10 and no
+        # position_factor is exposed.
         self.assertEqual(impacts[0].score_delta, -10)
+        self.assertIsNone(impacts[0].position_factor)
 
         # AVOID rules never exclude formulations, only warn and penalize
         match = RecommendationMatcher(extra_evaluators=[ConcernRuleEvaluator()]).match_formulation(

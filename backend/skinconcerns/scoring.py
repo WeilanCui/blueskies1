@@ -113,11 +113,10 @@ class ConcernRuleEvaluator:
                 elif rule.rule_kind == "avoid":
                     if match_result.matched:
                         enforcement = "warn"
+                        # AVOID is a safety caution: its warning and its delta
+                        # are position-immune (a trace amount you must avoid is
+                        # still worth avoiding). pos_factor stays None.
                         score_delta = -delta
-                        # Apply position_factor for ingredient-targeted AVOID
-                        if rule.target_type in (RuleTargetType.COMPOUND, RuleTargetType.CHEMICAL_CLASS):
-                            pos_factor = position_factor(match_result)
-                            score_delta = round(score_delta * pos_factor)
                     else:
                         continue
                 elif rule.rule_kind == "refer":
