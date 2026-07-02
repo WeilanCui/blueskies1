@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
-from typing import Iterable
+from dataclasses import dataclass, field
+from typing import TYPE_CHECKING, Iterable
 
 from core.models import Formulation, Profile, ProfileConstraint
 from core.profiles.constraints import (
@@ -10,6 +10,9 @@ from core.profiles.constraints import (
     ProfileConstraintEvaluator,
 )
 
+if TYPE_CHECKING:
+    from skinconcerns.scoring import CoverageSummary
+
 
 @dataclass(frozen=True)
 class RecommendationMatch:
@@ -17,6 +20,7 @@ class RecommendationMatch:
     evaluation: ConstraintEvaluation
     base_score: int
     final_score: int
+    coverage: list[CoverageSummary] = field(default_factory=list)  # pyright: ignore[reportGeneralTypeIssues]
 
     @property
     def excluded(self) -> bool:
@@ -72,11 +76,19 @@ class RecommendationMatcher:
         # Merge impacts from extra evaluators. Contexts are namespaced by
         # evaluator index so multiple evaluators' prepare() results never
         # collide under a shared key.
+        coverage_list = []
         for index, evaluator in enumerate(self.extra_evaluators):
             evaluator_context = None if contexts is None else contexts.get(index)
-            extra_impacts = evaluator.evaluate(
+            result = evaluator.evaluate(
                 profile, formulation, context=evaluator_context
             )
+            # Handle both old-style (list of impacts) and new-style (tuple of impacts, coverage)
+            if isinstance(result, tuple):
+                extra_impacts, extra_coverage = result
+                coverage_list.extend(extra_coverage)
+            else:
+                extra_impacts = result
+
             for impact in extra_impacts:
                 evaluation.matched_constraints.append(impact)
 
@@ -94,6 +106,7 @@ class RecommendationMatcher:
             evaluation=evaluation,
             base_score=base_score,
             final_score=self._final_score(base_score, evaluation),
+            coverage=coverage_list,
         )
 
     def rank_formulations(

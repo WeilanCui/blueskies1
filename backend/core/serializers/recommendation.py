@@ -16,6 +16,18 @@ class RecommendationImpactSerializer(serializers.Serializer):
     concern = serializers.CharField(source="concern_slug", allow_null=True, read_only=True)
 
 
+class CoverageSummarySerializer(serializers.Serializer):
+    """Read-only serializer for a CoverageSummary."""
+
+    concern = serializers.CharField(source="concern_slug", read_only=True)
+    concern_label = serializers.CharField(read_only=True)
+    matched = serializers.IntegerField(read_only=True)
+    total = serializers.IntegerField(read_only=True)
+    matched_rules = serializers.ListField(
+        child=serializers.CharField(), source="matched_labels", read_only=True
+    )
+
+
 class RecommendationMatchSerializer(serializers.Serializer):
     """Read-only serializer for a RecommendationMatch."""
 
@@ -28,6 +40,7 @@ class RecommendationMatchSerializer(serializers.Serializer):
     warnings = serializers.SerializerMethodField()
     penalties = serializers.SerializerMethodField()
     boosts = serializers.SerializerMethodField()
+    coverage = serializers.SerializerMethodField()
 
     def get_formulation_id(self, obj) -> int:
         return obj.formulation.id
@@ -48,6 +61,9 @@ class RecommendationMatchSerializer(serializers.Serializer):
 
     def get_boosts(self, obj):
         return RecommendationImpactSerializer(obj.boosts, many=True).data
+
+    def get_coverage(self, obj):
+        return CoverageSummarySerializer(obj.coverage, many=True).data
 
 
 class RecommendationScoreRequestSerializer(serializers.Serializer):

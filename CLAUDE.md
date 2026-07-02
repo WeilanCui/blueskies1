@@ -71,8 +71,8 @@ Two Django apps: `core` (domain models, API, profiles, services) and `literature
 The plain `/api/products/` and `/api/compounds/` list endpoints stay unpaged — existing callers rely on getting the whole array, so search was added alongside them rather than changing them.
 
 **Recommendation endpoints** (`RecommendationViewSet`):
-- `POST /api/recommendations/score/` — score a single formulation against the authenticated user's profile constraints and concern rules. Request: `{ "formulation_id": <id> }`. Response: `RecommendationMatch` with final_score, excluded, reasons, and impact groups (warnings, penalties, boosts). Each impact includes `source` ("constraint" or "concern") and concern-sourced impacts include `concern` (slug).
-- `GET /api/recommendations/` — rank all formulations with a resolved product against the authenticated user's profile, paginated (20 per page), best-first. Query param `?include_excluded=true` includes hard-excluded formulations (sorted after non-excluded ones); default is false. Response: paginated list of `RecommendationMatch` objects with concern impacts included.
+- `POST /api/recommendations/score/` — score a single formulation against the authenticated user's profile constraints and concern rules. Request: `{ "formulation_id": <id> }`. Response: `RecommendationMatch` with final_score, excluded, reasons, impact groups (warnings, penalties, boosts), and coverage array. Each impact includes `source` ("constraint" or "concern") and concern-sourced impacts include `concern` (slug). Coverage array lists per-concern RECOMMEND rule coverage: `{ concern (slug), concern_label, matched, total, matched_rules (list of matched labels) }`.
+- `GET /api/recommendations/` — rank all formulations with a resolved product against the authenticated user's profile, paginated (20 per page), best-first. Query param `?include_excluded=true` includes hard-excluded formulations (sorted after non-excluded ones); default is false. Response: paginated list of `RecommendationMatch` objects with concern impacts and coverage included.
 
 ## Frontend architecture
 

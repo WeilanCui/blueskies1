@@ -614,3 +614,83 @@ class RecommendationConcernRuleAPITests(APITestCase):
         self.assertGreater(len(data["warnings"]), 0)
         self.assertFalse(data["excluded"])
         self.assertEqual(len(data["penalties"]), 0)
+
+    def test_coverage_array_in_score_response(self):
+        """Score response includes coverage array with correct shape."""
+        glycerin = Compound.objects.create(
+            canonical_inci="GLYCERIN",
+            display_name="Glycerin",
+        )
+
+        # Create formulation with glycerin
+        formulation = Formulation.objects.create(
+            product=self.product,
+            raw_inci_text="Water, Glycerin",
+        )
+        FormulationIngredient.objects.create(
+            formulation=formulation,
+            position=1,
+            raw_text="Water",
+        )
+        FormulationIngredient.objects.create(
+            formulation=formulation,
+            position=2,
+            raw_text="Glycerin",
+            compound=glycerin,
+        )
+
+        # Create RECOMMEND rule
+        ConcernRule.objects.create(
+            concern=self.concern,
+            key="recommend-glycerin",
+            label="Glycerin",
+            rule_kind=RuleKind.RECOMMEND,
+            target_type=RuleTargetType.COMPOUND,
+            compound=glycerin,
+            weight=10,
+        )
+
+        # Link user to concern
+        SkinProfileConcern.objects.create(
+            skin_profile=self.skin_profile,
+            concern=self.concern,
+            confidence=1.0,
+        )
+
+        self.client.force_login(self.user)
+        response = self.client.post(
+            "/api/recommendations/score/",
+            {"formulation_id": formulation.id},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+
+        # Check coverage array exists
+        self.assertIn("coverage", data)
+        self.assertIsInstance(data["coverage"], list)
+
+        # Verify coverage shape
+        self.assertEqual(len(data["coverage"]), 1)
+        cov = data["coverage"][0]
+        self.assertEqual(cov["concern"], "sensitivity")
+        self.assertEqual(cov["concern_label"], "Sensitive skin")
+        self.assertEqual(cov["matched"], 1)
+        self.assertEqual(cov["total"], 1)
+        self.assertIn("Glycerin", cov["matched_rules"])
+
+    def test_coverage_empty_when_no_recommend_rules(self):
+        """Coverage array is empty when no RECOMMEND rules active."""
+        self.client.force_login(self.user)
+        response = self.client.post(
+            "/api/recommendations/score/",
+            {"formulation_id": self.formulation.id},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+
+        # Coverage should be empty (rule is PENALIZE, not RECOMMEND)
+        self.assertEqual(data["coverage"], [])

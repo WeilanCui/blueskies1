@@ -150,7 +150,7 @@ class ConcernRuleEvaluatorTests(TestCase):
         )
 
         context = self.evaluator.prepare(self.profile)
-        impacts = self.evaluator.evaluate(
+        impacts, coverage = self.evaluator.evaluate(
             self.profile, self.formulation_with_retinol, context=context
         )
 
@@ -216,7 +216,7 @@ class ConcernRuleEvaluatorTests(TestCase):
         )
 
         context = self.evaluator.prepare(self.profile)
-        impacts = self.evaluator.evaluate(
+        impacts, coverage = self.evaluator.evaluate(
             self.profile, self.formulation_with_glycerin, context=context
         )
 
@@ -244,7 +244,7 @@ class ConcernRuleEvaluatorTests(TestCase):
         )
 
         context = self.evaluator.prepare(self.profile)
-        impacts = self.evaluator.evaluate(
+        impacts, coverage = self.evaluator.evaluate(
             self.profile, self.formulation_with_retinol, context=context
         )
 
@@ -278,7 +278,7 @@ class ConcernRuleEvaluatorTests(TestCase):
         )
 
         context = self.evaluator.prepare(self.profile)
-        impacts = self.evaluator.evaluate(
+        impacts, coverage = self.evaluator.evaluate(
             self.profile, self.formulation_with_retinol, context=context
         )
 
@@ -286,12 +286,12 @@ class ConcernRuleEvaluatorTests(TestCase):
         self.assertEqual(impacts[0].enforcement, "inform")
         self.assertEqual(impacts[0].score_delta, 0)
 
-    def test_recommend_rule_informational_only(self):
-        """RECOMMEND rule produces informational impact with zero delta."""
+    def test_recommend_rule_produces_boost_and_coverage(self):
+        """RECOMMEND rule matched produces boost impact and is recorded in coverage."""
         rule = ConcernRule.objects.create(
             concern=self.sensitivity_concern,
             key="recommend-glycerin",
-            label="Recommend Glycerin",
+            label="Glycerin",
             rule_kind=RuleKind.RECOMMEND,
             target_type=RuleTargetType.COMPOUND,
             compound=self.glycerin,
@@ -306,13 +306,22 @@ class ConcernRuleEvaluatorTests(TestCase):
         )
 
         context = self.evaluator.prepare(self.profile)
-        impacts = self.evaluator.evaluate(
+        impacts, coverage = self.evaluator.evaluate(
             self.profile, self.formulation_with_glycerin, context=context
         )
 
+        # Should have one boost impact
         self.assertEqual(len(impacts), 1)
-        self.assertEqual(impacts[0].enforcement, "inform")
-        self.assertEqual(impacts[0].score_delta, 0)
+        self.assertEqual(impacts[0].enforcement, "boost")
+        self.assertEqual(impacts[0].score_delta, 10)
+
+        # Should have coverage summary
+        self.assertEqual(len(coverage), 1)
+        self.assertEqual(coverage[0].concern_slug, "sensitivity")
+        self.assertEqual(coverage[0].matched, 1)
+        self.assertEqual(coverage[0].total, 1)
+        self.assertEqual(list(coverage[0].matched_labels), ["Glycerin"])
+        self.assertEqual(list(coverage[0].unmatched_labels), [])
 
     def test_confidence_scales_delta(self):
         """Confidence 0.5 halves the delta."""
@@ -335,7 +344,7 @@ class ConcernRuleEvaluatorTests(TestCase):
         )
 
         context = self.evaluator.prepare(self.profile)
-        impacts = self.evaluator.evaluate(
+        impacts, coverage = self.evaluator.evaluate(
             self.profile, self.formulation_with_retinol, context=context
         )
 
@@ -362,7 +371,7 @@ class ConcernRuleEvaluatorTests(TestCase):
         )
 
         context = self.evaluator.prepare(self.profile)
-        impacts = self.evaluator.evaluate(
+        impacts, coverage = self.evaluator.evaluate(
             self.profile, self.formulation_with_retinol, context=context
         )
 
@@ -388,7 +397,7 @@ class ConcernRuleEvaluatorTests(TestCase):
         )
 
         context = self.evaluator.prepare(self.profile)
-        impacts = self.evaluator.evaluate(
+        impacts, coverage = self.evaluator.evaluate(
             self.profile, self.formulation_with_retinol, context=context
         )
 
@@ -413,7 +422,7 @@ class ConcernRuleEvaluatorTests(TestCase):
         )
 
         context = self.evaluator.prepare(self.profile)
-        impacts = self.evaluator.evaluate(
+        impacts, coverage = self.evaluator.evaluate(
             self.profile, self.formulation_with_retinol, context=context
         )
 
@@ -439,7 +448,7 @@ class ConcernRuleEvaluatorTests(TestCase):
         )
 
         context = self.evaluator.prepare(self.profile)
-        impacts = self.evaluator.evaluate(
+        impacts, coverage = self.evaluator.evaluate(
             self.profile, self.formulation_with_retinol, context=context
         )
 
@@ -459,7 +468,7 @@ class ConcernRuleEvaluatorTests(TestCase):
         )
 
         context = self.evaluator.prepare(self.profile)
-        impacts = self.evaluator.evaluate(
+        impacts, coverage = self.evaluator.evaluate(
             self.profile, self.formulation_with_retinol, context=context
         )
 
@@ -482,7 +491,7 @@ class ConcernRuleEvaluatorTests(TestCase):
         )
 
         context = self.evaluator.prepare(new_profile)
-        impacts = self.evaluator.evaluate(
+        impacts, coverage = self.evaluator.evaluate(
             new_profile, self.formulation_with_retinol, context=context
         )
 
@@ -507,7 +516,7 @@ class ConcernRuleEvaluatorTests(TestCase):
         )
 
         context = self.evaluator.prepare(self.profile)
-        impacts = self.evaluator.evaluate(
+        impacts, coverage = self.evaluator.evaluate(
             self.profile, self.formulation_with_retinol, context=context
         )
 
@@ -533,7 +542,7 @@ class ConcernRuleEvaluatorTests(TestCase):
         )
 
         context = self.evaluator.prepare(self.profile)
-        impacts = self.evaluator.evaluate(
+        impacts, coverage = self.evaluator.evaluate(
             self.profile, self.formulation_with_retinol, context=context
         )
 
@@ -560,7 +569,7 @@ class ConcernRuleEvaluatorTests(TestCase):
         )
 
         context = self.evaluator.prepare(self.profile)
-        impacts = self.evaluator.evaluate(
+        impacts, coverage = self.evaluator.evaluate(
             self.profile, self.formulation_with_retinol, context=context
         )
 
@@ -586,9 +595,168 @@ class ConcernRuleEvaluatorTests(TestCase):
         )
 
         context = self.evaluator.prepare(self.profile)
-        impacts = self.evaluator.evaluate(
+        impacts, coverage = self.evaluator.evaluate(
             self.profile, self.formulation_with_retinol, context=context
         )
 
         self.assertIn("Related to your concern", impacts[0].reason)
         self.assertIn("Acne", impacts[0].reason)
+
+    def test_partial_recommend_coverage(self):
+        """Coverage tracks matched and unmatched RECOMMEND rules."""
+        ConcernRule.objects.create(
+            concern=self.sensitivity_concern,
+            key="recommend-glycerin",
+            label="Glycerin",
+            rule_kind=RuleKind.RECOMMEND,
+            target_type=RuleTargetType.COMPOUND,
+            compound=self.glycerin,
+            weight=10,
+        )
+        ConcernRule.objects.create(
+            concern=self.sensitivity_concern,
+            key="recommend-retinol",
+            label="Retinol",
+            rule_kind=RuleKind.RECOMMEND,
+            target_type=RuleTargetType.COMPOUND,
+            compound=self.retinol,
+            weight=10,
+        )
+
+        SkinProfileConcern.objects.create(
+            skin_profile=self.skin_profile,
+            concern=self.sensitivity_concern,
+            confidence=1.0,
+        )
+
+        context = self.evaluator.prepare(self.profile)
+        impacts, coverage = self.evaluator.evaluate(
+            self.profile, self.formulation_with_glycerin, context=context
+        )
+
+        # Only glycerin matches
+        self.assertEqual(len(coverage), 1)
+        self.assertEqual(coverage[0].matched, 1)
+        self.assertEqual(coverage[0].total, 2)
+        self.assertEqual(list(coverage[0].matched_labels), ["Glycerin"])
+        self.assertEqual(list(coverage[0].unmatched_labels), ["Retinol"])
+
+    def test_zero_match_recommend_coverage(self):
+        """Coverage reports zero matches with full total."""
+        ConcernRule.objects.create(
+            concern=self.sensitivity_concern,
+            key="recommend-glycerin",
+            label="Glycerin",
+            rule_kind=RuleKind.RECOMMEND,
+            target_type=RuleTargetType.COMPOUND,
+            compound=self.glycerin,
+            weight=10,
+        )
+
+        SkinProfileConcern.objects.create(
+            skin_profile=self.skin_profile,
+            concern=self.sensitivity_concern,
+            confidence=1.0,
+        )
+
+        context = self.evaluator.prepare(self.profile)
+        impacts, coverage = self.evaluator.evaluate(
+            self.profile, self.formulation_with_retinol, context=context
+        )
+
+        # Nothing matches, but coverage is still reported
+        self.assertEqual(len(coverage), 1)
+        self.assertEqual(coverage[0].matched, 0)
+        self.assertEqual(coverage[0].total, 1)
+        self.assertEqual(list(coverage[0].matched_labels), [])
+        self.assertEqual(list(coverage[0].unmatched_labels), ["Glycerin"])
+
+    def test_concern_without_recommend_rules_omitted(self):
+        """Concern with no RECOMMEND rules produces no coverage."""
+        ConcernRule.objects.create(
+            concern=self.sensitivity_concern,
+            key="penalize-retinol",
+            label="Avoid Retinol",
+            rule_kind=RuleKind.PENALIZE,
+            target_type=RuleTargetType.COMPOUND,
+            compound=self.retinol,
+            weight=10,
+        )
+
+        SkinProfileConcern.objects.create(
+            skin_profile=self.skin_profile,
+            concern=self.sensitivity_concern,
+            confidence=1.0,
+        )
+
+        context = self.evaluator.prepare(self.profile)
+        impacts, coverage = self.evaluator.evaluate(
+            self.profile, self.formulation_with_retinol, context=context
+        )
+
+        # No coverage entry for concerns without RECOMMEND rules
+        self.assertEqual(len(coverage), 0)
+
+    def test_recommend_unmatched_not_penalized(self):
+        """Unmatched RECOMMEND rules produce no negative delta."""
+        ConcernRule.objects.create(
+            concern=self.sensitivity_concern,
+            key="recommend-glycerin",
+            label="Glycerin",
+            rule_kind=RuleKind.RECOMMEND,
+            target_type=RuleTargetType.COMPOUND,
+            compound=self.glycerin,
+            weight=10,
+        )
+
+        SkinProfileConcern.objects.create(
+            skin_profile=self.skin_profile,
+            concern=self.sensitivity_concern,
+            confidence=1.0,
+        )
+
+        context = self.evaluator.prepare(self.profile)
+        impacts, coverage = self.evaluator.evaluate(
+            self.profile, self.formulation_with_retinol, context=context
+        )
+
+        # No impacts (unmatched RECOMMEND produces no impact)
+        self.assertEqual(len(impacts), 0)
+        # But coverage is still tracked
+        self.assertEqual(len(coverage), 1)
+        self.assertEqual(coverage[0].matched, 0)
+
+    def test_matched_recommend_boosts_score(self):
+        """Product with matched RECOMMEND rule scores higher than without."""
+        ConcernRule.objects.create(
+            concern=self.sensitivity_concern,
+            key="recommend-glycerin",
+            label="Glycerin",
+            rule_kind=RuleKind.RECOMMEND,
+            target_type=RuleTargetType.COMPOUND,
+            compound=self.glycerin,
+            weight=10,
+        )
+
+        SkinProfileConcern.objects.create(
+            skin_profile=self.skin_profile,
+            concern=self.sensitivity_concern,
+            confidence=1.0,
+        )
+
+        context = self.evaluator.prepare(self.profile)
+
+        # Product with glycerin (matches RECOMMEND)
+        impacts_with, coverage_with = self.evaluator.evaluate(
+            self.profile, self.formulation_with_glycerin, context=context
+        )
+        score_with = sum(i.score_delta for i in impacts_with)
+
+        # Product without glycerin (no match)
+        impacts_without, coverage_without = self.evaluator.evaluate(
+            self.profile, self.formulation_with_retinol, context=context
+        )
+        score_without = sum(i.score_delta for i in impacts_without)
+
+        # With glycerin should score higher
+        self.assertGreater(score_with, score_without)

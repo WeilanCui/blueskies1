@@ -507,6 +507,57 @@
   white-space: nowrap;
 }
 
+.scoreSection {
+  display: grid;
+  gap: 12px;
+  align-items: start;
+}
+
+.coverageBreakdown {
+  display: grid;
+  gap: 12px;
+  font-size: 0.9rem;
+}
+
+.coverageItem {
+  background: rgba(240, 249, 255, 0.58);
+  border: 1px solid rgba(52, 111, 170, 0.18);
+  border-radius: 8px;
+  padding: 10px 12px;
+  display: grid;
+  gap: 8px;
+}
+
+.coverageHeader {
+  font-weight: 600;
+  color: #171412;
+  font-size: 0.95rem;
+}
+
+.coverageMatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.coverageMatch {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: #10b981;
+  font-weight: 500;
+  font-size: 0.9rem;
+}
+
+.coverageUnmatched {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: #d1d5db;
+  font-weight: 500;
+  font-size: 0.9rem;
+}
+
 .detailMeta {
   align-items: center;
   color: #6384a8;
