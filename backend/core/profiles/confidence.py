@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from core.models.compound import EnrichmentStatus
+
 if TYPE_CHECKING:
     from core.models import Formulation
 
@@ -22,7 +24,7 @@ def data_confidence(formulation: Formulation) -> float:
     Returns:
         A float in [0, 1] representing ingredient resolution confidence.
         - 0.0 if no ingredients exist
-        - capped at 0.5 if enrichment_status is "pending"
+        - capped at 0.5 if enrichment_status is EnrichmentStatus.PENDING
         - otherwise resolved/total where resolved = matched + compound_id not None
     """
     # Use prefetched ingredients if available (from queryset.prefetch_related("ingredients"))
@@ -41,7 +43,7 @@ def data_confidence(formulation: Formulation) -> float:
     conf = resolved / total
 
     # Cap at 0.5 if enrichment is still pending
-    if formulation.enrichment_status == "pending":
+    if formulation.enrichment_status == EnrichmentStatus.PENDING:
         conf = min(conf, 0.5)
 
     return conf
