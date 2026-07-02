@@ -54,6 +54,10 @@ def evidence_multiplier(rule: ConcernRule) -> tuple[float, int]:
         if not evidence.is_active:
             continue
         ref_id = evidence.literature_reference_id
+        # literature_reference is SET_NULL; a row without a reference is not
+        # a citable source and must not inflate the multiplier or count.
+        if ref_id is None:
+            continue
         evidence_type = evidence.evidence_type
         weight = EVIDENCE_TYPE_WEIGHTS.get(evidence_type, 0.0)
 
@@ -202,6 +206,9 @@ class ConcernRuleEvaluator:
                     if match_result.matched:
                         enforcement = "inform"
                         score_delta = 0
+                        # Informational impacts have no position-weighted
+                        # effect; exposing a factor would imply one.
+                        pos_factor = None
                     else:
                         continue
                 elif rule.rule_kind == "recommend":

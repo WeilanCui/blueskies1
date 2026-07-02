@@ -2,7 +2,7 @@
 
 ### Requirement: Concern-rule deltas are modulated by rule-scoped evidence
 
-The system SHALL compute an evidence multiplier per concern rule as `clamp(0.6 + Σ type_weight per distinct active evidence reference, 0.6, 1.3)` using type weights (clinical 0.15; regulatory and safety 0.12; public_guidance 0.08; rule and definition 0.05), counting only `ConcernEvidence` rows scoped to that rule, and SHALL apply it multiplicatively to concern-sourced score deltas.
+The system SHALL compute an evidence multiplier per concern rule as `clamp(0.6 + Σ type_weight per distinct active evidence reference, 0.6, 1.3)` using type weights (clinical 0.15; regulatory and safety 0.12; public_guidance 0.08; rule and definition 0.05), counting only `ConcernEvidence` rows scoped to that rule and carrying a non-null literature reference. When multiple rows on the same rule cite the same reference with different evidence types, the HIGHEST type weight among them SHALL be counted, once. The multiplier SHALL apply multiplicatively to concern-sourced score deltas.
 
 #### Scenario: Zero-evidence rule is dampened
 
