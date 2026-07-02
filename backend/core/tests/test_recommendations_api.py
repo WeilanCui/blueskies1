@@ -724,3 +724,240 @@ class RecommendationConcernRuleAPITests(APITestCase):
 
         # Coverage should be empty (rule is PENALIZE, not RECOMMEND)
         self.assertEqual(data["coverage"], [])
+
+
+class RecommendationConfidenceAPITests(APITestCase):
+    """Test data confidence in recommendation API."""
+
+    def setUp(self):
+        self.client = APIClient()
+        self.user = User.objects.create_user(username="testuser", password="testpass")
+        self.profile = Profile.objects.create(user=self.user, handle="testuser")
+        self.brand = Brand.objects.create(name="TestBrand")
+
+    def test_score_endpoint_includes_confidence_fields(self):
+        """Score endpoint response includes data_confidence and confidence_band."""
+        self.client.force_login(self.user)
+
+        product = Product.objects.create(name="TestProduct", brand=self.brand)
+        formulation = Formulation.objects.create(product=product, enrichment_status="complete")
+        FormulationIngredient.objects.create(
+            formulation=formulation,
+            position=1,
+            raw_text="Water",
+        )
+
+        response = self.client.post(
+            "/api/recommendations/score/",
+            {"formulation_id": formulation.id},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertIn("data_confidence", data)
+        self.assertIn("confidence_band", data)
+        self.assertIsInstance(data["data_confidence"], (int, float))
+        self.assertIn(data["confidence_band"], ["high", "medium", "low"])
+
+    def test_list_endpoint_includes_confidence_fields(self):
+        """List endpoint response includes data_confidence and confidence_band."""
+        self.client.force_login(self.user)
+
+        product = Product.objects.create(name="TestProduct", brand=self.brand)
+        formulation = Formulation.objects.create(product=product, enrichment_status="complete")
+        FormulationIngredient.objects.create(
+            formulation=formulation,
+            position=1,
+            raw_text="Water",
+        )
+
+        response = self.client.get("/api/recommendations/")
+
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertGreater(len(data["results"]), 0)
+
+        for match in data["results"]:
+            self.assertIn("data_confidence", match)
+            self.assertIn("confidence_band", match)
+            self.assertIsInstance(match["data_confidence"], (int, float))
+            self.assertIn(match["confidence_band"], ["high", "medium", "low"])
+
+    def test_confidence_rounded_to_2_decimals(self):
+        """data_confidence is rounded to 2 decimal places."""
+        self.client.force_login(self.user)
+
+        # Create a formulation with 1 of 3 ingredients resolved (0.333...)
+        compound = Compound.objects.create(
+            canonical_inci="WATER",
+            display_name="Water",
+        )
+        product = Product.objects.create(name="TestProduct", brand=self.brand)
+        formulation = Formulation.objects.create(product=product, enrichment_status="complete")
+
+        FormulationIngredient.objects.create(
+            formulation=formulation,
+            position=1,
+            raw_text="Water",
+            parse_status="matched",
+            compound=compound,
+        )
+        FormulationIngredient.objects.create(
+            formulation=formulation,
+            position=2,
+            raw_text="Unknown",
+            parse_status="unmatched",
+        )
+        FormulationIngredient.objects.create(
+            formulation=formulation,
+            position=3,
+            raw_text="Ambiguous",
+            parse_status="ambiguous",
+        )
+
+        response = self.client.post(
+            "/api/recommendations/score/",
+            {"formulation_id": formulation.id},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        # 1/3 = 0.333... → 0.33
+        self.assertEqual(data["data_confidence"], 0.33)
+
+    def test_ranking_resolves_ties_by_confidence(self):
+        """Equal-score formulations are ordered by confidence band (high > medium > low)."""
+        self.client.force_login(self.user)
+
+        # Create a resolved formulation (high confidence)
+        compound_water = Compound.objects.create(
+            canonical_inci="WATER",
+            display_name="Water",
+        )
+        compound_glycerin = Compound.objects.create(
+            canonical_inci="GLYCERIN",
+            display_name="Glycerin",
+        )
+
+        product_high = Product.objects.create(name="Product High Conf", brand=self.brand)
+        formulation_high = Formulation.objects.create(product=product_high, enrichment_status="complete")
+        FormulationIngredient.objects.create(
+            formulation=formulation_high,
+            position=1,
+            raw_text="Water",
+            parse_status="matched",
+            compound=compound_water,
+        )
+        FormulationIngredient.objects.create(
+            formulation=formulation_high,
+            position=2,
+            raw_text="Glycerin",
+            parse_status="matched",
+            compound=compound_glycerin,
+        )
+
+        # Create an unresolved formulation (low confidence)
+        product_low = Product.objects.create(name="Product Low Conf", brand=self.brand)
+        formulation_low = Formulation.objects.create(product=product_low, enrichment_status="complete")
+        FormulationIngredient.objects.create(
+            formulation=formulation_low,
+            position=1,
+            raw_text="Unknown1",
+            parse_status="unmatched",
+        )
+
+        response = self.client.get("/api/recommendations/")
+
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        results = data["results"]
+
+        # Both have score 100, but high-confidence should come first
+        high_conf_result = None
+        low_conf_result = None
+        for result in results:
+            if result["product_name"] == "Product High Conf":
+                high_conf_result = result
+            elif result["product_name"] == "Product Low Conf":
+                low_conf_result = result
+
+        self.assertIsNotNone(high_conf_result)
+        self.assertIsNotNone(low_conf_result)
+        self.assertEqual(high_conf_result["final_score"], 100)
+        self.assertEqual(low_conf_result["final_score"], 100)
+        self.assertEqual(high_conf_result["confidence_band"], "high")
+        self.assertEqual(low_conf_result["confidence_band"], "low")
+
+        # Verify high-confidence comes before low-confidence in list
+        high_index = results.index(high_conf_result)
+        low_index = results.index(low_conf_result)
+        self.assertLess(high_index, low_index)
+
+    def test_score_still_dominates_over_confidence(self):
+        """Higher score ranks before lower score, regardless of confidence."""
+        self.client.force_login(self.user)
+
+        # Create high-confidence, low-score formulation
+        compound = Compound.objects.create(
+            canonical_inci="RETINOL",
+            display_name="Retinol",
+        )
+        ProfileConstraint.objects.create(
+            profile=self.profile,
+            kind=ProfileConstraintKind.ALLERGY,
+            enforcement=ConstraintEnforcement.PENALIZE,
+            severity=ConstraintSeverity.MODERATE,
+            compound=compound,
+            is_active=True,
+        )
+
+        product_low_score = Product.objects.create(
+            name="Product Low Score", brand=self.brand
+        )
+        formulation_low_score = Formulation.objects.create(product=product_low_score, enrichment_status="complete")
+        FormulationIngredient.objects.create(
+            formulation=formulation_low_score,
+            position=1,
+            raw_text="Retinol",
+            parse_status="matched",
+            compound=compound,
+        )
+
+        # Create low-confidence, high-score formulation
+        product_high_score = Product.objects.create(
+            name="Product High Score", brand=self.brand
+        )
+        formulation_high_score = Formulation.objects.create(product=product_high_score, enrichment_status="complete")
+        FormulationIngredient.objects.create(
+            formulation=formulation_high_score,
+            position=1,
+            raw_text="Unknown",
+            parse_status="unmatched",
+        )
+
+        response = self.client.get("/api/recommendations/")
+
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        results = data["results"]
+
+        high_score_result = None
+        low_score_result = None
+        for result in results:
+            if result["product_name"] == "Product High Score":
+                high_score_result = result
+            elif result["product_name"] == "Product Low Score":
+                low_score_result = result
+
+        self.assertIsNotNone(high_score_result)
+        self.assertIsNotNone(low_score_result)
+        # High score should rank first despite lower confidence
+        # (MODERATE penalize = severity weight 8 -> 100 - 8 = 92)
+        self.assertEqual(high_score_result["final_score"], 100)
+        self.assertEqual(low_score_result["final_score"], 92)
+
+        high_index = results.index(high_score_result)
+        low_index = results.index(low_score_result)
+        self.assertLess(high_index, low_index)

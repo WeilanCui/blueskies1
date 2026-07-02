@@ -45,6 +45,8 @@ class RecommendationMatchSerializer(serializers.Serializer):
     penalties = serializers.SerializerMethodField()
     boosts = serializers.SerializerMethodField()
     coverage = serializers.SerializerMethodField()
+    data_confidence = serializers.SerializerMethodField()
+    confidence_band = serializers.CharField(read_only=True)
 
     def get_formulation_id(self, obj) -> int:
         return obj.formulation.id
@@ -68,6 +70,9 @@ class RecommendationMatchSerializer(serializers.Serializer):
 
     def get_coverage(self, obj):
         return CoverageSummarySerializer(obj.coverage, many=True).data
+
+    def get_data_confidence(self, obj) -> float:
+        return round(obj.data_confidence, 2)
 
 
 class RecommendationScoreRequestSerializer(serializers.Serializer):

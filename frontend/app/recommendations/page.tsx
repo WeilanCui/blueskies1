@@ -141,6 +141,11 @@ function RecommendationsContent() {
                         ))}
                       </ul>
                     )}
+                    {match.confidence_band === "low" && (
+                      <p className={styles.reason}>
+                        Limited ingredient data
+                      </p>
+                    )}
                   </div>
                   <ScoreBadge
                     score={match.final_score}

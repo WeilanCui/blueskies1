@@ -4,6 +4,7 @@ from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Iterable
 
 from core.models import Formulation, Profile, ProfileConstraint
+from core.profiles.confidence import confidence_band, data_confidence
 from core.profiles.constraints import (
     ConstraintEvaluation,
     ConstraintImpact,
@@ -21,6 +22,8 @@ class RecommendationMatch:
     base_score: int
     final_score: int
     coverage: list[CoverageSummary] = field(default_factory=list)  # pyright: ignore[reportGeneralTypeIssues]
+    data_confidence: float = field(default=0.0)
+    confidence_band: str = field(default="low")
 
     @property
     def excluded(self) -> bool:
@@ -101,12 +104,18 @@ class RecommendationMatcher:
                     evaluation.boosts.append(impact)
                 # "inform" goes to matched_constraints only, not to any group
 
+        # Compute data confidence and band
+        conf = data_confidence(formulation)
+        band = confidence_band(conf)
+
         return RecommendationMatch(
             formulation=formulation,
             evaluation=evaluation,
             base_score=base_score,
             final_score=self._final_score(base_score, evaluation),
             coverage=coverage_list,
+            data_confidence=conf,
+            confidence_band=band,
         )
 
     def rank_formulations(
@@ -145,11 +154,16 @@ class RecommendationMatcher:
         if not include_excluded:
             matches = [match for match in matches if not match.excluded]
 
+        # Map confidence band to tier for sorting (high=0, medium=1, low=2)
+        def band_tier(band: str) -> int:
+            return {"high": 0, "medium": 1, "low": 2}.get(band, 2)
+
         return sorted(
             matches,
             key=lambda match: (
                 match.excluded,
                 -match.final_score,
+                band_tier(match.confidence_band),
                 match.formulation.product.name.lower(),
                 match.formulation.id,  # pyright: ignore[reportAttributeAccessIssue]
             ),

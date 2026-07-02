@@ -665,6 +665,8 @@ class RecommendationViewSet(viewsets.ViewSet):
         # Get all formulations with a resolved product
         formulations = Formulation.objects.filter(product__isnull=False).select_related(
             "product__brand"
+        ).prefetch_related(
+            "ingredients"
         )
 
         # Parse include_excluded query param (default False)
@@ -692,7 +694,9 @@ class RecommendationViewSet(viewsets.ViewSet):
 
         formulation_id = serializer.validated_data["formulation_id"]
         formulation = get_object_or_404(
-            Formulation.objects.select_related("product__brand"),
+            Formulation.objects.select_related("product__brand").prefetch_related(
+                "ingredients"
+            ),
             pk=formulation_id,
         )
 
