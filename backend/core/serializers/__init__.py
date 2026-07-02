@@ -40,6 +40,11 @@ from core.serializers.location import (
 )
 from core.serializers.product import ProductSummarySerializer
 from core.serializers.reaction import ReactionEventSerializer
+from core.serializers.recommendation import (
+    RecommendationImpactSerializer,
+    RecommendationMatchSerializer,
+    RecommendationScoreRequestSerializer,
+)
 from core.serializers.routine import (
     RoutineAddProductSerializer,
     RoutineItemSerializer,
@@ -69,6 +74,9 @@ __all__ = [
     "ProfileLocationSerializer",
     "PropertyAssertionSerializer",
     "ReactionEventSerializer",
+    "RecommendationImpactSerializer",
+    "RecommendationMatchSerializer",
+    "RecommendationScoreRequestSerializer",
     "RoutineAddProductSerializer",
     "RoutineItemSerializer",
     "RoutineSerializer",

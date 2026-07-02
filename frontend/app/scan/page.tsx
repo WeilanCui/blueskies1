@@ -5,12 +5,14 @@ import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { Button } from "../../components/Button";
+import { ScoreBadge } from "../../components/ScoreBadge";
 import {
   addProductToRoutine,
   getCatalogProducts,
   getMe,
   getRoutines,
   scanBarcode,
+  scoreFormulation,
   type BarcodeScanResponse,
   type CatalogProduct,
   type Formulation,
@@ -121,6 +123,12 @@ function FormulationDetail({
 }) {
   const analysis = formulationAnalysisCounts(formulation.ingredients);
   const { product } = formulation;
+  const scoreQuery = useQuery({
+    queryKey: ["recommendation-score", formulation.id],
+    queryFn: () => scoreFormulation(formulation.id),
+    retry: false,
+    staleTime: Infinity,
+  });
 
   return (
     <section className={styles.productDetail}>
@@ -149,7 +157,15 @@ function FormulationDetail({
               <span>{product.brand}</span>
               <h1>{product.name}</h1>
             </div>
-            <strong>{product.category}</strong>
+            {scoreQuery.isSuccess ? (
+              <ScoreBadge
+                score={scoreQuery.data.final_score}
+                excluded={scoreQuery.data.excluded}
+                hasWarnings={scoreQuery.data.warnings.length > 0}
+              />
+            ) : (
+              <strong>{product.category}</strong>
+            )}
           </div>
           <div className={styles.detailMeta}>
             <span>{formatEnrichmentStatus(formulation.enrichment_status)}</span>

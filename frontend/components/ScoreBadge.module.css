@@ -1,0 +1,69 @@
+.badge {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  background-color: var(--panel);
+  border: 1px solid var(--accent);
+  flex-shrink: 0;
+  min-width: 60px;
+}
+
+.badge.excluded {
+  background-color: var(--status-excluded-bg);
+  border-color: var(--status-excluded-border);
+}
+
+.badge.cautioned {
+  background-color: var(--status-caution-bg);
+  border-color: var(--status-caution-border);
+}
+
+.score {
+  font-weight: 700;
+  font-size: 16px;
+  line-height: 1;
+  color: var(--foreground);
+}
+
+.badge.excluded .score {
+  color: var(--status-excluded-text);
+}
+
+.badge.cautioned .score {
+  color: var(--status-caution-text);
+}
+
+.label {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--muted);
+}
+
+.badge.excluded .label {
+  color: var(--status-excluded-label);
+}
+
+.badge.cautioned .label {
+  color: var(--status-caution-label);
+}
+
+/* Desktop enhancement */
+@media (min-width: 640px) {
+  .badge {
+    padding: 8px 12px;
+  }
+
+  .score {
+    font-size: 18px;
+  }
+
+  .label {
+    font-size: 11px;
+  }
+}

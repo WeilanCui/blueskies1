@@ -61,6 +61,10 @@ Two Django apps: `core` (domain models, API, profiles, services) and `literature
 
 **API conventions**: DRF throttling is enabled with named scopes (`anon`, `user`, `auth`, `signup`, `contact`, `formulation_submit`) — see `core/throttles.py` and `REST_FRAMEWORK` settings; rates are env-overridable. Auth is session-based via `SessionAuthViewSet`. Keep request/response logic in views/viewsets, domain behavior in model methods.
 
+**Recommendation endpoints** (`RecommendationViewSet`):
+- `POST /api/recommendations/score/` — score a single formulation against the authenticated user's profile constraints. Request: `{ "formulation_id": <id> }`. Response: `RecommendationMatch` with final_score, excluded, reasons, and impact groups (warnings, penalties, boosts).
+- `GET /api/recommendations/` — rank all formulations with a resolved product against the authenticated user's profile, paginated (20 per page), best-first. Query param `?include_excluded=true` includes hard-excluded formulations (sorted after non-excluded ones); default is false. Response: paginated list of `RecommendationMatch` objects.
+
 ## Frontend architecture
 
 Next.js 16 App Router under `frontend/app/` (routes: `home`, `login`, `intake`, `compounds`, `skincareApi`, `scan`, `routine`, `reactions`, `experience`; server route handlers under `app/api/`). Stack: HeroUI components, Tailwind v4, TanStack Query, `@zxing/library` for barcode scanning. Lint/format via Biome.
