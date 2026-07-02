@@ -575,3 +575,39 @@ class RecommendationConcernRuleAPITests(APITestCase):
         # Check that at least one penalty has source="concern"
         concern_penalties = [p for p in test_result["penalties"] if p.get("source") == "concern"]
         self.assertGreater(len(concern_penalties), 0)
+
+    def test_avoid_rule_warns_never_excludes(self):
+        """AVOID rule produces warnings but never excludes formulation."""
+        # Create AVOID rule instead of PENALIZE
+        avoid_rule = ConcernRule.objects.create(
+            concern=self.concern,
+            key="avoid-retinol-sensitivity",
+            label="Avoid Retinol (Sensitivity)",
+            rule_kind=RuleKind.AVOID,
+            target_type=RuleTargetType.COMPOUND,
+            compound=self.retinol,
+            weight=10,
+            rationale="Retinol can irritate sensitive skin.",
+        )
+
+        # Link user to concern
+        SkinProfileConcern.objects.create(
+            skin_profile=self.skin_profile,
+            concern=self.concern,
+            confidence=1.0,
+        )
+
+        self.client.force_login(self.user)
+        response = self.client.post(
+            "/api/recommendations/score/",
+            {"formulation_id": self.formulation.id},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+
+        # AVOID produces warnings, not penalties or exclusion
+        self.assertGreater(len(data["warnings"]), 0)
+        self.assertFalse(data["excluded"])
+        self.assertEqual(len(data["penalties"]), 0)

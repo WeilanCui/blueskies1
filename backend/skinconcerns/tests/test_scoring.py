@@ -17,6 +17,7 @@ from core.models import (
     SkinProfile,
     ValueType,
 )
+from core.profiles.recommendations import RecommendationMatcher
 from skinconcerns.models import (
     ConcernRule,
     RuleKind,
@@ -214,6 +215,12 @@ class ConcernRuleEvaluatorTests(TestCase):
         self.assertEqual(len(impacts), 1)
         self.assertEqual(impacts[0].enforcement, "warn")
         self.assertEqual(impacts[0].score_delta, -10)
+
+        # AVOID rules never exclude formulations, only warn and penalize
+        match = RecommendationMatcher(extra_evaluators=[ConcernRuleEvaluator()]).match_formulation(
+            self.profile, self.formulation_with_retinol
+        )
+        self.assertFalse(match.excluded)
 
     def test_refer_rule_informational_only(self):
         """REFER rule produces informational impact with zero delta."""

@@ -1,5 +1,7 @@
 """Concern rule scoring and evaluation."""
 
+from django.db.models import Prefetch
+
 from core.models import Formulation, Profile
 from core.profiles.matching import (
     matches_chemical_class,
@@ -9,7 +11,7 @@ from core.profiles.matching import (
     matches_raw_label,
 )
 from core.profiles.constraints import ConstraintImpact
-from skinconcerns.models import RuleTargetType
+from skinconcerns.models import RuleTargetType, ConcernRule
 
 
 class ConcernRuleEvaluator:
@@ -21,17 +23,24 @@ class ConcernRuleEvaluator:
         if not skin_profile:
             return {}
 
+        # Prefetch active rules for each concern to avoid N+1 queries
+        active_rules_prefetch = Prefetch(
+            "concern__rules",
+            queryset=ConcernRule.objects.filter(is_active=True),
+            to_attr="active_rules",
+        )
+
         # Get active SkinProfileConcern rows with concerns and rules prefetched
         active_links = skin_profile.concerns.filter(is_active=True).select_related(
             "concern"
-        )
+        ).prefetch_related(active_rules_prefetch)
 
         # Build list of (concern, confidence, rules)
         concerns_data = []
         for link in active_links:
             concern = link.concern
-            # Only get active rules
-            active_rules = concern.rules.filter(is_active=True)
+            # Read prefetched active rules
+            active_rules = concern.active_rules
             concerns_data.append((concern, link.confidence, list(active_rules)))
 
         return {"concerns_data": concerns_data}
