@@ -740,6 +740,7 @@ export type CoverageSummary = {
   matched: number;
   total: number;
   matched_rules: string[];
+  unmatched_rules: string[];
 };
 
 export type RecommendationMatch = {

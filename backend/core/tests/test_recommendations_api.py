@@ -705,6 +705,13 @@ class RecommendationConcernRuleAPITests(APITestCase):
 
     def test_coverage_empty_when_no_recommend_rules(self):
         """Coverage array is empty when no RECOMMEND rules active."""
+        # Link the concern so the evaluator actually runs; coverage must be
+        # empty because the linked concern's only rule is PENALIZE.
+        SkinProfileConcern.objects.create(
+            skin_profile=self.skin_profile,
+            concern=self.concern,
+            confidence=1.0,
+        )
         self.client.force_login(self.user)
         response = self.client.post(
             "/api/recommendations/score/",

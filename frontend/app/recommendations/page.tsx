@@ -115,9 +115,9 @@ function RecommendationsContent() {
                       <p className={styles.reason}>{match.reasons[0]}</p>
                     )}
                     {match.coverage.length > 0 && (
-                      <div className={styles.coverage}>
+                      <ul className={styles.coverage}>
                         {match.coverage.map((cov) => (
-                          <span
+                          <li
                             key={cov.concern}
                             className={styles.coverageLine}
                           >
@@ -137,9 +137,9 @@ function RecommendationsContent() {
                                   : ""}
                               </>
                             )}
-                          </span>
+                          </li>
                         ))}
-                      </div>
+                      </ul>
                     )}
                   </div>
                   <ScoreBadge

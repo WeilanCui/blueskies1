@@ -172,7 +172,7 @@ function FormulationDetail({
                           {cov.concern_label}
                         </div>
                         <div className={styles.coverageMatches}>
-                          {cov.matched_rules.map((label) => (
+                          {[...new Set(cov.matched_rules)].map((label) => (
                             <span
                               key={label}
                               className={styles.coverageMatch}
@@ -182,7 +182,8 @@ function FormulationDetail({
                           ))}
                           {cov.total > cov.matched && (
                             <span className={styles.coverageUnmatched}>
-                              ✗ {cov.total - cov.matched} not present
+                              ✗ not present:{" "}
+                              {[...new Set(cov.unmatched_rules)].join(", ")}
                             </span>
                           )}
                         </div>

@@ -26,6 +26,9 @@ class CoverageSummarySerializer(serializers.Serializer):
     matched_rules = serializers.ListField(
         child=serializers.CharField(), source="matched_labels", read_only=True
     )
+    unmatched_rules = serializers.ListField(
+        child=serializers.CharField(), source="unmatched_labels", read_only=True
+    )
 
 
 class RecommendationMatchSerializer(serializers.Serializer):
