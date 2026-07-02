@@ -127,6 +127,7 @@ function FormulationDetail({
     queryKey: ["recommendation-score", formulation.id],
     queryFn: () => scoreFormulation(formulation.id),
     retry: false,
+    staleTime: Infinity,
   });
 
   return (

@@ -53,10 +53,5 @@ urlpatterns = [
         FormulationViewSet.as_view({"get": "retrieve"}),
         name="formulation-detail",
     ),
-    path(
-        "recommendations/score/",
-        RecommendationViewSet.as_view({"post": "score"}),
-        name="recommendations-score",
-    ),
     path("", include(router.urls)),
 ]

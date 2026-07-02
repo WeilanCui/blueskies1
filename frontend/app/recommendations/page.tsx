@@ -2,20 +2,16 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { AppPageHeader } from "../../components/AppPageHeader";
 import { Button } from "../../components/Button";
 import { ScoreBadge } from "../../components/ScoreBadge";
-import {
-  getMe,
-  getRankedRecommendations,
-  type RecommendationMatch,
-} from "../../lib/appApi";
+import { getMe, getRankedRecommendations } from "../../lib/appApi";
 import styles from "./recommendations.module.css";
 
 const authFreshMs = 5 * 60 * 1000;
 
-export default function RecommendationsPage() {
+function RecommendationsContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [page, setPage] = useState(1);
@@ -156,5 +152,15 @@ export default function RecommendationsPage() {
         </>
       )}
     </div>
+  );
+}
+
+export default function RecommendationsPage() {
+  return (
+    <Suspense
+      fallback={<p className="detail-muted">Loading recommendations…</p>}
+    >
+      <RecommendationsContent />
+    </Suspense>
   );
 }

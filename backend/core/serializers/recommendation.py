@@ -31,12 +31,10 @@ class RecommendationMatchSerializer(serializers.Serializer):
         return obj.formulation.id
 
     def get_product_name(self, obj) -> str:
-        if obj.formulation.product is None:
-            return ""
         return obj.formulation.product.name or ""
 
     def get_brand_name(self, obj) -> str:
-        if obj.formulation.product is None or obj.formulation.product.brand is None:
+        if obj.formulation.product.brand is None:
             return ""
         return obj.formulation.product.brand.name or ""
 
