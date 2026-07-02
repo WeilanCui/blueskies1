@@ -405,12 +405,13 @@ class ConstraintScoringWithPositionTests(TestCase):
         # Should be excluded
         self.assertTrue(evaluation.excluded)
 
+        # EXCLUDE must emit its warning impact regardless of position
+        self.assertEqual(len(evaluation.warnings), 1)
+        impact = evaluation.warnings[0]
         # EXCLUDE delta should be -100, unscaled
-        if evaluation.warnings:
-            impact = evaluation.warnings[0]
-            self.assertEqual(impact.score_delta, -100)
-            # position_factor should be None for EXCLUDE
-            self.assertIsNone(impact.position_factor)
+        self.assertEqual(impact.score_delta, -100)
+        # position_factor should be None for EXCLUDE
+        self.assertIsNone(impact.position_factor)
 
     def test_non_ingredient_target_no_position_factor(self):
         """Non-ingredient targets (raw_label) should not have position_factor."""
@@ -442,10 +443,11 @@ class ConstraintScoringWithPositionTests(TestCase):
         evaluator = ProfileConstraintEvaluator()
         evaluation = evaluator.evaluate_formulation(self.profile, formulation)
 
-        if evaluation.penalties:
-            impact = evaluation.penalties[0]
-            # Raw label targets should have no position_factor
-            self.assertIsNone(impact.position_factor)
+        # The raw-label constraint must actually produce a penalty
+        self.assertEqual(len(evaluation.penalties), 1)
+        impact = evaluation.penalties[0]
+        # Raw label targets should have no position_factor
+        self.assertIsNone(impact.position_factor)
 
     def test_boost_applies_position_factor(self):
         """BOOST constraint should scale by position_factor."""

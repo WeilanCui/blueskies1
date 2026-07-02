@@ -26,7 +26,8 @@ For matches targeting a compound or chemical class, the system SHALL compute a p
 
 ### Requirement: Position factor scales score deltas but not safety signals
 
-PENALIZE, BOOST, and RECOMMEND deltas from ingredient-targeted matches SHALL become `round(base_delta × factor)` (positive deltas keep the minimum of 1); EXCLUDE decisions and warning emission SHALL be unaffected by position; property, raw-label, product-category, and formulation-specific targets SHALL NOT be scaled.
+
+PENALIZE, BOOST, RECOMMEND, and AVOID deltas from ingredient-targeted matches SHALL become `round(base_delta × factor)` (positive deltas keep the minimum of 1). EXCLUDE decisions SHALL be unaffected by position, and warning emission SHALL be position-immune (an AVOID match always warns; only its numeric delta scales); property, raw-label, product-category, and formulation-specific targets SHALL NOT be scaled.
 
 #### Scenario: Trace allergen penalizes less than headline allergen
 

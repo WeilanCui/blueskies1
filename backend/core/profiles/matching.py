@@ -69,12 +69,13 @@ def matches_compound(formulation: Formulation, compound_id: int) -> MatchResult:
     best_position = matching_positions.get('best_position')
     matched = best_position is not None
 
-    total_ingredients = formulation.ingredients.count()
+    # Only pay for the count when it will actually be used.
+    total_ingredients = formulation.ingredients.count() if matched else None
 
     return MatchResult(
         matched=matched,
         best_position=best_position,
-        total_ingredients=total_ingredients if matched else None,
+        total_ingredients=total_ingredients,
     )
 
 
@@ -98,12 +99,13 @@ def matches_chemical_class(
     best_position = matching_positions.get('best_position')
     matched = best_position is not None
 
-    total_ingredients = formulation.ingredients.count()
+    # Only pay for the count when it will actually be used.
+    total_ingredients = formulation.ingredients.count() if matched else None
 
     return MatchResult(
         matched=matched,
         best_position=best_position,
-        total_ingredients=total_ingredients if matched else None,
+        total_ingredients=total_ingredients,
     )
 
 
