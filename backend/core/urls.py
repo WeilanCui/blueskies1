@@ -11,6 +11,7 @@ from .views import (
     ProductCatalogViewSet,
     ProfileLocationViewSet,
     ReactionEventViewSet,
+    RecommendationViewSet,
     RoutineViewSet,
     ScanBarcodeView,
     SessionAuthViewSet,
@@ -24,6 +25,7 @@ router.register("formulations", FormulationViewSet, basename="formulation")
 router.register("contact", ContactSubmissionViewSet, basename="contact-submission")
 router.register("intake", IntakeViewSet, basename="intake")
 router.register("profile-locations", ProfileLocationViewSet, basename="profile-location")
+router.register("recommendations", RecommendationViewSet, basename="recommendation")
 router.register("routines", RoutineViewSet, basename="routine")
 router.register("daily-checkins", DailyCheckInViewSet, basename="daily-checkin")
 router.register("reactions", ReactionEventViewSet, basename="reaction")
@@ -50,6 +52,11 @@ urlpatterns = [
         "formulations/<int:pk>/",
         FormulationViewSet.as_view({"get": "retrieve"}),
         name="formulation-detail",
+    ),
+    path(
+        "recommendations/score/",
+        RecommendationViewSet.as_view({"post": "score"}),
+        name="recommendations-score",
     ),
     path("", include(router.urls)),
 ]

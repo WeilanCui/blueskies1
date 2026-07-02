@@ -8,6 +8,7 @@ from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
+from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -36,6 +37,8 @@ from core.serializers import (
     LoginSerializer,
     ProfileLocationSerializer,
     ReactionEventSerializer,
+    RecommendationMatchSerializer,
+    RecommendationScoreRequestSerializer,
     RoutineAddProductSerializer,
     RoutineSerializer,
     SignupSerializer,
@@ -46,6 +49,7 @@ from core.serializers import (
     intake_payload,
     serialize_catalog_product,
 )
+from core.profiles.recommendations import RecommendationMatcher
 from core.services.weather import get_or_fetch_uv_snapshot
 from core.throttles import (
     AuthRateThrottle,
@@ -596,6 +600,64 @@ class ReactionEventViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         profile, _ = Profile.objects.get_or_create(user=self.request.user)
         serializer.save(profile=profile)
+
+
+class RecommendationPagination(PageNumberPagination):
+    """Paginate recommendation results at 20 per page."""
+
+    page_size = 20
+
+
+class RecommendationViewSet(viewsets.ViewSet):
+    """Score and rank formulations against user's profile constraints."""
+
+    permission_classes = [IsAuthenticated]
+
+    def list(self, request):
+        profile, _ = Profile.objects.get_or_create(user=request.user)
+        matcher = RecommendationMatcher()
+
+        # Get all formulations with a resolved product
+        formulations = Formulation.objects.filter(product__isnull=False).select_related(
+            "product__brand"
+        )
+
+        # Parse include_excluded query param (default False)
+        include_excluded_param = request.query_params.get("include_excluded", "").lower()
+        include_excluded = include_excluded_param in ("true", "1", "yes")
+
+        # Rank formulations
+        matches = matcher.rank_formulations(
+            profile,
+            formulations,
+            include_excluded=include_excluded,
+        )
+
+        # Paginate results
+        paginator = RecommendationPagination()
+        paginated_matches = paginator.paginate_queryset(matches, request)
+        serializer = RecommendationMatchSerializer(paginated_matches, many=True)
+        return paginator.get_paginated_response(serializer.data)
+
+    @action(detail=False, methods=["post"], url_path="score")
+    def score(self, request):
+        profile, _ = Profile.objects.get_or_create(user=request.user)
+        serializer = RecommendationScoreRequestSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        formulation_id = serializer.validated_data["formulation_id"]
+        formulation = get_object_or_404(
+            Formulation.objects.select_related("product__brand"),
+            pk=formulation_id,
+        )
+
+        matcher = RecommendationMatcher()
+        match = matcher.match_formulation(profile, formulation)
+
+        return Response(
+            RecommendationMatchSerializer(match).data,
+            status=status.HTTP_200_OK,
+        )
 
 
 class ContactSubmissionViewSet(CreateOnlyModelViewSet):

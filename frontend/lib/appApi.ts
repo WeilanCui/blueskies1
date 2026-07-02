@@ -720,3 +720,68 @@ export function scanBarcode(barcode: string): Promise<BarcodeScanResponse> {
     "Could not look up that barcode.",
   );
 }
+
+export type ConstraintImpact = {
+  constraint_id: number;
+  kind: string;
+  enforcement: string;
+  severity: string;
+  target_type: string;
+  target: string;
+  reason: string;
+  score_delta: number;
+};
+
+export type RecommendationMatch = {
+  formulation_id: number;
+  product_name: string;
+  brand_name: string;
+  final_score: number;
+  excluded: boolean;
+  reasons: string[];
+  warnings: ConstraintImpact[];
+  penalties: ConstraintImpact[];
+  boosts: ConstraintImpact[];
+};
+
+export type PaginatedRecommendations = {
+  count: number;
+  next: string | null;
+  previous: string | null;
+  results: RecommendationMatch[];
+};
+
+export function scoreFormulation(
+  formulation_id: number,
+): Promise<RecommendationMatch> {
+  return requestJson<RecommendationMatch>(
+    "/api/recommendations/score/",
+    {
+      method: "POST",
+      body: JSON.stringify({ formulation_id }),
+    },
+    "Could not score that formulation.",
+  );
+}
+
+export function getRankedRecommendations(
+  includeExcluded = false,
+  page = 1,
+): Promise<PaginatedRecommendations> {
+  const params = new URLSearchParams();
+  if (includeExcluded) {
+    params.set("include_excluded", "true");
+  }
+  if (page > 1) {
+    params.set("page", String(page));
+  }
+  const query = params.toString();
+  const path = query
+    ? `/api/recommendations/?${query}`
+    : "/api/recommendations/";
+  return requestJson<PaginatedRecommendations>(
+    path,
+    {},
+    "Could not load recommendations.",
+  );
+}

@@ -1,0 +1,157 @@
+"use client";
+
+import { useQuery } from "@tanstack/react-query";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
+import { AppPageHeader } from "../../components/AppPageHeader";
+import { Button } from "../../components/Button";
+import { ScoreBadge } from "../../components/ScoreBadge";
+import {
+  getMe,
+  getRankedRecommendations,
+  type RecommendationMatch,
+} from "../../lib/appApi";
+import styles from "./recommendations.module.css";
+
+const authFreshMs = 5 * 60 * 1000;
+
+export default function RecommendationsPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const [page, setPage] = useState(1);
+  const [includeExcluded, setIncludeExcluded] = useState(false);
+
+  // Parse includeExcluded from search params
+  useEffect(() => {
+    const param = searchParams.get("include_excluded");
+    setIncludeExcluded(param === "true");
+  }, [searchParams]);
+
+  const meQuery = useQuery({
+    queryKey: ["me"],
+    queryFn: getMe,
+    retry: false,
+    staleTime: authFreshMs,
+  });
+
+  const recommendationsQuery = useQuery({
+    queryKey: ["recommendations", page, includeExcluded],
+    queryFn: () => getRankedRecommendations(includeExcluded, page),
+    enabled: meQuery.isSuccess,
+  });
+
+  useEffect(() => {
+    if (meQuery.isError) {
+      router.replace("/login");
+    }
+  }, [meQuery.isError, router]);
+
+  function handleIncludeExcludedChange() {
+    const newValue = !includeExcluded;
+    setIncludeExcluded(newValue);
+    setPage(1);
+    // Update URL without navigation
+    const params = new URLSearchParams();
+    if (newValue) {
+      params.set("include_excluded", "true");
+    }
+    router.push(`/recommendations?${params.toString()}`, { scroll: false });
+  }
+
+  if (meQuery.isLoading || meQuery.isError) {
+    return <p className="detail-muted">Loading your session...</p>;
+  }
+
+  const recommendations = recommendationsQuery.data?.results ?? [];
+  const pageCount = recommendationsQuery.data
+    ? Math.ceil(recommendationsQuery.data.count / 20)
+    : 0;
+
+  return (
+    <div className={styles.layout}>
+      <AppPageHeader
+        title="For You"
+        description="Ranked products matching your skin profile."
+        action={
+          <label className={styles.toggleLabel}>
+            <input
+              type="checkbox"
+              checked={includeExcluded}
+              onChange={handleIncludeExcludedChange}
+              disabled={recommendationsQuery.isLoading}
+            />
+            <span>Show avoided</span>
+          </label>
+        }
+      />
+
+      {recommendationsQuery.isLoading ? (
+        <p className="detail-muted">Loading recommendations...</p>
+      ) : recommendationsQuery.isError ? (
+        <p className="detail-muted">Could not load recommendations.</p>
+      ) : recommendations.length === 0 ? (
+        <div className={styles.emptyState}>
+          <p>
+            {includeExcluded
+              ? "No recommendations to show."
+              : "No products match your profile yet. Check back after adding skin concerns."}
+          </p>
+        </div>
+      ) : (
+        <>
+          <section
+            className={styles.listSection}
+            aria-label="Ranked recommendations"
+          >
+            <ul className={styles.list}>
+              {recommendations.map((match) => (
+                <li key={match.formulation_id} className={styles.listItem}>
+                  <div className={styles.productInfo}>
+                    <div>
+                      <span className={styles.brand}>{match.brand_name}</span>
+                      <h2 className={styles.productName}>
+                        {match.product_name}
+                      </h2>
+                    </div>
+                    {match.reasons.length > 0 && (
+                      <p className={styles.reason}>{match.reasons[0]}</p>
+                    )}
+                  </div>
+                  <ScoreBadge
+                    score={match.final_score}
+                    excluded={match.excluded}
+                    hasWarnings={match.warnings.length > 0}
+                  />
+                </li>
+              ))}
+            </ul>
+          </section>
+
+          {pageCount > 1 && (
+            <section className={styles.paginationSection}>
+              <Button
+                variant="secondary"
+                onPress={() => setPage((p) => Math.max(1, p - 1))}
+                isDisabled={page === 1 || recommendationsQuery.isLoading}
+              >
+                Previous
+              </Button>
+              <span className={styles.pageIndicator}>
+                Page {page} of {pageCount}
+              </span>
+              <Button
+                variant="secondary"
+                onPress={() => setPage((p) => Math.min(pageCount, p + 1))}
+                isDisabled={
+                  page === pageCount || recommendationsQuery.isLoading
+                }
+              >
+                Next
+              </Button>
+            </section>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
