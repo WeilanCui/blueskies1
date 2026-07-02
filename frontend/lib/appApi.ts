@@ -733,6 +733,8 @@ export type ConstraintImpact = {
   source: "constraint" | "concern";
   concern: string | null;
   position_factor: number | null;
+  evidence_count: number | null;
+  evidence_multiplier: number | null;
 };
 
 export type CoverageSummary = {

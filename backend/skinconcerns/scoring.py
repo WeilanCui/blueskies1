@@ -15,7 +15,63 @@ from core.profiles.matching import (
     position_factor,
 )
 from core.profiles.constraints import ConstraintImpact
-from skinconcerns.models import RuleTargetType, ConcernRule
+from skinconcerns.models import RuleTargetType, ConcernRule, ConcernEvidence
+
+# Evidence type weights for multiplier calculation
+EVIDENCE_TYPE_WEIGHTS = {
+    "clinical": 0.15,
+    "regulatory": 0.12,
+    "safety": 0.12,
+    "public_guidance": 0.08,
+    "rule": 0.05,
+    "definition": 0.05,
+}
+
+# Multiplier bounds
+EVIDENCE_MULT_MIN = 0.6
+EVIDENCE_MULT_MAX = 1.3
+
+
+def evidence_multiplier(rule: ConcernRule) -> tuple[float, int]:
+    """
+    Compute evidence multiplier for a rule based on its active evidence.
+
+    Only counts rule-scoped evidence (rule_id is not null), not concern-scoped evidence.
+    Deduplicates by distinct literature_reference_id (each reference counts its type weight once).
+
+    Returns:
+        Tuple of (multiplier, evidence_count) where:
+        - multiplier: float in [0.6, 1.3]
+        - evidence_count: int number of distinct references
+    """
+    # Get active rule-scoped evidence (rule_id is not null), distinct by literature_reference
+    evidence_rows = rule.evidence_links.filter(
+        is_active=True,
+        rule_id__isnull=False,
+    ).values("literature_reference_id", "evidence_type").distinct()
+
+    # Deduplicate by literature_reference_id, taking max weight per reference
+    refs_weights = {}
+    for row in evidence_rows:
+        ref_id = row["literature_reference_id"]
+        evidence_type = row["evidence_type"]
+        weight = EVIDENCE_TYPE_WEIGHTS.get(evidence_type, 0.0)
+
+        # If this ref already seen, keep the max weight
+        if ref_id in refs_weights:
+            refs_weights[ref_id] = max(refs_weights[ref_id], weight)
+        else:
+            refs_weights[ref_id] = weight
+
+    # Compute multiplier: clamp(0.6 + sum(weights), 0.6, 1.3)
+    total_weight = sum(refs_weights.values())
+    multiplier = round(
+        max(EVIDENCE_MULT_MIN, min(EVIDENCE_MULT_MAX, EVIDENCE_MULT_MIN + total_weight)),
+        4,
+    )
+    evidence_count = len(refs_weights)
+
+    return multiplier, evidence_count
 
 
 @dataclass(frozen=True)
@@ -39,10 +95,14 @@ class ConcernRuleEvaluator:
         if not skin_profile:
             return {}
 
-        # Prefetch active rules for each concern to avoid N+1 queries
+        # Prefetch active rules with their evidence links for evidence multiplier computation
+        evidence_prefetch = Prefetch(
+            "evidence_links",
+            queryset=ConcernEvidence.objects.filter(is_active=True),
+        )
         active_rules_prefetch = Prefetch(
             "concern__rules",
-            queryset=ConcernRule.objects.filter(is_active=True),
+            queryset=ConcernRule.objects.filter(is_active=True).prefetch_related(evidence_prefetch),
             to_attr="active_rules",
         )
 
@@ -51,15 +111,23 @@ class ConcernRuleEvaluator:
             "concern"
         ).prefetch_related(active_rules_prefetch)
 
-        # Build list of (concern, confidence, rules)
+        # Build list of (concern, confidence, rules) and compute evidence multipliers
         concerns_data = []
+        rule_multipliers = {}  # Cache multipliers: rule_id -> (multiplier, evidence_count)
+
         for link in active_links:
             concern = link.concern
             # Read prefetched active rules
             active_rules = concern.active_rules
+
+            # Precompute evidence multiplier for each rule
+            for rule in active_rules:
+                if rule.id not in rule_multipliers:
+                    rule_multipliers[rule.id] = evidence_multiplier(rule)
+
             concerns_data.append((concern, link.confidence, list(active_rules)))
 
-        return {"concerns_data": concerns_data}
+        return {"concerns_data": concerns_data, "rule_multipliers": rule_multipliers}
 
     def evaluate(
         self, profile: Profile, formulation: Formulation, context: dict | None = None
@@ -71,6 +139,7 @@ class ConcernRuleEvaluator:
         impacts = []
         coverage_summaries = []
         concerns_data = context.get("concerns_data", [])
+        rule_multipliers = context.get("rule_multipliers", {})
 
         for concern, link_confidence, rules in concerns_data:
             matched_labels = []
@@ -80,10 +149,16 @@ class ConcernRuleEvaluator:
                 # Check if rule target matches formulation
                 match_result = self._matches_rule_target(rule, formulation)
 
-                # Calculate delta. `weight` is a magnitude — its sign in seed
-                # data is incidental (e.g. PENALIZE stores -10); `rule_kind`
-                # alone controls the direction below, so take the magnitude.
+                # Calculate base delta (without evidence multiplier yet).
+                # `weight` is a magnitude — its sign in seed data is incidental
+                # (e.g. PENALIZE stores -10); `rule_kind` controls direction.
                 delta = round(abs(rule.weight) * link_confidence)
+
+                # Get evidence multiplier for this rule
+                evidence_mult, evidence_count = rule_multipliers.get(rule.id, (EVIDENCE_MULT_MIN, 0))
+
+                # Apply evidence multiplier to delta for concern-sourced rules
+                delta = round(delta * evidence_mult)
 
                 # Determine enforcement and score_delta based on rule kind
                 pos_factor = None
@@ -160,6 +235,8 @@ class ConcernRuleEvaluator:
                     source="concern",
                     concern_slug=concern.slug,
                     position_factor=pos_factor,
+                    evidence_count=evidence_count,
+                    evidence_multiplier=evidence_mult,
                 )
                 impacts.append(impact)
 
