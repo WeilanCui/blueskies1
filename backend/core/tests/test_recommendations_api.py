@@ -578,8 +578,11 @@ class RecommendationConcernRuleAPITests(APITestCase):
 
     def test_avoid_rule_warns_never_excludes(self):
         """AVOID rule produces warnings but never excludes formulation."""
+        # Deactivate the setUp PENALIZE rule so only the AVOID rule fires
+        self.rule.is_active = False
+        self.rule.save()
         # Create AVOID rule instead of PENALIZE
-        avoid_rule = ConcernRule.objects.create(
+        ConcernRule.objects.create(
             concern=self.concern,
             key="avoid-retinol-sensitivity",
             label="Avoid Retinol (Sensitivity)",
