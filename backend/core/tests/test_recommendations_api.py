@@ -284,6 +284,8 @@ class RecommendationListAPITests(APITestCase):
         excluded_items = [r for r in results if r["excluded"]]
         self.assertEqual(len(excluded_items), 1)
         self.assertEqual(excluded_items[0]["final_score"], 0)
+        # Verify excluded item appears at the end
+        self.assertTrue(results[-1]["excluded"])
 
     def test_list_pagination(self):
         """Results are paginated at 20 per page."""

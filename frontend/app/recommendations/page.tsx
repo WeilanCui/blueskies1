@@ -55,7 +55,10 @@ export default function RecommendationsPage() {
     if (newValue) {
       params.set("include_excluded", "true");
     }
-    router.push(`/recommendations?${params.toString()}`, { scroll: false });
+    router.push(
+      newValue ? `/recommendations?${params.toString()}` : "/recommendations",
+      { scroll: false },
+    );
   }
 
   if (meQuery.isLoading || meQuery.isError) {
