@@ -3,14 +3,18 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Iterable
 
-from django.db.models import Q
-
 from core.models import (
     ConstraintEnforcement,
     ConstraintSeverity,
     Formulation,
     Profile,
     ProfileConstraint,
+)
+from core.profiles.matching import (
+    matches_chemical_class,
+    matches_compound,
+    matches_property,
+    matches_raw_label,
 )
 
 
@@ -32,6 +36,8 @@ class ConstraintImpact:
     target: str
     reason: str
     score_delta: int
+    source: str = "constraint"
+    concern_slug: str | None = None
 
 
 @dataclass
@@ -97,67 +103,25 @@ class ProfileConstraintEvaluator:
             return constraint.formulation_id == formulation.id  # pyright: ignore[reportAttributeAccessIssue]
 
         if constraint.compound_id:  # pyright: ignore[reportAttributeAccessIssue]
-            return formulation.ingredients.filter(  # pyright: ignore[reportAttributeAccessIssue]
-                compound_id=constraint.compound_id,  # pyright: ignore[reportAttributeAccessIssue]
-            ).exists()
+            return matches_compound(
+                formulation, constraint.compound_id  # pyright: ignore[reportAttributeAccessIssue]
+            )
 
         if constraint.chemical_class_id:  # pyright: ignore[reportAttributeAccessIssue]
-            return formulation.ingredients.filter(  # pyright: ignore[reportAttributeAccessIssue]
-                compound__chemical_class_memberships__chemical_class_id=(
-                    constraint.chemical_class_id  # pyright: ignore[reportAttributeAccessIssue]
-                ),
-                compound__chemical_class_memberships__is_active=True,
-            ).exists()
+            return matches_chemical_class(
+                formulation, constraint.chemical_class_id  # pyright: ignore[reportAttributeAccessIssue]
+            )
 
         if constraint.property_def_id:  # pyright: ignore[reportAttributeAccessIssue]
-            return self._matches_property_constraint(constraint, formulation)
+            return matches_property(
+                formulation, constraint.property_def_id  # pyright: ignore[reportAttributeAccessIssue]
+            )
 
         if constraint.raw_label:
-            return self._matches_raw_label(constraint.raw_label, formulation)
+            return matches_raw_label(formulation, constraint.raw_label)
 
         return False
 
-    def _matches_property_constraint(
-        self,
-        constraint: ProfileConstraint,
-        formulation: Formulation,
-    ) -> bool:
-        property_def_id = constraint.property_def_id  # pyright: ignore[reportAttributeAccessIssue]
-        return Formulation.objects.filter(pk=formulation.pk).filter(
-            Q(
-                property_assertions__property_def_id=property_def_id,
-                property_assertions__is_active=True,
-            )
-            | Q(
-                ingredients__compound__property_assertions__property_def_id=(
-                    property_def_id
-                ),
-                ingredients__compound__property_assertions__is_active=True,
-            )
-            | Q(
-                ingredients__compound__chemical_class_memberships__is_active=True,
-                ingredients__compound__chemical_class_memberships__chemical_class__property_assertions__property_def_id=property_def_id,
-                ingredients__compound__chemical_class_memberships__chemical_class__property_assertions__is_active=True,
-            )
-        ).exists()
-
-    def _matches_raw_label(self, raw_label: str, formulation: Formulation) -> bool:
-        label = raw_label.strip()
-        if not label:
-            return False
-
-        return Formulation.objects.filter(pk=formulation.pk).filter(
-            Q(product__name__icontains=label)
-            | Q(product__brand__name__icontains=label)
-            | Q(version_label__icontains=label)
-            | Q(market__icontains=label)
-            | Q(made_in__icontains=label)
-            | Q(barcode__icontains=label)
-            | Q(raw_inci_text__icontains=label)
-            | Q(ingredients__raw_text__icontains=label)
-            | Q(ingredients__compound__canonical_inci__icontains=label)
-            | Q(ingredients__compound__display_name__icontains=label)
-        ).exists()
 
     def _impact_for_constraint(
         self,

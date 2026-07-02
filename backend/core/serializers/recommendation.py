@@ -12,6 +12,8 @@ class RecommendationImpactSerializer(serializers.Serializer):
     target = serializers.CharField(read_only=True)
     reason = serializers.CharField(read_only=True)
     score_delta = serializers.IntegerField(read_only=True)
+    source = serializers.CharField(read_only=True)
+    concern = serializers.CharField(source="concern_slug", allow_null=True, read_only=True)
 
 
 class RecommendationMatchSerializer(serializers.Serializer):

@@ -46,8 +46,13 @@ class RecommendationMatch:
 class RecommendationMatcher:
     """Score and rank formulations against a profile's flexible constraints."""
 
-    def __init__(self, evaluator: ProfileConstraintEvaluator | None = None):
+    def __init__(
+        self,
+        evaluator: ProfileConstraintEvaluator | None = None,
+        extra_evaluators: list | None = None,
+    ):
         self.evaluator = evaluator or ProfileConstraintEvaluator()
+        self.extra_evaluators = extra_evaluators or []
 
     def match_formulation(
         self,
@@ -56,12 +61,29 @@ class RecommendationMatcher:
         *,
         base_score: int = 100,
         constraints: Iterable[ProfileConstraint] | None = None,
+        context: dict | None = None,
     ) -> RecommendationMatch:
         evaluation = self.evaluator.evaluate_formulation(
             profile,
             formulation,
             constraints=constraints,
         )
+
+        # Merge impacts from extra evaluators
+        for evaluator in self.extra_evaluators:
+            extra_impacts = evaluator.evaluate(profile, formulation, context=context)
+            for impact in extra_impacts:
+                evaluation.matched_constraints.append(impact)
+
+                # Group by enforcement kind
+                if impact.enforcement == "warn":
+                    evaluation.warnings.append(impact)
+                elif impact.enforcement == "penalize":
+                    evaluation.penalties.append(impact)
+                elif impact.enforcement == "boost":
+                    evaluation.boosts.append(impact)
+                # "inform" goes to matched_constraints only, not to any group
+
         return RecommendationMatch(
             formulation=formulation,
             evaluation=evaluation,
@@ -83,12 +105,22 @@ class RecommendationMatcher:
             if constraints is None
             else list(constraints)
         )
+
+        # Prepare context once per run for all evaluators
+        context: dict = {}
+        for evaluator in self.extra_evaluators:
+            if hasattr(evaluator, "prepare"):
+                prepare_context = evaluator.prepare(profile)
+                if prepare_context is not None:
+                    context.update(prepare_context if isinstance(prepare_context, dict) else {"context": prepare_context})
+
         matches = [
             self.match_formulation(
                 profile,
                 formulation,
                 base_score=base_score,
                 constraints=constraints_for_run,
+                context=context,
             )
             for formulation in formulations
         ]

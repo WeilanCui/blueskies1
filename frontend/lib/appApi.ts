@@ -730,6 +730,8 @@ export type ConstraintImpact = {
   target: string;
   reason: string;
   score_delta: number;
+  source: "constraint" | "concern";
+  concern: string | null;
 };
 
 export type RecommendationMatch = {

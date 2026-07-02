@@ -12,6 +12,14 @@ from core.models import (
     ProfileConstraint,
     ProfileConstraintKind,
     Product,
+    SkinProfile,
+)
+from skinconcerns.models import (
+    ConcernRule,
+    RuleKind,
+    RuleTargetType,
+    SkinConcern,
+    SkinProfileConcern,
 )
 
 
@@ -372,3 +380,198 @@ class RecommendationListAPITests(APITestCase):
 
         # All 3 formulations should be returned
         self.assertEqual(len(results), 3)
+
+
+class RecommendationConcernRuleAPITests(APITestCase):
+    """Test concern rule impacts in recommendation API."""
+
+    def setUp(self):
+        self.client = APIClient()
+        self.user = User.objects.create_user(username="concernuser", password="testpass")
+        self.profile = Profile.objects.create(user=self.user, handle="concernuser")
+        self.skin_profile = SkinProfile.objects.create(
+            profile=self.profile, is_current=True
+        )
+
+        # Create a basic formulation
+        self.brand = Brand.objects.create(name="TestBrand")
+        self.product = Product.objects.create(name="TestProduct", brand=self.brand)
+        self.formulation = Formulation.objects.create(
+            product=self.product,
+            raw_inci_text="Water, Retinol",
+        )
+        FormulationIngredient.objects.create(
+            formulation=self.formulation,
+            position=1,
+            raw_text="Water",
+        )
+
+        # Create a compound for concern rule testing
+        self.retinol = Compound.objects.create(
+            canonical_inci="RETINOL",
+            display_name="Retinol",
+        )
+        FormulationIngredient.objects.create(
+            formulation=self.formulation,
+            position=2,
+            raw_text="Retinol",
+            compound=self.retinol,
+        )
+
+        # Create a concern and rule
+        self.concern = SkinConcern.objects.create(
+            slug="sensitivity",
+            display_name="Sensitivity",
+            consumer_label="Sensitive skin",
+        )
+        self.rule = ConcernRule.objects.create(
+            concern=self.concern,
+            key="avoid-retinol",
+            label="Avoid Retinol",
+            rule_kind=RuleKind.PENALIZE,
+            target_type=RuleTargetType.COMPOUND,
+            compound=self.retinol,
+            weight=10,
+            rationale="Retinol can irritate sensitive skin.",
+        )
+
+    def test_concern_rule_impact_includes_source_and_concern_slug(self):
+        """Score response includes concern-sourced impacts with source and concern."""
+        # Link user to concern
+        SkinProfileConcern.objects.create(
+            skin_profile=self.skin_profile,
+            concern=self.concern,
+            confidence=1.0,
+        )
+
+        self.client.force_login(self.user)
+        response = self.client.post(
+            "/api/recommendations/score/",
+            {"formulation_id": self.formulation.id},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+
+        # Check penalties include concern-sourced impact
+        self.assertGreater(len(data["penalties"]), 0)
+        concern_impact = None
+        for impact in data["penalties"]:
+            if impact.get("source") == "concern":
+                concern_impact = impact
+                break
+
+        self.assertIsNotNone(concern_impact)
+        self.assertEqual(concern_impact["source"], "concern")
+        self.assertEqual(concern_impact["concern"], "sensitivity")
+        self.assertIn("sensitive skin", concern_impact["reason"].lower())
+
+    def test_constraint_impact_source_is_constraint(self):
+        """Constraint impacts have source: constraint."""
+        # Create a constraint in addition to concern rule
+        ProfileConstraint.objects.create(
+            profile=self.profile,
+            kind=ProfileConstraintKind.ALLERGY,
+            enforcement=ConstraintEnforcement.PENALIZE,
+            severity=ConstraintSeverity.MODERATE,
+            compound=self.retinol,
+            is_active=True,
+        )
+
+        # Link user to concern
+        SkinProfileConcern.objects.create(
+            skin_profile=self.skin_profile,
+            concern=self.concern,
+            confidence=1.0,
+        )
+
+        self.client.force_login(self.user)
+        response = self.client.post(
+            "/api/recommendations/score/",
+            {"formulation_id": self.formulation.id},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+
+        # Should have both constraint and concern impacts
+        penalties = data["penalties"]
+        self.assertGreaterEqual(len(penalties), 2)
+
+        sources = [impact["source"] for impact in penalties]
+        self.assertIn("constraint", sources)
+        self.assertIn("concern", sources)
+
+    def test_no_concern_selected_behaves_like_constraint_only(self):
+        """Profile with no concerns scores identically to constraint-only scoring."""
+        # Don't link any concerns
+        self.client.force_login(self.user)
+        response = self.client.post(
+            "/api/recommendations/score/",
+            {"formulation_id": self.formulation.id},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+
+        # With no concerns and no constraints, score should be base (100)
+        self.assertEqual(data["final_score"], 100)
+        self.assertEqual(len(data["penalties"]), 0)
+
+    def test_inactive_concern_link_ignored(self):
+        """Inactive SkinProfileConcern does not produce impacts."""
+        # Create inactive link
+        SkinProfileConcern.objects.create(
+            skin_profile=self.skin_profile,
+            concern=self.concern,
+            confidence=1.0,
+            is_active=False,
+        )
+
+        self.client.force_login(self.user)
+        response = self.client.post(
+            "/api/recommendations/score/",
+            {"formulation_id": self.formulation.id},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+
+        # No concern impacts should be present
+        for impact in data["penalties"]:
+            self.assertEqual(impact["source"], "constraint")
+
+    def test_list_endpoint_includes_concern_impacts(self):
+        """GET /api/recommendations/ includes concern-sourced impacts."""
+        # Link user to concern
+        SkinProfileConcern.objects.create(
+            skin_profile=self.skin_profile,
+            concern=self.concern,
+            confidence=1.0,
+        )
+
+        self.client.force_login(self.user)
+        response = self.client.get("/api/recommendations/")
+
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        results = data["results"]
+
+        # Find our test formulation
+        test_result = None
+        for result in results:
+            if result["formulation_id"] == self.formulation.id:
+                test_result = result
+                break
+
+        self.assertIsNotNone(test_result)
+        # Should have penalties from concern rule
+        self.assertGreater(len(test_result["penalties"]), 0)
+
+        # Check that at least one penalty has source="concern"
+        concern_penalties = [p for p in test_result["penalties"] if p.get("source") == "concern"]
+        self.assertGreater(len(concern_penalties), 0)

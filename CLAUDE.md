@@ -55,15 +55,15 @@ Two Django apps: `core` (domain models, API, profiles, services) and `literature
 
 **Ingestion & enrichment** live in `literature/ingestion/` (`formulation_ingest.py`, `inci_ingest.py`, `ingest.py`, plus `pubchem_client.py`, `pubmed_client.py`, `inci_client.py`) and `literature/enrichment/`. External API bases/keys come from settings (`INCI_API_*`, `SKINCARE_API_BASE`, `EPA_UV_API_BASE`, `OPENAI_*`, `LITERATURE_EXTRACTOR`). Note: the cursor plan references `core/ingestion/` — actual path is `literature/ingestion/`.
 
-**Profiles** (`core/profiles/`): `constraints.py` and `recommendations.py` implement flexible per-user constraint matching (hard exclusions, cautions, penalties, boosts, informational).
+**Profiles** (`core/profiles/`): `constraints.py`, `recommendations.py`, and `matching.py` implement flexible per-user constraint matching (hard exclusions, cautions, penalties, boosts, informational). Recommendation matching is extensible via injectable `extra_evaluators` — `skinconcerns/scoring.py` provides `ConcernRuleEvaluator` which scores live `ConcernRule`s from selected skin concerns (reads concerns' active rules, matches them against formulations, scales delta by confidence). Concern rules produce impacts marked `source="concern"` alongside constraint impacts (`source="constraint"`). Note: AVOID rules produce warning-level impacts and negative deltas (caution + penalty, not exclusion).
 
 **Celery**: app defined in `config/celery.py`, broker/result on Redis. `core/tasks.py` holds `@shared_task`s; `daily_literature_discovery_task` runs nightly via `CELERY_BEAT_SCHEDULE` (configurable through `LITERATURE_DAILY_*` env vars). Keep tasks idempotent and observable.
 
 **API conventions**: DRF throttling is enabled with named scopes (`anon`, `user`, `auth`, `signup`, `contact`, `formulation_submit`) — see `core/throttles.py` and `REST_FRAMEWORK` settings; rates are env-overridable. Auth is session-based via `SessionAuthViewSet`. Keep request/response logic in views/viewsets, domain behavior in model methods.
 
 **Recommendation endpoints** (`RecommendationViewSet`):
-- `POST /api/recommendations/score/` — score a single formulation against the authenticated user's profile constraints. Request: `{ "formulation_id": <id> }`. Response: `RecommendationMatch` with final_score, excluded, reasons, and impact groups (warnings, penalties, boosts).
-- `GET /api/recommendations/` — rank all formulations with a resolved product against the authenticated user's profile, paginated (20 per page), best-first. Query param `?include_excluded=true` includes hard-excluded formulations (sorted after non-excluded ones); default is false. Response: paginated list of `RecommendationMatch` objects.
+- `POST /api/recommendations/score/` — score a single formulation against the authenticated user's profile constraints and concern rules. Request: `{ "formulation_id": <id> }`. Response: `RecommendationMatch` with final_score, excluded, reasons, and impact groups (warnings, penalties, boosts). Each impact includes `source` ("constraint" or "concern") and concern-sourced impacts include `concern` (slug).
+- `GET /api/recommendations/` — rank all formulations with a resolved product against the authenticated user's profile, paginated (20 per page), best-first. Query param `?include_excluded=true` includes hard-excluded formulations (sorted after non-excluded ones); default is false. Response: paginated list of `RecommendationMatch` objects with concern impacts included.
 
 ## Frontend architecture
 
