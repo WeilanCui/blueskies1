@@ -45,6 +45,9 @@
   padding: 12px;
   gap: 8px;
   min-height: auto;
+  background-color: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
 }
 
 .productInfo {
@@ -132,5 +135,6 @@
   .pageIndicator {
     width: auto;
     order: unset;
+    min-width: 120px;
   }
 }

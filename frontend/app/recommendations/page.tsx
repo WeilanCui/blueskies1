@@ -5,7 +5,6 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 import { AppPageHeader } from "../../components/AppPageHeader";
 import { Button } from "../../components/Button";
-import { Panel } from "../../components/Panel";
 import { ScoreBadge } from "../../components/ScoreBadge";
 import { getMe, getRankedRecommendations } from "../../lib/appApi";
 import styles from "./recommendations.module.css";
@@ -104,11 +103,7 @@ function RecommendationsContent() {
           >
             <ul className={styles.list}>
               {recommendations.map((match) => (
-                <Panel
-                  as="li"
-                  key={match.formulation_id}
-                  className={styles.listItem}
-                >
+                <li key={match.formulation_id} className={styles.listItem}>
                   <div className={styles.productInfo}>
                     <div>
                       <span className={styles.brand}>{match.brand_name}</span>
@@ -125,7 +120,7 @@ function RecommendationsContent() {
                     excluded={match.excluded}
                     hasWarnings={match.warnings.length > 0}
                   />
-                </Panel>
+                </li>
               ))}
             </ul>
           </section>
