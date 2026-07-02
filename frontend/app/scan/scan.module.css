@@ -553,7 +553,7 @@
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  color: #d1d5db;
+  color: var(--muted);
   font-weight: 500;
   font-size: 0.9rem;
 }

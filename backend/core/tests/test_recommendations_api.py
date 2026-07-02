@@ -546,6 +546,16 @@ class RecommendationConcernRuleAPITests(APITestCase):
 
     def test_list_endpoint_includes_concern_impacts(self):
         """GET /api/recommendations/ includes concern-sourced impacts."""
+        # Add a RECOMMEND rule so the rank endpoint carries coverage too
+        ConcernRule.objects.create(
+            concern=self.concern,
+            key="recommend-retinol-alt",
+            label="Retinol",
+            rule_kind=RuleKind.RECOMMEND,
+            target_type=RuleTargetType.COMPOUND,
+            compound=self.retinol,
+            weight=10,
+        )
         # Link user to concern
         SkinProfileConcern.objects.create(
             skin_profile=self.skin_profile,
@@ -559,6 +569,11 @@ class RecommendationConcernRuleAPITests(APITestCase):
         self.assertEqual(response.status_code, 200)
         data = response.json()
         results = data["results"]
+
+        # Every ranked result carries a coverage array
+        for result in results:
+            self.assertIn("coverage", result)
+            self.assertIsInstance(result["coverage"], list)
 
         # Find our test formulation
         matches = [
@@ -575,6 +590,14 @@ class RecommendationConcernRuleAPITests(APITestCase):
         # Check that at least one penalty has source="concern"
         concern_penalties = [p for p in test_result["penalties"] if p.get("source") == "concern"]
         self.assertGreater(len(concern_penalties), 0)
+
+        # Rank endpoint carries the coverage shape for the RECOMMEND match
+        self.assertEqual(len(test_result["coverage"]), 1)
+        cov = test_result["coverage"][0]
+        self.assertEqual(cov["concern"], "sensitivity")
+        self.assertEqual(cov["matched"], 1)
+        self.assertEqual(cov["total"], 1)
+        self.assertIn("Retinol", cov["matched_rules"])
 
     def test_avoid_rule_warns_never_excludes(self):
         """AVOID rule produces warnings but never excludes formulation."""
