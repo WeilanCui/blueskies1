@@ -46,8 +46,13 @@ class RecommendationMatch:
 class RecommendationMatcher:
     """Score and rank formulations against a profile's flexible constraints."""
 
-    def __init__(self, evaluator: ProfileConstraintEvaluator | None = None):
+    def __init__(
+        self,
+        evaluator: ProfileConstraintEvaluator | None = None,
+        extra_evaluators: list | None = None,
+    ):
         self.evaluator = evaluator or ProfileConstraintEvaluator()
+        self.extra_evaluators = extra_evaluators or []
 
     def match_formulation(
         self,
@@ -56,12 +61,34 @@ class RecommendationMatcher:
         *,
         base_score: int = 100,
         constraints: Iterable[ProfileConstraint] | None = None,
+        contexts: dict[int, object] | None = None,
     ) -> RecommendationMatch:
         evaluation = self.evaluator.evaluate_formulation(
             profile,
             formulation,
             constraints=constraints,
         )
+
+        # Merge impacts from extra evaluators. Contexts are namespaced by
+        # evaluator index so multiple evaluators' prepare() results never
+        # collide under a shared key.
+        for index, evaluator in enumerate(self.extra_evaluators):
+            evaluator_context = None if contexts is None else contexts.get(index)
+            extra_impacts = evaluator.evaluate(
+                profile, formulation, context=evaluator_context
+            )
+            for impact in extra_impacts:
+                evaluation.matched_constraints.append(impact)
+
+                # Group by enforcement kind
+                if impact.enforcement == "warn":
+                    evaluation.warnings.append(impact)
+                elif impact.enforcement == "penalize":
+                    evaluation.penalties.append(impact)
+                elif impact.enforcement == "boost":
+                    evaluation.boosts.append(impact)
+                # "inform" goes to matched_constraints only, not to any group
+
         return RecommendationMatch(
             formulation=formulation,
             evaluation=evaluation,
@@ -83,12 +110,21 @@ class RecommendationMatcher:
             if constraints is None
             else list(constraints)
         )
+
+        # Prepare per-evaluator context once per run, namespaced by index so
+        # one evaluator's context can never clobber another's.
+        contexts: dict[int, object] = {}
+        for index, evaluator in enumerate(self.extra_evaluators):
+            if hasattr(evaluator, "prepare"):
+                contexts[index] = evaluator.prepare(profile)
+
         matches = [
             self.match_formulation(
                 profile,
                 formulation,
                 base_score=base_score,
                 constraints=constraints_for_run,
+                contexts=contexts,
             )
             for formulation in formulations
         ]

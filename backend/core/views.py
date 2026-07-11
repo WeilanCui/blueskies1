@@ -50,6 +50,7 @@ from core.serializers import (
     serialize_catalog_product,
 )
 from core.profiles.recommendations import RecommendationMatcher
+from skinconcerns.scoring import ConcernRuleEvaluator
 from core.services.weather import get_or_fetch_uv_snapshot
 from core.throttles import (
     AuthRateThrottle,
@@ -615,7 +616,9 @@ class RecommendationViewSet(viewsets.ViewSet):
 
     def list(self, request):
         profile, _ = Profile.objects.get_or_create(user=request.user)
-        matcher = RecommendationMatcher()
+        matcher = RecommendationMatcher(
+            extra_evaluators=[ConcernRuleEvaluator()]
+        )
 
         # Get all formulations with a resolved product
         formulations = Formulation.objects.filter(product__isnull=False).select_related(
@@ -651,7 +654,9 @@ class RecommendationViewSet(viewsets.ViewSet):
             pk=formulation_id,
         )
 
-        matcher = RecommendationMatcher()
+        matcher = RecommendationMatcher(
+            extra_evaluators=[ConcernRuleEvaluator()]
+        )
         match = matcher.match_formulation(profile, formulation)
 
         return Response(

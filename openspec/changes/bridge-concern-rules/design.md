@@ -5,11 +5,13 @@
 ## Goals / Non-Goals
 
 **Goals:**
+
 - Selecting a concern measurably changes scores using seeded rules — no manual constraint entry.
 - One combined, explainable evaluation: every impact says whether it came from a constraint or a concern rule, and why.
 - Reuse the existing target-matching semantics; do not fork the matching logic.
 
 **Non-Goals:**
+
 - RECOMMEND coverage scoring (follow-up change `recommend-rule-coverage`).
 - Evidence/literature modulation of weights (follow-up `evidence-weighted-rules`).
 - Writing to `skinconcerns` tables, changing seeds, or UI for editing rules.
@@ -20,7 +22,7 @@
 **1. Live second evaluator, not materialized ProfileConstraints.**
 Materializing (syncing rules × concerns into derived `ProfileConstraint` rows) keeps the engine untouched but creates a shadow table that drifts: rule edits, concern deselection, and confidence updates all need sync hooks, and derived rows pollute the user's hand-entered constraint list in every UI that reads it. A `ConcernRuleEvaluator` reads live data, needs no lifecycle management, and makes provenance trivial (`source="concern"`). Cost: the matcher grows a second input path — acceptable, it is one composition point.
 
-**2. Evaluator lives in `core/profiles/concern_rules.py`; imports from `skinconcerns`.**
+**2. Evaluator lives in `skinconcerns/scoring.py`, injected into the matcher by the view.**
 `core` may not import from `skinconcerns` if `skinconcerns` already imports from `core` (it does: FKs to `core.Compound` etc. — but those are string references, and `skinconcerns.services` imports core models directly). Direction check: `skinconcerns` → `core` is the established dependency direction, so putting the evaluator in `skinconcerns` and having `core.profiles.recommendations` import it would invert nothing… but would make `core` depend on `skinconcerns`. Resolution: define a narrow protocol — `RecommendationMatcher` accepts an optional list of extra evaluators implementing `evaluate(profile, formulation) -> list[Impact]`; the concrete `ConcernRuleEvaluator` lives in `skinconcerns/scoring.py`, and the API view (which already knows both apps) injects it. Neither app gains a hard model-level dependency on the other; `core`'s engine stays framework-pure.
 
 **3. Shared target matching via extraction.**
