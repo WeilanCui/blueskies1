@@ -5,11 +5,13 @@
 ## Goals / Non-Goals
 
 **Goals:**
+
 - Selecting a concern measurably changes scores using seeded rules — no manual constraint entry.
 - One combined, explainable evaluation: every impact says whether it came from a constraint or a concern rule, and why.
 - Reuse the existing target-matching semantics; do not fork the matching logic.
 
 **Non-Goals:**
+
 - RECOMMEND coverage scoring (follow-up change `recommend-rule-coverage`).
 - Evidence/literature modulation of weights (follow-up `evidence-weighted-rules`).
 - Writing to `skinconcerns` tables, changing seeds, or UI for editing rules.
