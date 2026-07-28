@@ -46,6 +46,38 @@ from core.services.weather import get_or_create_shared_location
 User = get_user_model()
 
 
+SKIN_CONCERN_SECTIONS = [
+    {
+        "title": "Skin concerns",
+        "items": [
+            {
+                "value": "acne_blemishes",
+                "label": "Acne blemishes: breakouts, post-acne marks",
+            },
+            {"value": "dehydrated_dryness", "label": "Dehydrated / dryness"},
+            {"value": "enlarged_pores", "label": "Enlarged pores"},
+            {"value": "dark_circles", "label": "Dark circles"},
+            {"value": "sun_damage", "label": "Sun damage"},
+            {
+                "value": "uneven_tone_hyperpigmentation_dull_skin",
+                "label": "Uneven skin tone, hyperpigmentation, dull skin",
+            },
+            {
+                "value": "wrinkles_firmness_elasticity",
+                "label": "Wrinkles / firmness / skin elasticity",
+            },
+            {
+                "value": "sensitive_reactive_skin",
+                "label": (
+                    "Sensitive or reactive skin: redness, reactive skin, "
+                    "sensitivity, damaged skin barrier"
+                ),
+            },
+        ],
+    }
+]
+
+
 class CompoundAliasSerializer(serializers.ModelSerializer):
     class Meta:
         model = CompoundAlias
@@ -1370,7 +1402,16 @@ def serialize_catalog_product(product: Product) -> dict:
 
 
 class IntakeSerializer(serializers.Serializer):
-    skin_type = serializers.ChoiceField(choices=SkinType.choices)
+    skin_type = serializers.ChoiceField(
+        choices=SkinType.choices,
+        required=False,
+        default=SkinType.UNKNOWN,
+    )
+    skin_types = serializers.ListField(
+        child=serializers.ChoiceField(choices=SkinType.choices),
+        required=False,
+        default=list,
+    )
     fitzpatrick_skin_type = serializers.ChoiceField(
         choices=FitzpatrickSkinType.choices,
         required=False,
@@ -1409,6 +1450,9 @@ class IntakeSerializer(serializers.Serializer):
     def validate_primary_concerns(self, value: list[str]) -> list[str]:
         return self._clean_unique_list(value)
 
+    def validate_skin_types(self, value: list[str]) -> list[str]:
+        return self._clean_unique_list(value)
+
     def validate_goals(self, value: list[str]) -> list[str]:
         return self._clean_unique_list(value)
 
@@ -1435,6 +1479,10 @@ class IntakeSerializer(serializers.Serializer):
         goals_text = data.get("goals_text", "").strip()
         if goals_text:
             goals = [*goals, goals_text]
+        skin_types = data.get("skin_types", [])
+        if not skin_types:
+            skin_types = [data.get("skin_type", SkinType.UNKNOWN)]
+        primary_skin_type = skin_types[0] if skin_types else SkinType.UNKNOWN
 
         current_profiles = profile.skin_profiles.filter(is_current=True).order_by(
             "-captured_at",
@@ -1448,7 +1496,8 @@ class IntakeSerializer(serializers.Serializer):
         skin_profile_values = {
             "label": "Initial intake",
             "is_current": True,
-            "skin_type": data["skin_type"],
+            "skin_type": primary_skin_type,
+            "skin_types": skin_types,
             "fitzpatrick_skin_type": data.get(
                 "fitzpatrick_skin_type",
                 FitzpatrickSkinType.NOT_PROVIDED,
@@ -1492,11 +1541,13 @@ def intake_payload(profile: Profile) -> dict:
     constraints = profile.constraints.filter(source="intake", is_active=True)
     return {
         "profile_id": profile.id,
+        "skin_concern_sections": SKIN_CONCERN_SECTIONS,
         "skin_profile": None
         if skin_profile is None
         else {
             "id": skin_profile.id,
             "skin_type": skin_profile.skin_type,
+            "skin_types": skin_profile.skin_types or [skin_profile.skin_type],
             "fitzpatrick_skin_type": skin_profile.fitzpatrick_skin_type,
             "primary_concerns": skin_profile.primary_concerns,
             "goals": skin_profile.goals,

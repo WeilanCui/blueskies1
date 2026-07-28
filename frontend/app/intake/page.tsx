@@ -3,9 +3,13 @@
 import { Input, Label, TextArea, TextField } from "@heroui/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 
 import { Button } from "../../components/Button";
+import { ConcernPicker } from "../../components/profile/ConcernPicker";
+import { SensitivityOptions } from "../../components/profile/SensitivityOptions";
+import { SkinTypeSelector } from "../../components/profile/SkinTypeSelector";
+import { useConcernZones } from "../../hooks/useConcernZones";
 import FaceMap from "../experience/FaceMap";
 import {
   getIntake,
@@ -14,193 +18,23 @@ import {
   type AuthResponse,
   type IntakePayload,
 } from "../../lib/appApi";
+import {
+  concernSections,
+  fitzpatrickTypeOptions,
+  toggleValue,
+  type FitzpatrickStyleKey,
+} from "../../lib/profileForm";
 import styles from "./intake.module.css";
 
-const skinTypes = [
-  ["dry", "Dry"],
-  ["oily", "Oily"],
-  ["combination", "Combination"],
-  ["normal", "Normal"],
-  ["sensitive", "Sensitive"],
-  ["unknown", "Not sure"],
-];
-
-const fitzpatrickTypes = [
-  {
-    value: "not_provided",
-    label: "Not sure",
-    tone: "Skip for now",
-    response: "You can update this later.",
-    className: styles.fitzpatrickTileNotProvided,
-  },
-  {
-    value: "type_i",
-    label: "Type I",
-    tone: "Ivory",
-    response: "Always freckles, always burns or peels, never tans.",
-    className: styles.fitzpatrickTileTypeI,
-  },
-  {
-    value: "type_ii",
-    label: "Type II",
-    tone: "Pale or fair",
-    response: "Usually freckles, often burns or peels, rarely tans.",
-    className: styles.fitzpatrickTileTypeII,
-  },
-  {
-    value: "type_iii",
-    label: "Type III",
-    tone: "Fair to beige",
-    response: "Might freckle, burns on occasion, sometimes tans.",
-    className: styles.fitzpatrickTileTypeIII,
-  },
-  {
-    value: "type_iv",
-    label: "Type IV",
-    tone: "Olive or light brown",
-    response: "Doesn't really freckle, rarely burns, often tans.",
-    className: styles.fitzpatrickTileTypeIV,
-  },
-  {
-    value: "type_v",
-    label: "Type V",
-    tone: "Dark brown",
-    response: "Rarely freckles, almost never burns, always tans.",
-    className: styles.fitzpatrickTileTypeV,
-  },
-  {
-    value: "type_vi",
-    label: "Type VI",
-    tone: "Deep brown",
-    response: "Never freckles, never burns, always tans.",
-    className: styles.fitzpatrickTileTypeVI,
-  },
-];
-
-const concernSections = [
-  {
-    title: "Breakouts & congestion",
-    items: [
-      ["acne", "Acne"],
-      ["clogged_pores", "Clogged pores"],
-      ["blackheads", "Blackheads"],
-      ["whiteheads", "Whiteheads"],
-    ],
-  },
-  {
-    title: "Sensitivity & inflammation",
-    items: [
-      ["redness", "Redness"],
-      ["stinging", "Stinging or burning"],
-      ["reactive_skin", "Reactive skin"],
-      ["rosacea_prone", "Rosacea-prone"],
-    ],
-  },
-  {
-    title: "Hydration & barrier",
-    items: [
-      ["dryness", "Dryness"],
-      ["dehydration", "Dehydration"],
-      ["flaking", "Flaking"],
-      ["tightness", "Tightness"],
-      ["barrier_damage", "Barrier damage"],
-    ],
-  },
-  {
-    title: "Oil & pores",
-    items: [
-      ["oiliness", "Oiliness"],
-      ["enlarged_pores", "Enlarged pores"],
-      ["shine", "Shine"],
-      ["sebaceous_filaments", "Sebaceous filaments"],
-    ],
-  },
-  {
-    title: "Tone & pigment",
-    items: [
-      ["dark_spots", "Dark spots"],
-      ["hyperpigmentation", "Hyperpigmentation"],
-      ["melasma_prone", "Melasma-prone"],
-      ["post_acne_marks", "Post-acne marks"],
-    ],
-  },
-  {
-    title: "Texture & dullness",
-    items: [
-      ["roughness", "Roughness"],
-      ["bumps", "Bumps"],
-      ["uneven_texture", "Uneven texture"],
-      ["dullness", "Dullness"],
-    ],
-  },
-  {
-    title: "Aging & firmness",
-    items: [
-      ["fine_lines", "Fine lines"],
-      ["wrinkles", "Wrinkles"],
-      ["loss_of_firmness", "Loss of firmness"],
-    ],
-  },
-  {
-    title: "Eye area",
-    items: [
-      ["dark_circles", "Dark circles"],
-      ["puffiness", "Puffiness"],
-      ["eye_fine_lines", "Eye-area fine lines"],
-    ],
-  },
-];
-
-const concernZones: Record<string, string[]> = {
-  acne: ["forehead", "cheeks", "chin"],
-  clogged_pores: ["nose", "chin"],
-  blackheads: ["nose", "chin"],
-  whiteheads: ["forehead", "chin"],
-  redness: ["cheeks", "nose"],
-  stinging: ["cheeks"],
-  reactive_skin: ["cheeks", "forehead"],
-  rosacea_prone: ["cheeks", "nose"],
-  dryness: ["cheeks", "lips"],
-  dehydration: ["cheeks", "forehead"],
-  flaking: ["cheeks", "chin"],
-  tightness: ["cheeks"],
-  barrier_damage: ["cheeks", "forehead"],
-  oiliness: ["forehead", "nose", "chin"],
-  enlarged_pores: ["nose", "cheeks"],
-  shine: ["forehead", "nose"],
-  sebaceous_filaments: ["nose"],
-  dark_spots: ["cheeks", "forehead"],
-  hyperpigmentation: ["cheeks", "forehead"],
-  melasma_prone: ["cheeks", "forehead"],
-  post_acne_marks: ["cheeks", "chin"],
-  roughness: ["cheeks", "forehead"],
-  bumps: ["forehead", "cheeks"],
-  uneven_texture: ["cheeks", "forehead"],
-  dullness: ["cheeks", "forehead"],
-  fine_lines: ["eyes", "forehead"],
-  wrinkles: ["eyes", "forehead"],
-  loss_of_firmness: ["cheeks", "chin"],
-  dark_circles: ["eyes"],
-  puffiness: ["eyes"],
-  eye_fine_lines: ["eyes"],
+const fitzpatrickTileClasses: Record<FitzpatrickStyleKey, string> = {
+  notProvided: styles.fitzpatrickTileNotProvided,
+  typeI: styles.fitzpatrickTileTypeI,
+  typeII: styles.fitzpatrickTileTypeII,
+  typeIII: styles.fitzpatrickTileTypeIII,
+  typeIV: styles.fitzpatrickTileTypeIV,
+  typeV: styles.fitzpatrickTileTypeV,
+  typeVI: styles.fitzpatrickTileTypeVI,
 };
-
-const sensitivityOptions = [
-  "Fragrance",
-  "Essential oils",
-  "Denatured alcohol",
-  "Retinoids",
-  "AHAs / BHAs",
-  "Benzoyl peroxide",
-  "Sulfates",
-  "Lanolin",
-];
-
-function toggleValue(values: string[], value: string): string[] {
-  return values.includes(value)
-    ? values.filter((item) => item !== value)
-    : [...values, value];
-}
 
 export default function IntakePage() {
   const router = useRouter();
@@ -274,15 +108,8 @@ export default function IntakePage() {
     setSensitivities(intakeQuery.data?.sensitivities ?? []);
   }, [intakeQuery.data]);
 
-  const activeZones = useMemo(() => {
-    const zones = new Set<string>();
-    for (const concern of concerns) {
-      for (const zone of concernZones[concern] ?? []) {
-        zones.add(zone);
-      }
-    }
-    return Array.from(zones);
-  }, [concerns]);
+  const activeZones = useConcernZones(concerns);
+  const skinConcernSections = intakeQuery.data?.skin_concern_sections ?? concernSections;
 
   function addCustomSensitivity() {
     const value = customSensitivity.trim();
@@ -297,6 +124,7 @@ export default function IntakePage() {
     event.preventDefault();
     const payload: IntakePayload = {
       skin_type: skinType,
+      skin_types: [skinType],
       fitzpatrick_skin_type: fitzpatrickSkinType,
       baseline_sensitivity: baselineSensitivity,
       primary_concerns: concerns,
@@ -342,30 +170,23 @@ export default function IntakePage() {
           <h2>Skin basics</h2>
           <fieldset className="choice-group">
             <legend>Skin type</legend>
-            <div className={styles.skinTypeGrid}>
-              {skinTypes.map(([value, label]) => (
-                <label className={["choice-card", styles.skinTypeTile].join(" ")} key={value}>
-                  <input
-                    type="radio"
-                    name="skin_type"
-                    value={value}
-                    checked={skinType === value}
-                    onChange={() => setSkinType(value)}
-                  />
-                  <span>{label}</span>
-                </label>
-              ))}
-            </div>
+            <SkinTypeSelector
+              className={styles.skinTypeGrid}
+              name="skin_type"
+              optionClassName={["choice-card", styles.skinTypeTile].join(" ")}
+              values={[skinType]}
+              onChange={(values) => setSkinType(values[0] ?? "unknown")}
+            />
           </fieldset>
           <fieldset className="choice-group">
             <legend>Fitzpatrick skin type</legend>
             <div className={styles.fitzpatrickGrid}>
-              {fitzpatrickTypes.map((type) => (
+              {fitzpatrickTypeOptions.map((type) => (
                 <label
                   className={[
                     "choice-card",
                     styles.fitzpatrickTile,
-                    type.className,
+                    fitzpatrickTileClasses[type.styleKey],
                   ].join(" ")}
                   key={type.value}
                 >
@@ -401,27 +222,18 @@ export default function IntakePage() {
 
         <section className={styles.intakeCard}>
           <h2>Skin concerns</h2>
-          <div className={styles.concernSectionStack}>
-            {concernSections.map((section) => (
-              <fieldset className={styles.concernSection} key={section.title}>
-                <legend>{section.title}</legend>
-                <div className="choice-grid">
-                  {section.items.map(([value, label]) => (
-                    <label className="choice-card" key={value}>
-                      <input
-                        type="checkbox"
-                        checked={concerns.includes(value)}
-                        onChange={() =>
-                          setConcerns((current) => toggleValue(current, value))
-                        }
-                      />
-                      <span>{label}</span>
-                    </label>
-                  ))}
-                </div>
-              </fieldset>
-            ))}
-          </div>
+          <ConcernPicker
+            classNames={{
+              stack: styles.concernSectionStack,
+              fieldset: styles.concernSection,
+              grid: styles.concernChoiceGrid,
+              option: ["choice-card", styles.concernChoice].join(" "),
+              input: styles.visuallyHiddenInput,
+            }}
+            sections={skinConcernSections}
+            values={concerns}
+            onChange={setConcerns}
+          />
         </section>
 
         <section className={styles.intakeCard}>
@@ -463,20 +275,14 @@ export default function IntakePage() {
 
         <section className={styles.intakeCard}>
           <h2>Sensitivities and avoid list</h2>
-          <div className="choice-grid">
-            {sensitivityOptions.map((item) => (
-              <label className="choice-card" key={item}>
-                <input
-                  type="checkbox"
-                  checked={sensitivities.includes(item)}
-                  onChange={() =>
-                    setSensitivities((current) => toggleValue(current, item))
-                  }
-                />
-                <span>{item}</span>
-              </label>
-            ))}
-          </div>
+          <SensitivityOptions
+            gridClassName="choice-grid"
+            optionClassName="choice-card"
+            values={sensitivities}
+            onToggle={(item) =>
+              setSensitivities((current) => toggleValue(current, item))
+            }
+          />
           <div className={styles.sensitivityAdd}>
             <input
               type="text"

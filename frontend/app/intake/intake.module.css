@@ -238,6 +238,31 @@
   padding: 0;
 }
 
+.concernChoiceGrid {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: 1fr;
+}
+
+.concernChoice {
+  border-radius: 18px;
+  min-height: 52px;
+}
+
+.visuallyHiddenInput {
+  height: 1px;
+  margin: -1px;
+  opacity: 0;
+  overflow: hidden;
+  position: absolute;
+  width: 1px;
+}
+
+.concernChoice:has(input:focus-visible) {
+  outline: 3px solid rgba(52, 111, 170, 0.24);
+  outline-offset: 2px;
+}
+
 .sensitivityAdd {
   display: flex;
   flex-wrap: wrap;
