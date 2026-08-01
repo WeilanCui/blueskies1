@@ -11,8 +11,11 @@ Blueskies is a skincare intelligence prototype: a Django REST API + Celery backe
 All backend commands run inside the `backend` container.
 
 ```bash
-# Start full stack (db, redis, backend, celery worker, celery-beat, frontend)
+# Start backend stack (db, redis, backend, celery worker, celery-beat)
 docker compose up --build
+
+# Start the frontend in Docker dev mode when needed
+docker compose --profile frontend up --build frontend
 
 # Migrations
 docker compose run --rm backend python manage.py migrate
@@ -37,7 +40,7 @@ npm run lint     # biome check
 npm run format   # biome format --write
 ```
 
-Do not run `npm start` without a fresh `npm run build` — it serves a frozen `.next` with no file watching.
+Do not run `npm start` without a fresh `npm run build` — it runs the standalone `.next` output with no file watching.
 
 URLs: frontend `http://localhost:3000`, backend health `http://localhost:8000/api/health/`, Django admin `http://localhost:8000/admin/`.
 

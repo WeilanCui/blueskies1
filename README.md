@@ -54,21 +54,21 @@ Create an environment file:
 cp .env.example .env
 ```
 
-Start the full stack:
+Start the backend stack:
 
 ```bash
 docker compose up --build
 ```
 
-The frontend container installs its npm dependencies before starting, so rebuilt
-images and reused compose volumes stay in sync with `frontend/package-lock.json`.
+This starts Postgres, Redis, Django, the Celery worker, and Celery beat. The
+frontend container is opt-in so everyday frontend work can run through Next.js
+dev mode with hot reload.
 
 Open:
 
-- Frontend: http://localhost:3000
 - Backend health check: http://localhost:8000/api/health/
 
-You can also run the frontend directly:
+Run the frontend directly:
 
 ```bash
 cd frontend
@@ -77,6 +77,15 @@ npm run dev
 ```
 
 If port `3000` is occupied, Next.js will use the next available port.
+
+You can also run the frontend in Docker dev mode:
+
+```bash
+docker compose --profile frontend up --build frontend
+```
+
+The frontend container installs its npm dependencies before starting, so rebuilt
+images and reused compose volumes stay in sync with `frontend/package-lock.json`.
 
 ## Common Commands
 

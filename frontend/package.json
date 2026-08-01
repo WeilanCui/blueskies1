@@ -5,7 +5,8 @@
   "scripts": {
     "dev": "next dev --hostname 0.0.0.0",
     "build": "next build",
-    "start": "next start",
+    "postbuild": "sh scripts/sync-standalone-assets.sh",
+    "start": "node .next/standalone/server.js",
     "lint": "biome check",
     "format": "biome format --write"
   },

@@ -64,8 +64,8 @@ Use these standards when adding or changing code in this project. Favor clear, m
 ## Frontend dev
 
 - **Hot reload (daily work):** from `frontend/`, run `npm run dev`.
-- **Production smoke test:** `npm run build` then `npm start` (uses standalone output from `next.config.ts`).
-- Do not use `npm start` without a fresh build — it serves a frozen `.next` output with no file watching.
+- **Production smoke test:** `npm run build` then `npm start` (runs standalone output from `next.config.ts`).
+- Do not use `npm start` without a fresh build — it runs a frozen `.next` output with no file watching.
 
 ## Review Checklist
 

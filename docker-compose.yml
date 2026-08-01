@@ -147,6 +147,7 @@ services:
         condition: service_healthy
 
   frontend:
+    profiles: ["frontend"]
     build:
       context: ./frontend
     command: ["sh", "scripts/docker-dev.sh"]
