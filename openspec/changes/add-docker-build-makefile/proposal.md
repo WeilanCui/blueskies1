@@ -1,16 +1,15 @@
 ## Why
 
-The repository now has production build stages for both services (`backend/Dockerfile`
-target `prod`, `frontend/Dockerfile` target `prod`), but no way to produce and publish
-those images. Every documented workflow is `docker compose up --build`, which builds the
-`dev` targets under compose-generated names and never pushes anywhere. Deploying means
-retyping long `docker build`/`docker tag`/`docker push` invocations by hand, with no
-guarantee that the tag on the registry corresponds to a known commit.
+The repository has Dockerfiles for both services but no way to produce and publish their
+images. Every documented workflow is `docker compose up --build`, which builds under
+compose-generated names and never pushes anywhere. Deploying means retyping long
+`docker build`/`docker tag`/`docker push` invocations by hand, with no guarantee that the
+tag on the registry corresponds to a known commit.
 
 ## What Changes
 
-- Add a top-level `Makefile` that builds the `prod` stage of both Dockerfiles and pushes
-  the results to the local registry at `direct:5000`.
+- Add a top-level `Makefile` that builds both service images and pushes the results to
+  the local registry at `direct:5000`.
 - Each image is tagged twice per build: a mutable `latest` (overridable via `TAG=`) and an
   immutable short git SHA, so a deployed image can always be traced back to a commit.
 - All inputs are overridable make variables (`REGISTRY`, `PROJECT`, `TAG`, `DOCKER`,
@@ -37,9 +36,8 @@ None. No existing spec's requirements change; `static-type-checking` is unaffect
 
 - **New file**: `Makefile` at the repository root. It is the only implementation artifact.
 - **Modified**: `README.md` gains a "Building and publishing images" section.
-- **Reads but does not modify**: `backend/Dockerfile` and `frontend/Dockerfile` (their
-  `prod` targets), and the build contexts `./backend` and `./frontend` that
-  `docker-compose.yml` already establishes.
+- **Reads but does not modify**: `backend/Dockerfile` and `frontend/Dockerfile`, and the
+  build contexts `./backend` and `./frontend` that `docker-compose.yml` already establishes.
 - **External dependency**: a reachable registry at `direct:5000`. The Makefile does not
   configure the Docker daemon; `insecure-registries` is a root-owned host change outside
   the scope of a build script.

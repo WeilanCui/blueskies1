@@ -2,16 +2,22 @@
 
 ### Requirement: Production images are built from a single command
 
-The repository SHALL provide a `Makefile` at its root that builds the production image
-for every containerised service from one command, without the operator naming Dockerfiles,
-build contexts, or build targets.
+The repository SHALL provide a `Makefile` at its root that builds the image for every
+containerised service from one command, without the operator naming Dockerfiles, build
+contexts, or build targets.
 
 #### Scenario: Building all images
 
 - **WHEN** the operator runs `make build`
-- **THEN** the backend image is built from build context `./backend` at Dockerfile target `prod`
-- **AND** the frontend image is built from build context `./frontend` at Dockerfile target `prod`
+- **THEN** the backend image is built from build context `./backend`
+- **AND** the frontend image is built from build context `./frontend`
 - **AND** each image is tagged with both the mutable tag and the revision tag
+
+#### Scenario: Selecting a Dockerfile stage
+
+- **WHEN** a service's build target variable is set to a named stage
+- **THEN** that stage is selected explicitly during the build
+- **AND** when the variable is empty, no stage is requested and the Dockerfile's default applies
 
 #### Scenario: Building a single service
 
@@ -83,7 +89,7 @@ Introducing the Makefile SHALL NOT change how the local development stack is bui
 #### Scenario: Compose workflow is unchanged
 
 - **WHEN** the operator runs `docker compose up --build`
-- **THEN** the services build their `dev` targets exactly as before the Makefile existed
+- **THEN** the services build exactly as they did before the Makefile existed
 - **AND** no Dockerfile or compose file was modified by this change
 
 ### Requirement: Locally built image tags can be removed

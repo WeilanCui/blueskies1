@@ -1,7 +1,7 @@
-# Builds the production container images and publishes them to a registry.
+# Builds the container images and publishes them to a registry.
 #
-# Local development does not use this file — `docker compose up --build` selects
-# the `dev` stage of each Dockerfile and is unaffected by anything here.
+# Local development does not use this file — `docker compose up --build` builds
+# its own images and is unaffected by anything here.
 #
 # Every variable is overridable on the command line:
 #   make push
@@ -15,8 +15,12 @@ TAG             ?= latest
 DOCKER          ?= docker
 PLATFORM        ?=
 BUILD_ARGS      ?=
-BACKEND_TARGET  ?= prod
-FRONTEND_TARGET ?= prod
+# Both Dockerfiles are currently single-stage, so no --target is passed by default.
+# Once they gain named stages, set these (e.g. BACKEND_TARGET=prod) rather than
+# relying on the last stage winning, so appending a stage cannot silently change
+# what is published.
+BACKEND_TARGET  ?=
+FRONTEND_TARGET ?=
 
 # Resolved once per invocation rather than once per use.
 REV := $(shell git rev-parse --short HEAD 2>/dev/null)
@@ -34,28 +38,26 @@ endif
 BACKEND_IMAGE  := $(REGISTRY)/$(PROJECT)-backend
 FRONTEND_IMAGE := $(REGISTRY)/$(PROJECT)-frontend
 
-# Expands to nothing unless PLATFORM is set.
-PLATFORM_FLAG := $(if $(strip $(PLATFORM)),--platform $(strip $(PLATFORM)),)
+# These expand to nothing unless their variable is set.
+PLATFORM_FLAG        := $(if $(strip $(PLATFORM)),--platform $(strip $(PLATFORM)),)
+BACKEND_TARGET_FLAG  := $(if $(strip $(BACKEND_TARGET)),--target $(strip $(BACKEND_TARGET)),)
+FRONTEND_TARGET_FLAG := $(if $(strip $(FRONTEND_TARGET)),--target $(strip $(FRONTEND_TARGET)),)
 
 .DEFAULT_GOAL := help
 .PHONY: help build build-backend build-frontend push push-backend push-frontend clean print-images
 
 ## --- build ------------------------------------------------------------------
 
-# --target is passed explicitly rather than relying on the last stage winning,
-# so appending a stage to a Dockerfile cannot silently change what is published.
 # Both tags come from one build, which guarantees they denote the same image.
 
 build-backend: ## Build the backend image (serves backend, celery and celery-beat)
-	$(DOCKER) build $(PLATFORM_FLAG) $(BUILD_ARGS) \
-		--target $(BACKEND_TARGET) \
+	$(DOCKER) build $(PLATFORM_FLAG) $(BACKEND_TARGET_FLAG) $(BUILD_ARGS) \
 		-t $(BACKEND_IMAGE):$(TAG) \
 		-t $(BACKEND_IMAGE):$(REV) \
 		./backend
 
-build-frontend: ## Build the frontend image (Next.js standalone server)
-	$(DOCKER) build $(PLATFORM_FLAG) $(BUILD_ARGS) \
-		--target $(FRONTEND_TARGET) \
+build-frontend: ## Build the frontend image (Next.js app)
+	$(DOCKER) build $(PLATFORM_FLAG) $(FRONTEND_TARGET_FLAG) $(BUILD_ARGS) \
 		-t $(FRONTEND_IMAGE):$(TAG) \
 		-t $(FRONTEND_IMAGE):$(REV) \
 		./frontend

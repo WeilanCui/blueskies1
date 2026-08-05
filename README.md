@@ -125,13 +125,13 @@ Biome is configured in `frontend/biome.json` and scoped to `app/`, `components/`
 
 ## Building and Publishing Images
 
-The root `Makefile` builds the **production** stage of each Dockerfile and pushes the
-results to the local registry at `direct:5000`. This is separate from local development —
-`docker compose up --build` selects the `dev` stage and is unaffected.
+The root `Makefile` builds each service's image and pushes it to the local registry at
+`direct:5000`. This is separate from local development — `docker compose up --build`
+builds its own images and is unaffected.
 
 ```bash
 make            # list targets and the current variable values
-make build      # build both production images
+make build      # build both images
 make push       # build and push both images
 make clean      # remove the locally built tags
 ```
@@ -151,11 +151,15 @@ Every input is overridable on the command line:
 make push TAG=v1.2.3
 make build REGISTRY=localhost:5000 PLATFORM=linux/amd64
 make push BUILD_ARGS='--build-arg SERVER_API_BASE_URL=http://backend:8000'
-make build BACKEND_TARGET=dev          # publish a dev image for debugging
 ```
 
 `REGISTRY`, `PROJECT`, `TAG`, `DOCKER`, `PLATFORM`, `BUILD_ARGS`, `BACKEND_TARGET`, and
 `FRONTEND_TARGET` are all supported; `make help` prints their current values.
+
+Both Dockerfiles are currently single-stage, so no `--target` is passed. If they gain
+named stages, select one explicitly with `make build BACKEND_TARGET=prod` rather than
+relying on the last stage winning — otherwise appending a stage silently changes what
+gets published.
 
 ### Registry prerequisites
 

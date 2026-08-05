@@ -1,21 +1,16 @@
 ## Context
 
-`backend/Dockerfile` and `frontend/Dockerfile` were recently split into named stages
-(`base -> dev | prod` and `deps -> dev | builder -> prod` respectively). `docker-compose.yml`
-pins `target: dev` on every built service, so the local development flow is fully served.
-Nothing in the repository builds or publishes the `prod` stages — there is no Makefile, no
-CI workflow, and no reference to any registry anywhere in the tree.
+`backend/Dockerfile` and `frontend/Dockerfile` are single-stage and dev-oriented.
+`docker-compose.yml` builds them directly, so the local development flow is fully served.
+Nothing in the repository builds or publishes images for deployment — there is no
+Makefile, no CI workflow, and no reference to any registry anywhere in the tree.
 
 The deployment target is a Docker Swarm platform fed from a local registry at `direct:5000`.
 Constraints that shape this design:
 
-- The two build contexts differ (`./backend`, `./frontend`) and their `prod` stages are not
-  interchangeable — the frontend prod stage is a fresh `node:22-bookworm-slim` populated
-  from a `builder` stage, and listens on port 5000, while the backend prod stage extends
-  `base` and listens on 8000.
-- `frontend/Dockerfile` may gain build arguments shortly (Next bakes `rewrites()`
-  destinations into the route manifest at build time, so `SERVER_API_BASE_URL` must be
-  present during `next build`). The Makefile must accommodate that without being rewritten.
+- The two build contexts differ (`./backend`, `./frontend`) and are not interchangeable.
+- The Dockerfiles are expected to gain named stages (a production stage per service) and
+  build arguments later. The Makefile must accommodate both without being rewritten.
 - `direct:5000` is a plain-HTTP registry. Docker refuses to push to it unless the daemon
   is configured, which is a root-owned host change.
 
@@ -43,16 +38,16 @@ Constraints that shape this design:
 
 ## Decisions
 
-### Build the `prod` stage, not the default stage
+### Stage selection is explicit when it happens at all
 
-Both Dockerfiles now define multiple stages, and the last stage in each file is `prod`.
-Relying on that positional default is fragile — appending a stage would silently change
-what gets published. Every build therefore passes `--target` explicitly, held in per-image
-variables (`BACKEND_TARGET`, `FRONTEND_TARGET`, both defaulting to `prod`) so a caller can
-publish a `dev` image for debugging without editing the file.
+The Dockerfiles are single-stage today, so no `--target` is passed and the flag expands to
+nothing. Per-image variables (`BACKEND_TARGET`, `FRONTEND_TARGET`) exist and are empty by
+default. When the Dockerfiles gain named stages, the operator sets the variable rather than
+the Makefile relying on the last stage winning — that positional default is fragile, since
+appending a stage would silently change what gets published.
 
-*Alternative considered:* omit `--target` and let the last stage win. Rejected: implicit,
-and breaks the moment a stage is appended.
+*Alternative considered:* hard-code a `prod` target now, in anticipation. Rejected: it
+breaks every build until those stages actually exist.
 
 ### Two tags per build, applied in a single `docker build`
 
@@ -89,12 +84,12 @@ cheap) and avoids publishing a stale local image.
 
 ### Generic `BUILD_ARGS` passthrough
 
-Rather than enumerating build arguments the Dockerfiles do not yet declare, a single
-`BUILD_ARGS` variable is interpolated into every `docker build`. When the frontend gains
-`ARG SERVER_API_BASE_URL`, publishing becomes
+Rather than enumerating build arguments the Dockerfiles do not declare, a single
+`BUILD_ARGS` variable is interpolated into every `docker build`. If the frontend later
+gains an `ARG`, publishing becomes
 `make push BUILD_ARGS='--build-arg SERVER_API_BASE_URL=http://backend:8000'` with no
-change to the Makefile. `PLATFORM` is handled the same way: empty by default, expanding to
-`--platform <value>` only when set.
+change to the Makefile. `PLATFORM` and the two target variables are handled the same way:
+empty by default, expanding to their flag only when set.
 
 ### Image naming: `$(REGISTRY)/$(PROJECT)-$(service)`
 
@@ -119,9 +114,8 @@ container on the host — far outside what running `make` should be permitted to
   so an IP or alternate hostname works without editing the file.
 - **`make push` always rebuilds** → Accepted. Docker's cache makes the no-op case fast, and
   the alternative (publishing a stale local image) is a worse failure mode.
-- **Frontend prod build runs `npm run build`, which is slow and needs network on a cold
-  cache** → Inherent to the Dockerfile, not to this change. The `deps` stage caches
-  `node_modules` across builds.
+- **Frontend builds install dependencies and need network on a cold cache** → Inherent to
+  the Dockerfile, not to this change. Docker's layer cache covers the warm case.
 - **`latest` is mutable, so two commits can both claim it** → This is why the revision tag
   exists and is always published alongside. Deployments should reference the revision tag.
 - **Building from a dirty tree produces a `-dirty` tag that cannot be reproduced from git**
