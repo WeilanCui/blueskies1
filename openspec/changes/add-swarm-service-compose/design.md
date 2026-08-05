@@ -91,11 +91,32 @@ correctly. Keeping the file means adopting Swarm secrets later is an edit to one
 rather than a change of shape. Note that `docker exec` bypasses an entrypoint, so
 management commands must be run as `/app/deploy/entrypoint.sh python manage.py ...`.
 
-### Migrations are operator-run, not automatic
+### Migrations run automatically, on the Django service only
 
-The entrypoint waits for the database but does **not** run `migrate`. Three backend
-services start concurrently; migrating from all of them races, and an automatic migration
-on deploy makes rollback unsafe. Documented as a deliberate post-deploy step.
+The entrypoint runs `migrate` when `DJANGO_MIGRATE_ON_START` is set, and the stack file
+sets it **only on the `backend` service**. Celery worker and beat share the same image and
+the same entrypoint, so without that gate all three would migrate concurrently on every
+deploy and race each other.
+
+The gate is an explicit environment variable rather than the entrypoint inspecting `$@` to
+guess whether it is about to run gunicorn. Sniffing the command couples the entrypoint to
+the exact `CMD` strings, and fails silently the first time one is reworded — a silent
+failure to migrate is far worse than a loud one.
+
+This makes `backend` single-replica a correctness requirement, not just a sizing choice:
+Django takes no global migration lock, so two replicas starting together would race the
+same way the three services would. The stack file pins `replicas: 1` and the design records
+why. Scaling the web tier later means moving migration to a one-shot service run before the
+rollout, not raising the replica count.
+
+Migration still runs after the database wait and before `exec "$@"`, so a failed migration
+fails the task and Swarm surfaces it, rather than serving traffic against a stale schema.
+
+*Alternative considered:* leave migration entirely to the operator as a documented
+post-deploy step. Safer for rollback — an automatic migration on deploy means rolling the
+image back does not roll the schema back — but it makes every deploy a two-step manual
+process and a forgotten step yields confusing runtime errors. The rollback caveat is
+recorded under Risks instead.
 
 ### Multi-stage Dockerfiles with the dev stage preserved
 
@@ -135,6 +156,12 @@ self-contained and independently deployable.
   handling; called out in the README so it is not discovered during an incident.
 - **Three backend services race to be ready before Postgres** → Mitigated by the entrypoint
   wait rather than by restart-loop convergence.
+- **Automatic migration means an image rollback does not roll the schema back** → Inherent
+  to migrate-on-deploy. Reversible migrations and checking the diff before deploying remain
+  the operator's job; the alternative (manual migration) was weighed and rejected above.
+- **`backend` must stay at one replica or concurrent migrations race** → Pinned in the
+  stack file and stated in the design; scaling requires moving migration to a one-shot
+  service first, not editing `replicas`.
 - **Compose would build the production stage by default** → Mitigated by pinning
   `target: dev`. If a future stage is appended, that pin is what keeps local dev correct.
 - **The admin path depends on a rewrite whose trailing-slash handling is subtle** → Covered
@@ -144,9 +171,10 @@ self-contained and independently deployable.
 ## Migration Plan
 
 Additive; no existing deployment to migrate. Order: build and push images with the
-`Makefile`, ensure `/mnt/persist/blueskies/{postgres,redis}` exist on the target node,
-`docker stack deploy -c service-compose.yml blueskies`, then run `migrate` and
-`createsuperuser` once via the entrypoint. Rollback is `docker stack rm blueskies`; the
+`Makefile`, ensure `/mnt/persist/blueskies/{postgres,redis}` exist on the target node, then
+`docker stack deploy -c service-compose.yml blueskies`. The backend applies migrations
+itself on start; only `createsuperuser` is a manual one-off, run via the entrypoint.
+Rollback is `docker stack rm blueskies` — note that this does not unapply migrations; the
 bind-mounted data survives, and local development is untouched throughout.
 
 ## Open Questions

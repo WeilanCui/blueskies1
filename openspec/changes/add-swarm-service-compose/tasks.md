@@ -12,7 +12,9 @@
 - [ ] 2.2 Derive `CELERY_BROKER_URL`, `CELERY_RESULT_BACKEND` and `DJANGO_CACHE_URL` from a single `REDIS_URL` when they are not already set, giving the result backend its own logical database
 - [ ] 2.3 Handle `rediss://` broker URLs by appending `ssl_cert_reqs` if absent, since Celery refuses a TLS broker without it
 - [ ] 2.4 Wait for TCP reachability of `POSTGRES_HOST:POSTGRES_PORT` before exec'ing, with a bounded timeout that fails loudly rather than hanging forever
-- [ ] 2.5 Make the script executable and verify it is a no-op when every variable is already set
+- [ ] 2.5 Run `python manage.py migrate --noinput` only when `DJANGO_MIGRATE_ON_START` is truthy — after the database wait, before `exec "$@"` — and abort on non-zero exit so a failed migration fails the task
+- [ ] 2.6 Gate migration on the environment variable only; do not inspect `$@` to infer whether this is the web service, since that silently breaks when a `CMD` is reworded
+- [ ] 2.7 Make the script executable and verify it is a no-op when every variable is already set and `DJANGO_MIGRATE_ON_START` is unset
 
 ## 3. Dockerfile stages
 
@@ -34,21 +36,24 @@
 
 - [ ] 5.1 Create `service-compose.yml` with a `version:` string, `networks:` declaring `public` as `external: true` and a private `blueskies` overlay with `driver_opts: encrypted: "true"`
 - [ ] 5.2 Add the `web` service: frontend image from `direct:5000`, on both networks, `deploy.labels` with the four standard Traefik openers plus router `blueskies-https` on entrypoint `https`, `certresolver=le`, host rule `blueskies1.tempestnetworks.net`, and loadbalancer server port
-- [ ] 5.3 Add the `backend` service: backend image, private network only, `endpoint_mode: dnsrr`, environment for Postgres, Django hosts/CSRF/cookies and `REDIS_URL`
-- [ ] 5.4 Add `celery` and `celery-beat` services sharing the backend image, overriding `command:` only
-- [ ] 5.5 Add `db` (`postgres:16-alpine`) and `redis` (`redis:7-alpine`) with bind mounts under `/mnt/persist/blueskies/` and placement constraints pinning them to the node holding that data
-- [ ] 5.6 Give every service a `deploy.resources` block with quoted `cpus:` and `M`-suffixed `memory:` limits and reservations, sized per role
-- [ ] 5.7 Give every service a healthcheck in the house shape (`15s`/`15s`/`5`, with a `start_period` suited to its startup cost)
-- [ ] 5.8 Add the standard three-line `net.ipv4.tcp_keepalive_*` `sysctls:` block
-- [ ] 5.9 Verify no Swarm-ignored keys remain: no `build:`, no `depends_on:`, no `profiles:`, no `ports:` on private services
+- [ ] 5.3 Add the `backend` service: backend image, private network only, `endpoint_mode: dnsrr`, environment for Postgres, Django hosts/CSRF/cookies and `REDIS_URL`, plus `DJANGO_MIGRATE_ON_START=true`
+- [ ] 5.4 Pin `backend` to `replicas: 1` with a comment stating this is a migration-concurrency requirement, not a sizing choice
+- [ ] 5.5 Add `celery` and `celery-beat` services sharing the backend image, overriding `command:` only, and **without** `DJANGO_MIGRATE_ON_START` so they never migrate
+- [ ] 5.6 Add `db` (`postgres:16-alpine`) and `redis` (`redis:7-alpine`) with bind mounts under `/mnt/persist/blueskies/` and placement constraints pinning them to the node holding that data
+- [ ] 5.7 Give every service a `deploy.resources` block with quoted `cpus:` and `M`-suffixed `memory:` limits and reservations, sized per role
+- [ ] 5.8 Give every service a healthcheck in the house shape (`15s`/`15s`/`5`, with a `start_period` suited to its startup cost)
+- [ ] 5.9 Add the standard three-line `net.ipv4.tcp_keepalive_*` `sysctls:` block
+- [ ] 5.10 Verify no Swarm-ignored keys remain: no `build:`, no `depends_on:`, no `profiles:`, no `ports:` on private services
 
 ## 6. Documentation
 
-- [ ] 6.1 Add a deployment section to `README.md`: build and push with `make push`, create the persist directories, `docker stack deploy`, then run migrations
-- [ ] 6.2 Document that management commands must be run as `/app/deploy/entrypoint.sh python manage.py ...`, since `docker exec` bypasses the entrypoint
-- [ ] 6.3 Document that `SERVER_API_BASE_URL` is baked into the frontend image at build time, so changing the backend address requires a rebuild rather than a redeploy
-- [ ] 6.4 State plainly that `service-compose.yml` holds credentials in plaintext, that production values must not be committed, and record the `env_file` and Swarm-secrets migration paths
-- [ ] 6.5 Add a "Deployment" section to `CLAUDE.md` listing what to preserve when editing this area: keep `dev` stages in sync, the build-time rewrite dependency, and the entrypoint bypass
+- [ ] 6.1 Add a deployment section to `README.md`: build and push with `make push`, create the persist directories, then `docker stack deploy` — noting that migrations apply themselves on backend startup
+- [ ] 6.2 Document that management commands must be run as `/app/deploy/entrypoint.sh python manage.py ...`, since `docker exec` bypasses the entrypoint; `createsuperuser` is still a manual one-off
+- [ ] 6.3 Document that `backend` must stay at one replica while migration is entrypoint-driven, and that scaling it requires moving migration to a one-shot service first
+- [ ] 6.4 Note that an image rollback does not roll back applied migrations, so migrations should be written reversibly
+- [ ] 6.5 Document that `SERVER_API_BASE_URL` is baked into the frontend image at build time, so changing the backend address requires a rebuild rather than a redeploy
+- [ ] 6.6 State plainly that `service-compose.yml` holds credentials in plaintext, that production values must not be committed, and record the `env_file` and Swarm-secrets migration paths
+- [ ] 6.7 Add a "Deployment" section to `CLAUDE.md` listing what to preserve when editing this area: keep `dev` stages in sync, the build-time rewrite dependency, and the entrypoint bypass
 
 ## 7. Verification
 
@@ -60,10 +65,13 @@
 - [ ] 7.6 Run the entrypoint in isolation with only `REDIS_URL` set; confirm it derives all three URLs and that the result backend uses a different logical database
 - [ ] 7.7 Confirm the entrypoint's database wait fails loudly on an unreachable host rather than hanging
 - [ ] 7.8 Deploy the stack to the Swarm; confirm all six services converge to running and pass their healthchecks
-- [ ] 7.9 Run `migrate` and `createsuperuser` through the entrypoint; confirm both succeed
-- [ ] 7.10 Confirm `https://blueskies1.tempestnetworks.net/` serves the app over TLS with a valid certificate
-- [ ] 7.11 Confirm `/admin` loads **styled** (assets resolve via `/django-static/`) and does not redirect-loop — the trailing-slash regression manifests only here
-- [ ] 7.12 Confirm an app API route works end to end, proving the Next → Django private-network proxy path
-- [ ] 7.13 Confirm Django, Celery, Postgres and Redis are NOT reachable from outside the Swarm
-- [ ] 7.14 Confirm a Celery task runs, and that beat schedules its nightly job
-- [ ] 7.15 Redeploy the stack and confirm Postgres data survives
+- [ ] 7.9 Confirm the backend service applied migrations itself on first start — its task log shows the migrate output and the schema is present with no manual step
+- [ ] 7.10 Confirm `celery` and `celery-beat` did **not** run migrations: neither task's log contains migrate output, and `DJANGO_MIGRATE_ON_START` is absent from both service definitions
+- [ ] 7.11 Confirm a deliberately failing migration fails the backend task rather than letting it serve against a stale schema
+- [ ] 7.12 Run `createsuperuser` through the entrypoint; confirm it succeeds
+- [ ] 7.13 Confirm `https://blueskies1.tempestnetworks.net/` serves the app over TLS with a valid certificate
+- [ ] 7.14 Confirm `/admin` loads **styled** (assets resolve via `/django-static/`) and does not redirect-loop — the trailing-slash regression manifests only here
+- [ ] 7.15 Confirm an app API route works end to end, proving the Next → Django private-network proxy path
+- [ ] 7.16 Confirm Django, Celery, Postgres and Redis are NOT reachable from outside the Swarm
+- [ ] 7.17 Confirm a Celery task runs, and that beat schedules its nightly job
+- [ ] 7.18 Redeploy the stack and confirm Postgres data survives

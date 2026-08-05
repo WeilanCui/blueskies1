@@ -65,6 +65,27 @@ need not supply one.
 - **THEN** each service builds its development stage and behaves exactly as before this change
 - **AND** source bind-mounts and hot reload continue to work
 
+### Requirement: Database migrations are applied by exactly one service
+
+Migrations SHALL be applied automatically on deployment, by the Django service alone. The
+Celery worker and beat services share the same image and SHALL NOT apply migrations.
+
+#### Scenario: Deploying a change containing migrations
+
+- **WHEN** the stack is deployed with pending migrations
+- **THEN** the Django service applies them before it begins serving requests
+- **AND** no other service attempts to apply them
+
+#### Scenario: A migration fails
+
+- **WHEN** applying migrations fails
+- **THEN** the service task fails visibly rather than starting and serving against a stale schema
+
+#### Scenario: Concurrency is bounded
+
+- **WHEN** the Django service is scheduled
+- **THEN** exactly one replica of it runs, so two replicas cannot migrate concurrently
+
 ### Requirement: Application state survives service restarts
 
 Data written by PostgreSQL and Redis SHALL persist across service restarts, task

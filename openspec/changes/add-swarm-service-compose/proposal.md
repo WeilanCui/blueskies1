@@ -19,8 +19,10 @@ without styling even if the container started.
 - Add production stages to both Dockerfiles. `backend`: `base -> dev | prod`, where `prod`
   runs `collectstatic` at build time and serves via gunicorn. `frontend`:
   `deps -> dev | builder -> prod`, where `prod` carries only the Next.js standalone output.
-- Add `backend/deploy/entrypoint.sh`, which normalises Redis configuration and waits for
-  the database before exec'ing the service command.
+- Add `backend/deploy/entrypoint.sh`, which normalises Redis configuration, waits for the
+  database, and applies migrations before exec'ing the service command. Migration is gated
+  on `DJANGO_MIGRATE_ON_START`, set only on the Django service — Celery worker and beat
+  share the image and must not migrate concurrently with it.
 - Pin `docker-compose.yml` to the new `dev` targets so local development is unchanged.
 - Add `gunicorn` and `whitenoise` to `backend/requirements.txt`; set `STATIC_ROOT` and a
   WhiteNoise storage backend in `settings.py` so the Django admin renders.
