@@ -117,7 +117,13 @@ Things to preserve when changing this area:
   This keeps `backend` at `replicas: 1` by necessity, not preference.
 - Credentials are **external Swarm secrets** (`blueskies_django_secret_key`,
   `blueskies_postgres_password`), consumed as `*_FILE`. Never inline a secret value in
-  `service-compose.yml`; an earlier revision did, and those values are burned.
+  `service-compose.yml`; an earlier revision did, and those values are burned. `settings.py`
+  resolves `*_FILE` through `env_or_file()` as well as the entrypoint, because healthchecks
+  and `docker exec` do not inherit the entrypoint's exports — a settings-importing
+  healthcheck fails with `ImproperlyConfigured` otherwise.
+- Health `start_period`s must cover the entrypoint's database wait and migration barrier,
+  and `restart_policy` is `condition: any`: Swarm stops an unhealthy task gracefully, so it
+  exits 0 and `on-failure` would leave the service at zero replicas.
 - Stack image references interpolate `${REGISTRY:-direct:5000}`, `${PROJECT:-blueskies}` and
   `${TAG:-latest}`; the Makefile exports all three, and `make release` deploys `TAG=$(REV)`
   so the live stack names its commit. A bare `docker stack deploy` still resolves defaults.

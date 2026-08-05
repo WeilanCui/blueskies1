@@ -84,6 +84,9 @@ is nothing to protect yet, and the `_FILE` mechanism below covers them unchanged
 - **Expand `FOO_FILE` into `FOO`.** Swarm presents a secret as a file; Django reads
   environment variables. One generic loop bridges the two for every variable, so adding a
   secret is a stack-file change only. An explicitly set `FOO` wins, leaving compose untouched.
+  `settings.py` resolves the same `_FILE` forms independently, because a healthcheck and
+  `docker exec` start from the container's configured environment and never inherit these
+  exports — a settings-importing healthcheck would fail with `ImproperlyConfigured`.
 - **Derive the Celery URLs from one `REDIS_URL`.** Otherwise the same host and port are
   repeated across three variables on three services, and they drift. The script also gives
   the result backend its own logical database, and handles `rediss://` needing an explicit

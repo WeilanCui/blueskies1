@@ -11,7 +11,23 @@ env = environ.Env(
 )
 environ.Env.read_env(BASE_DIR.parent / ".env")
 
-SECRET_KEY = env("DJANGO_SECRET_KEY", default="change-me")  # pyright: ignore[reportArgumentType]
+
+def env_or_file(name: str, default: str) -> str:
+    """Read NAME, or NAME_FILE's contents when the value comes from a Swarm secret.
+
+    The deployment entrypoint performs the same expansion for the process it execs, but
+    a container healthcheck and `docker exec` both start from the container's configured
+    environment and never see it. Reading the file here keeps every entry point working.
+    """
+    path = env(f"{name}_FILE", default="")  # pyright: ignore[reportArgumentType]
+    if path:
+        # rstrip("\n") only, matching the entrypoint's `$(cat …)`: a secret may legitimately
+        # end in a space, and stripping it would silently produce a different credential.
+        return Path(path).read_text().rstrip("\n")
+    return env(name, default=default)  # pyright: ignore[reportArgumentType]
+
+
+SECRET_KEY = env_or_file("DJANGO_SECRET_KEY", "change-me")
 DEBUG = env("DJANGO_DEBUG")
 ALLOWED_HOSTS = env.list("DJANGO_ALLOWED_HOSTS", default=["localhost", "127.0.0.1"])  # pyright: ignore[reportArgumentType]
 
@@ -68,7 +84,7 @@ DATABASES = {
         "ENGINE": "django.db.backends.postgresql",
         "NAME": env("POSTGRES_DB", default="blueskies"),  # pyright: ignore[reportArgumentType]
         "USER": env("POSTGRES_USER", default="blueskies"),  # pyright: ignore[reportArgumentType]
-        "PASSWORD": env("POSTGRES_PASSWORD", default="blueskies"),  # pyright: ignore[reportArgumentType]
+        "PASSWORD": env_or_file("POSTGRES_PASSWORD", "blueskies"),
         "HOST": env("POSTGRES_HOST", default="db"),  # pyright: ignore[reportArgumentType]
         "PORT": env("POSTGRES_PORT", default="5432"),  # pyright: ignore[reportArgumentType]
     }

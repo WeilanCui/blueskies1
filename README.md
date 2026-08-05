@@ -316,8 +316,11 @@ Services mount them at `/run/secrets/<name>` and reference them as `DJANGO_SECRE
 and `POSTGRES_PASSWORD_FILE`. `backend/deploy/entrypoint.sh` expands **any** `FOO_FILE` into
 `FOO` before starting the process, so `OPENAI_API_KEY` and `NCBI_API_KEY` follow the same
 path once they stop being empty — add a secret and swap the variable for its `_FILE` form.
-The `postgres` image reads `POSTGRES_PASSWORD_FILE` natively. An explicitly set `FOO` always
-wins over `FOO_FILE`, which is why local `docker compose` development is unaffected.
+The `postgres` image reads `POSTGRES_PASSWORD_FILE` natively, and `settings.py` reads the
+`_FILE` form of `DJANGO_SECRET_KEY` and `POSTGRES_PASSWORD` itself — necessary because a
+container healthcheck and `docker exec` start from the container's configured environment
+and never see the entrypoint's exports. An explicitly set `FOO` always wins over `FOO_FILE`,
+which is why local `docker compose` development is unaffected.
 
 Rotating a secret Swarm cannot update in place (a secret's contents are immutable):
 
