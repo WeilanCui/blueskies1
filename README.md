@@ -156,10 +156,10 @@ make push BUILD_ARGS='--build-arg SERVER_API_BASE_URL=http://backend:8000'
 `REGISTRY`, `PROJECT`, `TAG`, `DOCKER`, `PLATFORM`, `BUILD_ARGS`, `BACKEND_TARGET`, and
 `FRONTEND_TARGET` are all supported; `make help` prints their current values.
 
-Both Dockerfiles are currently single-stage, so no `--target` is passed. If they gain
-named stages, select one explicitly with `make build BACKEND_TARGET=prod` rather than
-relying on the last stage winning — otherwise appending a stage silently changes what
-gets published.
+Both Dockerfiles are multi-stage, and `BACKEND_TARGET`/`FRONTEND_TARGET` default to
+`prod`. The stage is named explicitly rather than left to the last-stage-wins default, so
+appending a stage cannot silently change what ships. `make build BACKEND_TARGET=dev`
+publishes a development image for debugging.
 
 ### Registry prerequisites
 
@@ -201,17 +201,25 @@ overlay, so Django never needs to be exposed. Traefik routes
 ### Deploying
 
 ```bash
-make push BUILD_ARGS='--build-arg SERVER_API_BASE_URL=http://backend:8000' \
-          BACKEND_TARGET=prod FRONTEND_TARGET=prod
-
 # On the node matching the placement constraint, once. Swarm does NOT create bind
 # sources the way `docker run` does -- without these the db/redis/beat tasks are
 # rejected with "bind source path does not exist".
 sudo mkdir -p /mnt/persist/blueskies/{postgres,redis,beat}
 
-docker stack deploy -c service-compose.yml blueskies1
-docker stack services blueskies1
+make release        # build + push + deploy, from a swarm manager
+make deploy-status  # services and any task errors
 ```
+
+`release` is `push` then `deploy`. The two are also separate targets, because they are
+needed independently:
+
+```bash
+make deploy   # redeploy after editing service-compose.yml only -- no rebuild
+make push     # publish images without touching the running stack
+```
+
+`STACK` (default `blueskies1`) and `STACK_FILE` (default `service-compose.yml`) are
+overridable, so a second environment is `make release STACK=blueskies-staging`.
 
 Expect the backend to fail its first attempt or two while Postgres is still being
 scheduled: the entrypoint waits 60s for the database, then exits, and the restart policy

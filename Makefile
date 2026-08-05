@@ -8,6 +8,7 @@
 #   make push TAG=v1.2.3
 #   make build REGISTRY=localhost:5000 PLATFORM=linux/amd64
 #   make push BUILD_ARGS='--build-arg SERVER_API_BASE_URL=http://backend:8000'
+#   make release STACK=blueskies1
 
 REGISTRY        ?= direct:5000
 PROJECT         ?= blueskies
@@ -15,12 +16,19 @@ TAG             ?= latest
 DOCKER          ?= docker
 PLATFORM        ?=
 BUILD_ARGS      ?=
-# Both Dockerfiles are currently single-stage, so no --target is passed by default.
-# Once they gain named stages, set these (e.g. BACKEND_TARGET=prod) rather than
-# relying on the last stage winning, so appending a stage cannot silently change
-# what is published.
-BACKEND_TARGET  ?=
-FRONTEND_TARGET ?=
+# Both Dockerfiles are multi-stage. The stage is named explicitly rather than left to
+# the last-stage-wins default, so appending a stage cannot silently change what ships.
+# Set to dev to publish a development image for debugging.
+BACKEND_TARGET  ?= prod
+FRONTEND_TARGET ?= prod
+
+# Swarm deployment. STACK is the stack name; the service DNS names inside the stack
+# are unaffected by it.
+STACK           ?= blueskies1
+STACK_FILE      ?= service-compose.yml
+# --with-registry-auth forwards this client's registry credentials to the swarm
+# managers, which is what lets the other nodes pull from a private registry.
+DEPLOY_FLAGS    ?= --detach=true --with-registry-auth
 
 # Resolved once per invocation rather than once per use.
 REV := $(shell git rev-parse --short HEAD 2>/dev/null)
@@ -44,7 +52,8 @@ BACKEND_TARGET_FLAG  := $(if $(strip $(BACKEND_TARGET)),--target $(strip $(BACKE
 FRONTEND_TARGET_FLAG := $(if $(strip $(FRONTEND_TARGET)),--target $(strip $(FRONTEND_TARGET)),)
 
 .DEFAULT_GOAL := help
-.PHONY: help build build-backend build-frontend push push-backend push-frontend clean print-images
+.PHONY: help build build-backend build-frontend push push-backend push-frontend \
+        deploy release deploy-status clean print-images
 
 ## --- build ------------------------------------------------------------------
 
@@ -80,6 +89,28 @@ push-frontend: build-frontend ## Build and push the frontend image (both tags)
 
 push: push-backend push-frontend ## Build and push both images
 
+## --- deploy -----------------------------------------------------------------
+
+# `deploy` deliberately does NOT depend on `push`: redeploying after editing only the
+# stack file should not rebuild images, and the swarm pulls from the registry rather
+# than from this machine. Use `release` (or `make push deploy`) to do both.
+#
+# The stack must be deployed from a swarm manager. Deploying a new hostname also needs
+# `docker service update --force traefik_traefik` afterwards -- Traefik's replicas race
+# on ACME and only the winner holds the new certificate. That is left manual because it
+# restarts the ingress for every stack on the swarm, not just this one.
+
+deploy: ## Deploy the stack to Docker Swarm (does not build or push)
+	$(DOCKER) stack deploy -c $(STACK_FILE) $(DEPLOY_FLAGS) $(STACK)
+
+release: push deploy ## Build, push, then deploy
+
+deploy-status: ## Show the deployed services and any task errors
+	@$(DOCKER) stack services $(STACK)
+	@echo ""
+	@$(DOCKER) stack ps $(STACK) --no-trunc \
+		--format 'table {{.Name}}\t{{.Node}}\t{{.CurrentState}}\t{{.Error}}' | head -20
+
 ## --- housekeeping -----------------------------------------------------------
 
 clean: ## Remove the locally built image tags (safe to re-run)
@@ -107,3 +138,6 @@ help: ## List the available targets
 	@echo "  DOCKER=$(DOCKER)"
 	@echo "  PLATFORM=$(PLATFORM)"
 	@echo "  BUILD_ARGS=$(BUILD_ARGS)"
+	@echo "  STACK=$(STACK)"
+	@echo "  STACK_FILE=$(STACK_FILE)"
+	@echo "  DEPLOY_FLAGS=$(DEPLOY_FLAGS)"
