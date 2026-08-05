@@ -10,6 +10,28 @@
 # otherwise none of the derivation below has happened.
 set -e
 
+# --- Secrets ----------------------------------------------------------------
+#
+# Swarm delivers secrets as files under /run/secrets/. FOO_FILE=/run/secrets/x exports
+# FOO with that file's contents, which is the convention the postgres and redis images
+# already use. Runs first so everything below (REDIS_URL included) can come from a secret.
+#
+# An explicitly set FOO wins, so the compose development flow -- which sets no *_FILE
+# variables at all -- is untouched.
+
+for _var in $(env | sed -n 's/^\([A-Za-z_][A-Za-z0-9_]*\)_FILE=.*/\1/p'); do
+    eval "_path=\${${_var}_FILE}"
+    if [ ! -r "$_path" ]; then
+        echo "entrypoint: ${_var}_FILE=$_path is not readable" >&2
+        exit 1
+    fi
+    eval "_current=\${${_var}:-}"
+    if [ -z "$_current" ]; then
+        export "$_var=$(cat "$_path")"
+    fi
+done
+unset _var _path _current
+
 # --- Redis ------------------------------------------------------------------
 #
 # The stack file supplies one REDIS_URL. Deriving the rest here keeps the same host
@@ -34,7 +56,14 @@ if [ -n "${REDIS_URL:-}" ]; then
     case "$REDIS_URL" in
         */0\?*) _result_url=$(printf '%s' "$REDIS_URL" | sed 's|/0?|/1?|') ;;
         */0) _result_url="${REDIS_URL%/0}/1" ;;
-        *) _result_url="$REDIS_URL" ;;
+        *)
+            # Only db 0 is split automatically. Anything else would need parsing an
+            # arbitrary index, so say plainly that results and messages will share a db
+            # rather than pretending the separation happened.
+            _result_url="$REDIS_URL"
+            echo "entrypoint: REDIS_URL does not end in /0; results will share the" \
+                 "broker's database. Set CELERY_RESULT_BACKEND explicitly to separate them." >&2
+            ;;
     esac
 
     [ -z "${CELERY_BROKER_URL:-}" ] && export CELERY_BROKER_URL="$REDIS_URL"
@@ -49,23 +78,56 @@ fi
 # to converge. Bounded so a genuinely unreachable database fails loudly instead of
 # hanging a task forever in "starting".
 
+# A malformed override must fail the task, not run the loop forever: `[ 0 -ge abc ]`
+# exits 2, which as an `if` condition is indistinguishable from "not yet expired".
+_require_seconds() {
+    case "$2" in
+        ''|*[!0-9]*)
+            echo "entrypoint: $1 must be a non-negative integer, got '$2'" >&2
+            exit 1
+            ;;
+    esac
+}
+
+# A real connection, not a TCP handshake: Postgres accepts connections on the port
+# well before it will serve SQL, and a bare port check lets `migrate` run into that
+# window. connect_timeout keeps one probe from outliving the deadline below.
+_db_ready() {
+    python - <<'PY' 2>/dev/null
+import os
+import sys
+
+import psycopg
+
+# Defaults mirror backend/config/settings.py DATABASES["default"].
+try:
+    psycopg.connect(
+        host=os.environ.get("POSTGRES_HOST", "db"),
+        port=os.environ.get("POSTGRES_PORT", "5432"),
+        dbname=os.environ.get("POSTGRES_DB", "blueskies"),
+        user=os.environ.get("POSTGRES_USER", "blueskies"),
+        password=os.environ.get("POSTGRES_PASSWORD", "blueskies"),
+        connect_timeout=2,
+    ).close()
+except Exception:
+    sys.exit(1)
+PY
+}
+
 _db_host="${POSTGRES_HOST:-db}"
 _db_port="${POSTGRES_PORT:-5432}"
 _wait="${POSTGRES_WAIT_SECONDS:-60}"
-_waited=0
+_require_seconds POSTGRES_WAIT_SECONDS "$_wait"
 
-while ! python -c "
-import socket, sys
-try:
-    socket.create_connection(('$_db_host', $_db_port), timeout=2).close()
-except OSError:
-    sys.exit(1)
-" 2>/dev/null; do
-    if [ "$_waited" -ge "$_wait" ]; then
-        echo "entrypoint: $_db_host:$_db_port unreachable after ${_wait}s" >&2
+# A wall-clock deadline, not a per-iteration counter: each probe can itself burn up to
+# its connect timeout, so counting only the sleeps overshoots the documented bound.
+_deadline=$(($(date +%s) + _wait))
+
+while ! _db_ready; do
+    if [ "$(date +%s)" -ge "$_deadline" ]; then
+        echo "entrypoint: $_db_host:$_db_port not accepting queries after ${_wait}s" >&2
         exit 1
     fi
-    _waited=$((_waited + 2))
     sleep 2
 done
 
@@ -86,6 +148,24 @@ case "${DJANGO_MIGRATE_ON_START:-}" in
     1|true|True|TRUE|yes|on)
         echo "entrypoint: applying migrations"
         python manage.py migrate --noinput
+        ;;
+    *)
+        # Everything else waits for those migrations instead of racing them. Swarm
+        # starts all four backend services at once, so without this barrier a worker
+        # can pick up queued work and run it against the previous schema for as long
+        # as `backend` takes to migrate.
+        _mwait="${MIGRATION_WAIT_SECONDS:-300}"
+        _require_seconds MIGRATION_WAIT_SECONDS "$_mwait"
+        _mdeadline=$(($(date +%s) + _mwait))
+
+        while ! python manage.py migrate --check >/dev/null 2>&1; do
+            if [ "$(date +%s)" -ge "$_mdeadline" ]; then
+                echo "entrypoint: migrations still pending after ${_mwait}s" >&2
+                exit 1
+            fi
+            echo "entrypoint: waiting for migrations to be applied"
+            sleep 5
+        done
         ;;
 esac
 

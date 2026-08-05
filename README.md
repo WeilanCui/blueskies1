@@ -205,26 +205,39 @@ overlay, so Django never needs to be exposed. Traefik routes
 # sources the way `docker run` does -- without these the db/redis/beat tasks are
 # rejected with "bind source path does not exist".
 sudo mkdir -p /mnt/persist/blueskies/{postgres,redis,beat}
+# The backend image runs as uid 10001, which must own the beat schedule directory.
+sudo chown 10001:10001 /mnt/persist/blueskies/beat
+
+# Once per swarm, before the first deploy -- see "Credentials" below.
+openssl rand -base64 48 | docker secret create blueskies_django_secret_key -
+openssl rand -base64 24 | docker secret create blueskies_postgres_password -
 
 make release        # build + push + deploy, from a swarm manager
 make deploy-status  # services and any task errors
 ```
 
-`release` is `push` then `deploy`. The two are also separate targets, because they are
-needed independently:
+`release` is `push` followed by `deploy TAG=<revision>`, so the running stack always names
+the commit it was built from (`-dirty` when built from uncommitted work). The two halves
+are also separate targets, because they are needed independently:
 
 ```bash
-make deploy   # redeploy after editing service-compose.yml only -- no rebuild
+make deploy   # redeploy after editing service-compose.yml only -- no rebuild, TAG=latest
 make push     # publish images without touching the running stack
 ```
+
+The stack file's image references are `${REGISTRY:-direct:5000}/${PROJECT:-blueskies}-*`
+`:${TAG:-latest}`, and the Makefile exports those three variables, so overriding
+`REGISTRY` or `PROJECT` moves both the push and the deploy together. `docker service
+inspect --format '{{.Spec.TaskTemplate.ContainerSpec.Image}}' blueskies1_web` reports which
+revision is live.
 
 `STACK` (default `blueskies1`) and `STACK_FILE` (default `service-compose.yml`) are
 overridable, so a second environment is `make release STACK=blueskies-staging`.
 
 Expect the backend to fail its first attempt or two while Postgres is still being
-scheduled: the entrypoint waits 60s for the database, then exits, and the restart policy
-retries. This is self-correcting — `POSTGRES_WAIT_SECONDS` raises the window if your
-scheduler is slower than that.
+scheduled: the entrypoint waits 60s for the database to accept a real connection, then
+exits, and the restart policy retries. This is self-correcting — `POSTGRES_WAIT_SECONDS`
+raises the window if your scheduler is slower than that.
 
 ### After adding a hostname, restart Traefik
 
@@ -282,26 +295,45 @@ Things that will bite you if you don't know them:
   Changing the backend address therefore needs a rebuild and re-push, not just a redeploy.
 - **`celery` and `celery-beat` deliberately do not set `DJANGO_MIGRATE_ON_START`.** They
   share the backend image, and would otherwise all migrate concurrently on every deploy.
+  Instead the entrypoint blocks them on `migrate --check` until `backend` has finished, so
+  a worker never consumes queued tasks against the previous schema. `MIGRATION_WAIT_SECONDS`
+  (default 300) bounds that wait; exceeding it fails the task and the restart policy retries.
 - **`db`, `redis` and `celery-beat` are pinned by placement constraint** to the node holding
   their data under `/mnt/persist/blueskies/`. Adjust the `node.labels.name` constraint to
   match your swarm.
 
 ### Credentials
 
-`service-compose.yml` holds its credentials in **plaintext**, matching the convention of
-the other stacks on this swarm. Anyone who can read the repo or run `docker stack config`
-can read the database password and the API keys.
+The Django secret key and the Postgres password are **Swarm secrets**, declared
+`external: true` so their values exist only on the swarm:
 
-The checked-in values are the ones currently deployed, committed deliberately while this
-is a prototype. **They must be rolled before this serves real users**, and at that point
-the credentials should move out of the file entirely. Two ways to do that without
-restructuring it:
+```bash
+openssl rand -base64 48 | docker secret create blueskies_django_secret_key -
+openssl rand -base64 24 | docker secret create blueskies_postgres_password -
+```
 
-- Move the sensitive subset into an `env_file:` on a host path under
-  `/mnt/persist/blueskies/config/`, as the keycloak and grafana stacks do.
-- Adopt Swarm `secrets:`. `backend/deploy/entrypoint.sh` is already shaped for this — it
-  exports derived values before `exec`, so reading `*_FILE` secrets is a small edit to one
-  script rather than a change to every service definition.
+Services mount them at `/run/secrets/<name>` and reference them as `DJANGO_SECRET_KEY_FILE`
+and `POSTGRES_PASSWORD_FILE`. `backend/deploy/entrypoint.sh` expands **any** `FOO_FILE` into
+`FOO` before starting the process, so `OPENAI_API_KEY` and `NCBI_API_KEY` follow the same
+path once they stop being empty — add a secret and swap the variable for its `_FILE` form.
+The `postgres` image reads `POSTGRES_PASSWORD_FILE` natively. An explicitly set `FOO` always
+wins over `FOO_FILE`, which is why local `docker compose` development is unaffected.
+
+Rotating a secret Swarm cannot update in place (a secret's contents are immutable):
+
+```bash
+# 1. The postgres image sets the role's password only when it initialises an empty
+#    data directory, so an existing deployment must be told directly.
+docker exec -it $(docker ps -qf name=blueskies1_db) \
+  psql -U blueskies -d blueskies -c "ALTER ROLE blueskies WITH PASSWORD '<new>';"
+
+# 2. Replace the secret under a new name, point the stack file at it, redeploy.
+printf '%s' '<new>' | docker secret create blueskies_postgres_password_v2 -
+```
+
+**Earlier revisions of this repository committed the live secret key and database password
+in plaintext.** Git history is permanent, so both values must be treated as compromised and
+rotated — the key rotation invalidates every existing session, which is expected.
 
 ## Backend Notes
 

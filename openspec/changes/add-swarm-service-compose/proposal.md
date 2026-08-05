@@ -53,7 +53,8 @@ None. No existing spec's requirements change.
 - **Runtime dependencies**: an existing Swarm with a `public` overlay network and a Traefik
   instance using the `le` cert resolver, plus writable `/mnt/persist/blueskies/` on the
   target node. All are external and pre-existing.
-- **Credentials are in plaintext** in `service-compose.yml`, matching the surrounding
-  tempest stacks. See the security note in the design.
+- **Credentials are external Swarm secrets** (`blueskies_django_secret_key`,
+  `blueskies_postgres_password`), consumed as `*_FILE` and expanded by the entrypoint. They
+  must exist on the swarm before the first deploy. See the design's credentials decision.
 - Local development is unaffected: `docker compose up --build` continues to build and run
   the `dev` stages exactly as today.

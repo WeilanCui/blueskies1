@@ -18,7 +18,8 @@ should read like a sibling of those. The conventions observed there and adopted 
 - Traefik labels under `deploy.labels`, opening with the same four keys, router named
   `<name>-https`, `certresolver=le`.
 - The three-line `net.ipv4.tcp_keepalive_*` `sysctls:` block on most services.
-- No `secrets:` anywhere; credentials sit inline in `environment:`.
+- No `secrets:` anywhere; credentials sit inline in `environment:`. (This stack departs
+  from that one convention — see the credentials decision below.)
 
 ## Goals / Non-Goals
 
@@ -61,34 +62,40 @@ two loop.
 Rejected — it needs Django on the `public` network, which defeats the single-ingress goal
 for a path used a few times a month.
 
-### Plaintext credentials in `environment:`, matching the neighbours
+### Credentials as external Swarm secrets
 
-Per direction, this stack follows the tempest house style: no `secrets:`, values inline.
+The stack originally followed the tempest house style — values inline in `environment:` —
+and that shipped briefly. It was wrong for a repository with a remote: anyone who could read
+the repo could read the database password and forge sessions with the Django secret key, and
+git history makes that permanent. The credentials are now `external: true` Swarm secrets
+(`blueskies_django_secret_key`, `blueskies_postgres_password`), created with
+`docker secret create` and mounted at `/run/secrets/`; the stack file carries only the names.
+The values committed earlier must be treated as burned and rotated.
 
-**This is a deliberate trade-off with a real cost, recorded here so it is not mistaken for
-an oversight.** Anyone who can run `docker stack config`, read the repo, or inspect the
-service definition can read the database password and the OpenAI and NCBI API keys. The
-file must therefore never carry production credentials into a public remote. Two mitigations
-are available later without restructuring: move the sensitive subset into an `env_file:`
-under `/mnt/persist/blueskies/config/`, as the keycloak and grafana stacks do, or adopt
-Swarm `secrets:` — the entrypoint below is already shaped to make that a small change.
+`external: true` rather than a stack-defined secret because a stack-defined one still needs
+its value from a file at deploy time, which puts it back into the operator's tree.
+API-key slots (`OPENAI_API_KEY`, `NCBI_API_KEY`) stay as empty `environment:` entries: there
+is nothing to protect yet, and the `_FILE` mechanism below covers them unchanged when there is.
 
-### An entrypoint, but for startup ordering rather than secrets
+### An entrypoint, for startup ordering and secret expansion
 
-The direction selected an entrypoint script alongside plaintext env. With no secret files to
-bridge, `backend/deploy/entrypoint.sh` earns its place doing two other jobs:
+`backend/deploy/entrypoint.sh` earns its place doing three jobs:
 
+- **Expand `FOO_FILE` into `FOO`.** Swarm presents a secret as a file; Django reads
+  environment variables. One generic loop bridges the two for every variable, so adding a
+  secret is a stack-file change only. An explicitly set `FOO` wins, leaving compose untouched.
 - **Derive the Celery URLs from one `REDIS_URL`.** Otherwise the same host and port are
   repeated across three variables on three services, and they drift. The script also gives
   the result backend its own logical database, and handles `rediss://` needing an explicit
   `ssl_cert_reqs`.
 - **Wait for Postgres before exec'ing.** Swarm has no `depends_on`; without this, backend,
   worker and beat all crash-loop through their restart policy until the database is up.
-  Noisy, and slow to converge.
+  Noisy, and slow to converge. The probe opens a real `psycopg` connection rather than a TCP
+  socket, because Postgres accepts connections on the port before it will serve SQL, and it
+  is bounded by a wall-clock deadline so the probe's own timeout cannot double the wait.
 
 It ends in `exec "$@"`, so the container's `CMD` is still what runs and signals propagate
-correctly. Keeping the file means adopting Swarm secrets later is an edit to one script
-rather than a change of shape. Note that `docker exec` bypasses an entrypoint, so
+correctly. Note that `docker exec` bypasses an entrypoint, so
 management commands must be run as `/app/deploy/entrypoint.sh python manage.py ...`.
 
 ### Migrations run automatically, on the Django service only
@@ -97,6 +104,12 @@ The entrypoint runs `migrate` when `DJANGO_MIGRATE_ON_START` is set, and the sta
 sets it **only on the `backend` service**. Celery worker and beat share the same image and
 the same entrypoint, so without that gate all three would migrate concurrently on every
 deploy and race each other.
+
+The services that do **not** migrate do not simply proceed: they block on
+`manage.py migrate --check` until the Django service has finished. Swarm starts all four at
+once, so without that barrier a worker can pull queued tasks and execute them against the
+previous schema for as long as `backend` takes to migrate. `MIGRATION_WAIT_SECONDS` bounds
+the wait; exceeding it fails the task, and `restart_policy: on-failure` retries.
 
 The gate is an explicit environment variable rather than the entrypoint inspecting `$@` to
 guess whether it is about to run gunicorn. Sniffing the command couples the entrypoint to
@@ -147,8 +160,9 @@ self-contained and independently deployable.
 
 ## Risks / Trade-offs
 
-- **Credentials readable by anyone with Swarm or repo access** → Accepted per direction and
-  documented above; two migration paths recorded. Do not commit production values.
+- **Credentials committed in an earlier revision of this branch** → Permanent in git
+  history. Both values are rotated and the stack now reads external Swarm secrets; nothing
+  sensitive remains in the file.
 - **Bind mounts pin datastores to one node** → Deliberate: placement constraints make it
   explicit rather than accidental. A node loss requires restoring the path.
 - **`SERVER_API_BASE_URL` is baked into the frontend image at build time** → A different
@@ -172,9 +186,9 @@ self-contained and independently deployable.
 
 Additive; no existing deployment to migrate. Order: build and push images with the
 `Makefile`, ensure `/mnt/persist/blueskies/{postgres,redis}` exist on the target node, then
-`docker stack deploy -c service-compose.yml blueskies`. The backend applies migrations
+`docker stack deploy -c service-compose.yml blueskies1`. The backend applies migrations
 itself on start; only `createsuperuser` is a manual one-off, run via the entrypoint.
-Rollback is `docker stack rm blueskies` — note that this does not unapply migrations; the
+Rollback is `docker stack rm blueskies1` — note that this does not unapply migrations; the
 bind-mounted data survives, and local development is untouched throughout.
 
 ## Open Questions

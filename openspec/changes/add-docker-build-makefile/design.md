@@ -1,16 +1,17 @@
 ## Context
 
-`backend/Dockerfile` and `frontend/Dockerfile` are single-stage and dev-oriented.
-`docker-compose.yml` builds them directly, so the local development flow is fully served.
-Nothing in the repository builds or publishes images for deployment — there is no
-Makefile, no CI workflow, and no reference to any registry anywhere in the tree.
+`backend/Dockerfile` (`dev`, `prod`) and `frontend/Dockerfile` (`dev`, `builder`, `prod`)
+are multi-stage, and `docker-compose.yml` pins `target: dev` on every built service, so the
+local development flow is fully served. Nothing in the repository builds or publishes the
+production stages for deployment — there is no Makefile, no CI workflow, and no reference
+to any registry anywhere in the tree.
 
 The deployment target is a Docker Swarm platform fed from a local registry at `direct:5000`.
 Constraints that shape this design:
 
 - The two build contexts differ (`./backend`, `./frontend`) and are not interchangeable.
-- The Dockerfiles are expected to gain named stages (a production stage per service) and
-  build arguments later. The Makefile must accommodate both without being rewritten.
+- Each Dockerfile has a `prod` stage and takes build arguments. The Makefile must name the
+  stage explicitly and pass arguments through, without being rewritten when a stage is added.
 - `direct:5000` is a plain-HTTP registry. Docker refuses to push to it unless the daemon
   is configured, which is a root-owned host change.
 
@@ -30,24 +31,25 @@ Constraints that shape this design:
 - Wrapping development commands (`up`, `down`, `migrate`, `test`, `lint`). The Makefile is
   build-and-publish only; `CLAUDE.md` and `README.md` already document the compose commands.
 - Modifying any Dockerfile or `docker-compose.yml`.
-- Configuring the Docker daemon's `insecure-registries`, creating the registry, or
-  deploying the pushed images. Those are host- and platform-level concerns.
+- Configuring the Docker daemon's `insecure-registries` or creating the registry. Those are
+  host-level concerns. (Deploying the pushed images *is* in scope: `deploy`, `release` and
+  `deploy-status` wrap `docker stack deploy` against the stack file from
+  `add-swarm-service-compose`.)
 - Multi-architecture manifests via buildx. A `PLATFORM` passthrough is provided for the
   single-arch case; true multi-arch is a later change if the platform demands it.
 - CI integration. The repository has no workflows; adding one is a separate change.
 
 ## Decisions
 
-### Stage selection is explicit when it happens at all
+### Stage selection is explicit
 
-The Dockerfiles are single-stage today, so no `--target` is passed and the flag expands to
-nothing. Per-image variables (`BACKEND_TARGET`, `FRONTEND_TARGET`) exist and are empty by
-default. When the Dockerfiles gain named stages, the operator sets the variable rather than
-the Makefile relying on the last stage winning — that positional default is fragile, since
-appending a stage would silently change what gets published.
+Per-image variables (`BACKEND_TARGET`, `FRONTEND_TARGET`) default to `prod`, so `--target
+prod` is always passed. The alternative — relying on the last stage winning — is fragile,
+since appending a stage would silently change what gets published. Setting either variable
+to `dev` publishes a development image for debugging; setting it empty drops the flag.
 
-*Alternative considered:* hard-code a `prod` target now, in anticipation. Rejected: it
-breaks every build until those stages actually exist.
+*Alternative considered:* leave both empty and let the positional default apply. Rejected
+for the reason above.
 
 ### Two tags per build, applied in a single `docker build`
 

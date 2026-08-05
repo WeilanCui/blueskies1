@@ -82,6 +82,29 @@ build target SHALL each be overridable as make variables on the command line.
 - **WHEN** the operator sets `DOCKER` to a `docker`-compatible executable
 - **THEN** all build and push invocations use that executable
 
+### Requirement: The published images can be deployed to the Swarm stack
+
+The Makefile SHALL provide targets that deploy `service-compose.yml` to Docker Swarm, and
+the deploying target SHALL reference the same images the publishing targets produced.
+
+#### Scenario: Building, publishing and deploying in one command
+
+- **WHEN** the operator runs `make release`
+- **THEN** both images are built and pushed before any deployment begins, including under `make -j`
+- **AND** the stack is deployed referencing the revision tag just published, not the mutable tag
+
+#### Scenario: Redeploying without rebuilding
+
+- **WHEN** the operator runs `make deploy`
+- **THEN** the stack file is deployed as-is
+- **AND** no image is built or pushed
+
+#### Scenario: Overridden registry or project name
+
+- **WHEN** the operator overrides `REGISTRY` or `PROJECT` for a deployment
+- **THEN** the deployed services reference images under those same values
+- **AND** a stack file deployed without those variables set resolves the documented defaults
+
 ### Requirement: Local development remains unaffected
 
 Introducing the Makefile SHALL NOT change how the local development stack is built or run.

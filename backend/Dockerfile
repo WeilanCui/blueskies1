@@ -36,6 +36,13 @@ RUN DJANGO_DEBUG=False DJANGO_SECRET_KEY=collectstatic-build-only \
 
 RUN chmod +x deploy/entrypoint.sh
 
+# Drop root for the running service: it holds the database password and the Django
+# secret key, and needs no privileged port (gunicorn binds 8000) and no runtime writes
+# (whitenoise serves the collectstatic output produced above).
+RUN useradd --create-home --uid 10001 app \
+    && chown -R app:app /app
+USER app
+
 EXPOSE 8000
 
 ENTRYPOINT ["/app/deploy/entrypoint.sh"]

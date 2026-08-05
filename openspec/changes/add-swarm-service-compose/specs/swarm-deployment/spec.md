@@ -3,7 +3,7 @@
 ### Requirement: The stack deploys from a single Swarm compose file
 
 The repository SHALL provide `service-compose.yml`, deployable with
-`docker stack deploy -c service-compose.yml blueskies`, declaring every service the
+`docker stack deploy -c service-compose.yml blueskies1`, declaring every service the
 application needs to run.
 
 #### Scenario: Deploying the stack
@@ -76,6 +76,12 @@ Celery worker and beat services share the same image and SHALL NOT apply migrati
 - **THEN** the Django service applies them before it begins serving requests
 - **AND** no other service attempts to apply them
 
+#### Scenario: A service that does not migrate is scheduled first
+
+- **WHEN** the Celery worker or beat service starts while migrations are still being applied
+- **THEN** it waits for the schema to be current before executing its command
+- **AND** it fails its task rather than waiting indefinitely if the bound is exceeded
+
 #### Scenario: A migration fails
 
 - **WHEN** applying migrations fails
@@ -85,6 +91,23 @@ Celery worker and beat services share the same image and SHALL NOT apply migrati
 
 - **WHEN** the Django service is scheduled
 - **THEN** exactly one replica of it runs, so two replicas cannot migrate concurrently
+
+### Requirement: Credentials are supplied as Swarm secrets
+
+The stack file SHALL NOT contain credential values. The Django secret key and the database
+password SHALL be supplied as Swarm secrets and referenced by name, and services SHALL
+consume them through `*_FILE` variables.
+
+#### Scenario: Deploying with secrets present
+
+- **WHEN** the stack is deployed on a swarm where the named secrets exist
+- **THEN** each service reads its credential from `/run/secrets/` at startup
+- **AND** no credential value appears in the stack file or in `docker stack config` output
+
+#### Scenario: Local development is unaffected
+
+- **WHEN** the development stack runs under `docker compose`, which sets no `*_FILE` variables
+- **THEN** the explicitly set environment variables are used unchanged
 
 ### Requirement: Application state survives service restarts
 

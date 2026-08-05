@@ -109,10 +109,20 @@ Things to preserve when changing this area:
   evaluated at **build time**, so `frontend/Dockerfile` passes `SERVER_API_BASE_URL` as a
   build `ARG`. The `:path*` destinations deliberately re-append the trailing slash Next
   strips, or Django's `APPEND_SLASH` loops.
-- `backend/deploy/entrypoint.sh` derives the Celery/cache URLs from one `REDIS_URL`, waits
-  for Postgres, and runs `migrate` **only when `DJANGO_MIGRATE_ON_START` is set** — which
-  the stack file sets on `backend` alone. Celery and beat share the image and must not
-  migrate. This keeps `backend` at `replicas: 1` by necessity, not preference.
+- `backend/deploy/entrypoint.sh` expands any `FOO_FILE` into `FOO` (Swarm secrets), derives
+  the Celery/cache URLs from one `REDIS_URL`, waits for Postgres to accept a real
+  connection, and runs `migrate` **only when `DJANGO_MIGRATE_ON_START` is set** — which the
+  stack file sets on `backend` alone. Celery and beat share the image and must not migrate;
+  they instead block on `migrate --check` so they never process work against the old schema.
+  This keeps `backend` at `replicas: 1` by necessity, not preference.
+- Credentials are **external Swarm secrets** (`blueskies_django_secret_key`,
+  `blueskies_postgres_password`), consumed as `*_FILE`. Never inline a secret value in
+  `service-compose.yml`; an earlier revision did, and those values are burned.
+- Stack image references interpolate `${REGISTRY:-direct:5000}`, `${PROJECT:-blueskies}` and
+  `${TAG:-latest}`; the Makefile exports all three, and `make release` deploys `TAG=$(REV)`
+  so the live stack names its commit. A bare `docker stack deploy` still resolves defaults.
+- The prod backend image runs as uid 10001, so `/mnt/persist/blueskies/beat` on the host
+  must be owned by it or celery-beat cannot write its schedule.
 - `docker exec` bypasses the entrypoint, so run management commands as
   `/app/deploy/entrypoint.sh python manage.py ...`.
 - `settings.py` keeps the discrete `POSTGRES_*` path; `DJANGO_CACHE_URL` switches DRF

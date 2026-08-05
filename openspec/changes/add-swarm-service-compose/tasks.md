@@ -52,7 +52,7 @@
 - [x] 6.3 Document that `backend` must stay at one replica while migration is entrypoint-driven, and that scaling it requires moving migration to a one-shot service first
 - [x] 6.4 Note that an image rollback does not roll back applied migrations, so migrations should be written reversibly
 - [x] 6.5 Document that `SERVER_API_BASE_URL` is baked into the frontend image at build time, so changing the backend address requires a rebuild rather than a redeploy
-- [x] 6.6 State plainly that `service-compose.yml` holds credentials in plaintext, that production values must not be committed, and record the `env_file` and Swarm-secrets migration paths
+- [x] 6.6 Document the Swarm secrets the stack requires, how to create them, how to rotate the Postgres password against an existing data directory, and that no credential value belongs in `service-compose.yml`
 - [x] 6.7 Add a "Deployment" section to `CLAUDE.md` listing what to preserve when editing this area: keep `dev` stages in sync, the build-time rewrite dependency, and the entrypoint bypass
 
 ## 7. Verification

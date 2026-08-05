@@ -1,13 +1,26 @@
 # Docker Swarm stack for blueskies. Deploy with:
+#   make release              (builds, pushes, deploys the current revision)
 #   docker stack deploy -c service-compose.yml blueskies1
 #
-# PRE-PRODUCTION. The DJANGO_SECRET_KEY and POSTGRES_PASSWORD below are the values
-# currently deployed, committed deliberately while this is a prototype. They must be
-# rolled before this serves real users, at which point move them out of this file --
-# either an env_file: on a host path under /mnt/persist/blueskies/config/, as the
-# keycloak and grafana stacks do, or Swarm secrets: (backend/deploy/entrypoint.sh is
-# already shaped to read *_FILE secrets, so that is a change to one script).
+# Credentials live in Swarm secrets, never in this file. Create them once per swarm
+# before the first deploy:
+#   openssl rand -base64 48 | docker secret create blueskies_django_secret_key -
+#   openssl rand -base64 24 | docker secret create blueskies_postgres_password -
+# The backend entrypoint expands any FOO_FILE into FOO, so the same mechanism covers
+# OPENAI_API_KEY and NCBI_API_KEY when those stop being empty. See README.md.
+#
+# Image references interpolate REGISTRY, PROJECT and TAG from the deploying shell's
+# environment (the Makefile exports them); the defaults below are what a bare
+# `docker stack deploy` resolves to.
 version: '3.9'
+
+secrets:
+  # external: the values are created with `docker secret create` on the swarm and are
+  # not reproducible from this repository.
+  blueskies_django_secret_key:
+    external: true
+  blueskies_postgres_password:
+    external: true
 
 networks:
   public:
@@ -21,7 +34,7 @@ networks:
 services:
 
   web:
-    image: direct:5000/blueskies-frontend:latest
+    image: ${REGISTRY:-direct:5000}/${PROJECT:-blueskies}-frontend:${TAG:-latest}
     environment:
       - NODE_ENV=production
       - HOSTNAME=0.0.0.0
@@ -74,15 +87,19 @@ services:
         - traefik.http.services.blueskies.loadbalancer.server.port=3000
 
   backend:
-    image: direct:5000/blueskies-backend:latest
+    image: ${REGISTRY:-direct:5000}/${PROJECT:-blueskies}-backend:${TAG:-latest}
+    secrets:
+      - blueskies_django_secret_key
+      - blueskies_postgres_password
     environment:
       - POSTGRES_DB=blueskies
       - POSTGRES_USER=blueskies
-      - POSTGRES_PASSWORD=9gHGswNaF7AU3hO6iQ40jfbwEpKBcWfC
+      # The entrypoint expands these into POSTGRES_PASSWORD / DJANGO_SECRET_KEY.
+      - POSTGRES_PASSWORD_FILE=/run/secrets/blueskies_postgres_password
       - POSTGRES_HOST=db
       - POSTGRES_PORT=5432
       - REDIS_URL=redis://redis:6379/0
-      - DJANGO_SECRET_KEY=immk5e(RdFe27WhFhgm2i6ckZLK7HubEB(d&XEfq@&D4LrG^NIubYios%0fYM4Ih
+      - DJANGO_SECRET_KEY_FILE=/run/secrets/blueskies_django_secret_key
       - DJANGO_DEBUG=False
       - DJANGO_ALLOWED_HOSTS=backend,localhost,127.0.0.1,blueskies1.tempestnetworks.net
       - DJANGO_CSRF_TRUSTED_ORIGINS=https://blueskies1.tempestnetworks.net
@@ -134,16 +151,19 @@ services:
         condition: on-failure
 
   celery:
-    image: direct:5000/blueskies-backend:latest
+    image: ${REGISTRY:-direct:5000}/${PROJECT:-blueskies}-backend:${TAG:-latest}
     command: celery -A config worker --loglevel=info
+    secrets:
+      - blueskies_django_secret_key
+      - blueskies_postgres_password
     environment:
       - POSTGRES_DB=blueskies
       - POSTGRES_USER=blueskies
-      - POSTGRES_PASSWORD=9gHGswNaF7AU3hO6iQ40jfbwEpKBcWfC
+      - POSTGRES_PASSWORD_FILE=/run/secrets/blueskies_postgres_password
       - POSTGRES_HOST=db
       - POSTGRES_PORT=5432
       - REDIS_URL=redis://redis:6379/0
-      - DJANGO_SECRET_KEY=immk5e(RdFe27WhFhgm2i6ckZLK7HubEB(d&XEfq@&D4LrG^NIubYios%0fYM4Ih
+      - DJANGO_SECRET_KEY_FILE=/run/secrets/blueskies_django_secret_key
       - DJANGO_DEBUG=False
       - DJANGO_ALLOWED_HOSTS=backend,localhost,127.0.0.1
       - OPENAI_API_KEY=
@@ -180,19 +200,22 @@ services:
         condition: on-failure
 
   celery-beat:
-    image: direct:5000/blueskies-backend:latest
+    image: ${REGISTRY:-direct:5000}/${PROJECT:-blueskies}-backend:${TAG:-latest}
     # --schedule keeps the state file on the persistent mount. Note it must be passed
     # here rather than by changing working_dir, since `-A config` resolves relative to
     # /app where the code lives.
     command: celery -A config beat --loglevel=info --schedule=/var/lib/celerybeat/celerybeat-schedule
+    secrets:
+      - blueskies_django_secret_key
+      - blueskies_postgres_password
     environment:
       - POSTGRES_DB=blueskies
       - POSTGRES_USER=blueskies
-      - POSTGRES_PASSWORD=9gHGswNaF7AU3hO6iQ40jfbwEpKBcWfC
+      - POSTGRES_PASSWORD_FILE=/run/secrets/blueskies_postgres_password
       - POSTGRES_HOST=db
       - POSTGRES_PORT=5432
       - REDIS_URL=redis://redis:6379/0
-      - DJANGO_SECRET_KEY=immk5e(RdFe27WhFhgm2i6ckZLK7HubEB(d&XEfq@&D4LrG^NIubYios%0fYM4Ih
+      - DJANGO_SECRET_KEY_FILE=/run/secrets/blueskies_django_secret_key
       - DJANGO_DEBUG=False
       - DJANGO_ALLOWED_HOSTS=backend,localhost,127.0.0.1
       - LITERATURE_DAILY_HOUR=3
@@ -201,7 +224,8 @@ services:
       - LITERATURE_DAILY_ENRICH=False
     volumes:
       # The beat schedule is state: without this it is lost on every restart and the
-      # nightly job can fire twice.
+      # nightly job can fire twice. The image runs as uid 10001, so this host path must
+      # be owned by it: chown 10001:10001 /mnt/persist/blueskies/beat
       - /mnt/persist/blueskies/beat:/var/lib/celerybeat
       - /etc/localtime:/etc/localtime:ro
     networks:
@@ -236,10 +260,14 @@ services:
 
   db:
     image: postgres:16-alpine
+    secrets:
+      - blueskies_postgres_password
     environment:
       - POSTGRES_DB=blueskies
       - POSTGRES_USER=blueskies
-      - POSTGRES_PASSWORD=9gHGswNaF7AU3hO6iQ40jfbwEpKBcWfC
+      # The postgres image reads *_FILE itself. Note it only sets the role's password on
+      # first initialisation: on an existing volume, rotate with ALTER ROLE (see README).
+      - POSTGRES_PASSWORD_FILE=/run/secrets/blueskies_postgres_password
       - PGDATA=/var/lib/postgresql/data/pgdata
     volumes:
       - /mnt/persist/blueskies/postgres:/var/lib/postgresql/data
@@ -287,7 +315,9 @@ services:
       - net.ipv4.tcp_keepalive_intvl=30
       - net.ipv4.tcp_keepalive_probes=10
     healthcheck:
-      test: redis-cli --raw incr ping || exit 1
+      # PING, not `incr ping`: AOF is on, so a write here would be persisted every
+      # interval and would collide with an application key of that name.
+      test: redis-cli ping || exit 1
       interval: 15s
       timeout: 15s
       retries: 5

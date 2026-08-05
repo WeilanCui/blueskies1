@@ -46,6 +46,14 @@ endif
 BACKEND_IMAGE  := $(REGISTRY)/$(PROJECT)-backend
 FRONTEND_IMAGE := $(REGISTRY)/$(PROJECT)-frontend
 
+# The stack file names its images as ${REGISTRY:-...}/${PROJECT:-...}-x:${TAG:-latest},
+# which `docker stack deploy` interpolates from this process's environment. Exporting
+# them is what keeps a `make deploy REGISTRY=...` from pushing one set of images and
+# deploying another.
+export REGISTRY
+export PROJECT
+export TAG
+
 # These expand to nothing unless their variable is set.
 PLATFORM_FLAG        := $(if $(strip $(PLATFORM)),--platform $(strip $(PLATFORM)),)
 BACKEND_TARGET_FLAG  := $(if $(strip $(BACKEND_TARGET)),--target $(strip $(BACKEND_TARGET)),)
@@ -103,7 +111,16 @@ push: push-backend push-frontend ## Build and push both images
 deploy: ## Deploy the stack to Docker Swarm (does not build or push)
 	$(DOCKER) stack deploy -c $(STACK_FILE) $(DEPLOY_FLAGS) $(STACK)
 
-release: push deploy ## Build, push, then deploy
+# Two sub-makes rather than `release: push deploy`: prerequisites of one target may run
+# concurrently under `make -j`, which would deploy while the images were still building
+# and quietly start the previous release. A recipe is ordered by definition.
+#
+# TAG=$(REV) is what makes the running stack traceable: the deployed image is the commit
+# it was built from, and an image built from uncommitted work deploys as <sha>-dirty
+# rather than hiding behind `latest`.
+release: ## Build, push, then deploy the revision that was just built
+	$(MAKE) push
+	$(MAKE) deploy TAG=$(REV)
 
 deploy-status: ## Show the deployed services and any task errors
 	@$(DOCKER) stack services $(STACK)
