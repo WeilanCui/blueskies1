@@ -123,6 +123,67 @@ npm run lint
 
 Biome is configured in `frontend/biome.json` and scoped to `app/`, `components/`, `hooks/`, and `lib/`.
 
+## Building and Publishing Images
+
+The root `Makefile` builds the **production** stage of each Dockerfile and pushes the
+results to the local registry at `direct:5000`. This is separate from local development —
+`docker compose up --build` selects the `dev` stage and is unaffected.
+
+```bash
+make            # list targets and the current variable values
+make build      # build both production images
+make push       # build and push both images
+make clean      # remove the locally built tags
+```
+
+Per-service targets exist too: `build-backend`, `push-frontend`, and so on. The backend
+image serves `backend`, `celery`, and `celery-beat` — they share a build context and
+differ only in their command.
+
+Each image is tagged twice: a mutable `latest` and the abbreviated commit hash, so a
+deployed image can always be traced back to a commit. Building from a working tree with
+uncommitted changes appends `-dirty` to the hash, so such an image can never be mistaken
+for a clean commit's. Deployments should reference the hash tag, not `latest`.
+
+Every input is overridable on the command line:
+
+```bash
+make push TAG=v1.2.3
+make build REGISTRY=localhost:5000 PLATFORM=linux/amd64
+make push BUILD_ARGS='--build-arg SERVER_API_BASE_URL=http://backend:8000'
+make build BACKEND_TARGET=dev          # publish a dev image for debugging
+```
+
+`REGISTRY`, `PROJECT`, `TAG`, `DOCKER`, `PLATFORM`, `BUILD_ARGS`, `BACKEND_TARGET`, and
+`FRONTEND_TARGET` are all supported; `make help` prints their current values.
+
+### Registry prerequisites
+
+`direct:5000` is a plain-HTTP registry, so two things must be true on the build host
+before `make push` will work. The Makefile does not configure either — both are
+root-owned host changes.
+
+1. **`direct` must resolve.** Check with `getent hosts direct`. Add it to `/etc/hosts` or
+   your DNS if it does not, or override with `make push REGISTRY=<ip>:5000`.
+2. **The Docker daemon must accept the insecure registry.** Without this, the push fails
+   with `http: server gave HTTP response to HTTPS client`. Add it to
+   `/etc/docker/daemon.json` and restart the daemon:
+
+   ```json
+   { "insecure-registries": ["direct:5000"] }
+   ```
+
+   ```bash
+   sudo systemctl restart docker
+   ```
+
+Confirm the registry is reachable before pushing, and inspect what landed afterwards:
+
+```bash
+curl -s http://direct:5000/v2/_catalog
+curl -s http://direct:5000/v2/blueskies-backend/tags/list
+```
+
 ## Backend Notes
 
 The backend includes:
