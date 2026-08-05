@@ -218,6 +218,33 @@ scheduled: the entrypoint waits 60s for the database, then exits, and the restar
 retries. This is self-correcting — `POSTGRES_WAIT_SECONDS` raises the window if your
 scheduler is slower than that.
 
+### After adding a hostname, restart Traefik
+
+```bash
+docker service update --force traefik_traefik
+```
+
+Traefik runs three replicas, which all race to solve the same ACME challenge. One wins and
+writes the certificate to the shared store; the others fail with
+`400 malformed :: authorization must be pending` and hold **no certificate in memory**.
+Traefik does not reload another process's writes to that store, so those replicas answer
+the new hostname with a TLS `unrecognized_name` alert — `ERR_SSL_UNRECOGNIZED_NAME_ALERT`
+in the browser — until they are restarted. The rolling restart is safe; the certificate is
+already in the shared store, so no new ACME request is made.
+
+This is deceptive to diagnose, because a request through Cloudflare can land on the one
+healthy replica and look completely fine. Check each origin directly instead:
+
+```bash
+for ip in <manager-ips>; do
+  echo | openssl s_client -connect "$ip:443" -servername blueskies1.tempestnetworks.net \
+    2>&1 | grep -E 'subject=|unrecognized'
+done
+```
+
+Every replica should print `subject=CN = blueskies1.tempestnetworks.net`. Any that print
+`unrecognized name` still need the restart.
+
 Migrations apply themselves: the backend container runs `migrate` on startup, before it
 begins serving. Only `createsuperuser` is a manual step.
 
