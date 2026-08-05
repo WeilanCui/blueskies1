@@ -112,7 +112,9 @@ The services that do **not** migrate do not simply proceed: they block on
 `manage.py migrate --check` until the Django service has finished. Swarm starts all four at
 once, so without that barrier a worker can pull queued tasks and execute them against the
 previous schema for as long as `backend` takes to migrate. `MIGRATION_WAIT_SECONDS` bounds
-the wait; exceeding it fails the task, and `restart_policy: on-failure` retries.
+the wait; exceeding it fails the task, and `restart_policy: condition: any` retries it.
+The services' health `start_period`s cover that whole bounded window, or Swarm would kill a
+task that is still legitimately waiting.
 
 The gate is an explicit environment variable rather than the entrypoint inspecting `$@` to
 guess whether it is about to run gunicorn. Sniffing the command couples the entrypoint to
@@ -192,8 +194,8 @@ Additive; no existing deployment to migrate. Order:
 1. Build and push the images with the `Makefile`.
 2. Create the two `external: true` secrets on the swarm — the deploy fails with
    `secret not found` without them:
-   `openssl rand -base64 48 | docker secret create blueskies_django_secret_key -` and the
-   same for `blueskies_postgres_password`. Rotating the Postgres password on an existing
+   `openssl rand -base64 48 | docker secret create blueskies_django_secret_key -` and
+   `openssl rand -base64 24 | docker secret create blueskies_postgres_password -`. Rotating the Postgres password on an existing
    data directory also needs an `ALTER ROLE`, since the image only sets it at first
    initialisation.
 3. Ensure `/mnt/persist/blueskies/{postgres,redis,beat}` exist on the target node, with

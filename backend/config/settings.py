@@ -18,13 +18,20 @@ def env_or_file(name: str, default: str) -> str:
     The deployment entrypoint performs the same expansion for the process it execs, but
     a container healthcheck and `docker exec` both start from the container's configured
     environment and never see it. Reading the file here keeps every entry point working.
+
+    NAME wins over NAME_FILE, matching the entrypoint. The two disagreeing is what a
+    stale secret reference looks like, and Django resolving it the other way would give
+    the app a different password than the one the entrypoint proved it could connect with.
     """
+    value = env(name, default="")  # pyright: ignore[reportArgumentType]
+    if value:
+        return value
     path = env(f"{name}_FILE", default="")  # pyright: ignore[reportArgumentType]
     if path:
         # rstrip("\n") only, matching the entrypoint's `$(cat …)`: a secret may legitimately
         # end in a space, and stripping it would silently produce a different credential.
         return Path(path).read_text().rstrip("\n")
-    return env(name, default=default)  # pyright: ignore[reportArgumentType]
+    return default
 
 
 SECRET_KEY = env_or_file("DJANGO_SECRET_KEY", "change-me")

@@ -132,8 +132,10 @@ services:
       interval: 15s
       timeout: 15s
       retries: 5
-      # Covers the entrypoint's database wait plus `migrate` before gunicorn binds.
-      start_period: 120s
+      # Covers the entrypoint's bounded startup before gunicorn binds: the database wait
+      # (POSTGRES_WAIT_SECONDS, 60s) plus `migrate`, which is not itself bounded. A health
+      # failure here kills the task mid-migration, so this is deliberately generous.
+      start_period: 300s
     deploy:
       mode: replicated
       # Must stay at 1 while migrations run from the entrypoint: Django takes no
@@ -188,9 +190,10 @@ services:
       interval: 15s
       timeout: 15s
       retries: 5
-      # Covers the entrypoint's migration barrier: this service waits for `backend` to
-      # finish migrating before the worker starts, which is well past 45s on a deploy.
-      start_period: 180s
+      # Must cover the entrypoint's whole bounded startup, or the task is killed while
+      # still legitimately waiting: POSTGRES_WAIT_SECONDS (60s) + MIGRATION_WAIT_SECONDS
+      # (300s) + boot. Lower MIGRATION_WAIT_SECONDS if this needs to be shorter.
+      start_period: 420s
     deploy:
       mode: replicated
       replicas: 1
@@ -251,8 +254,8 @@ services:
       interval: 15s
       timeout: 15s
       retries: 5
-      # Same migration barrier as the worker.
-      start_period: 180s
+      # Same arithmetic as the worker: 60s database wait + 300s migration barrier + boot.
+      start_period: 420s
     deploy:
       mode: replicated
       # More than one beat means duplicate scheduled tasks.
