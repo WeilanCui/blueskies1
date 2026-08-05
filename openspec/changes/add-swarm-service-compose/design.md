@@ -187,10 +187,21 @@ self-contained and independently deployable.
 
 ## Migration Plan
 
-Additive; no existing deployment to migrate. Order: build and push images with the
-`Makefile`, ensure `/mnt/persist/blueskies/{postgres,redis}` exist on the target node, then
-`docker stack deploy -c service-compose.yml blueskies1`. The backend applies migrations
-itself on start; only `createsuperuser` is a manual one-off, run via the entrypoint.
+Additive; no existing deployment to migrate. Order:
+
+1. Build and push the images with the `Makefile`.
+2. Create the two `external: true` secrets on the swarm — the deploy fails with
+   `secret not found` without them:
+   `openssl rand -base64 48 | docker secret create blueskies_django_secret_key -` and the
+   same for `blueskies_postgres_password`. Rotating the Postgres password on an existing
+   data directory also needs an `ALTER ROLE`, since the image only sets it at first
+   initialisation.
+3. Ensure `/mnt/persist/blueskies/{postgres,redis,beat}` exist on the target node, with
+   `beat` owned by uid 10001 — the image runs as that user and beat writes its schedule there.
+4. `docker stack deploy -c service-compose.yml blueskies1`.
+
+The backend applies migrations itself on start; only `createsuperuser` is a manual one-off,
+run via the entrypoint.
 Rollback is `docker stack rm blueskies1` — note that this does not unapply migrations; the
 bind-mounted data survives, and local development is untouched throughout.
 

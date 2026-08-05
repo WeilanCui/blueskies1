@@ -20,15 +20,19 @@ set -e
 # variables at all -- is untouched.
 
 for _var in $(env | sed -n 's/^\([A-Za-z_][A-Za-z0-9_]*\)_FILE=.*/\1/p'); do
+    # The explicit value is checked first: with a stale FOO_FILE left in the environment,
+    # reading the file would otherwise fail the task even though FOO says what to use.
+    eval "_current=\${${_var}:-}"
+    if [ -n "$_current" ]; then
+        continue
+    fi
+
     eval "_path=\${${_var}_FILE}"
     if [ ! -r "$_path" ]; then
         echo "entrypoint: ${_var}_FILE=$_path is not readable" >&2
         exit 1
     fi
-    eval "_current=\${${_var}:-}"
-    if [ -z "$_current" ]; then
-        export "$_var=$(cat "$_path")"
-    fi
+    export "$_var=$(cat "$_path")"
 done
 unset _var _path _current
 
@@ -80,13 +84,17 @@ fi
 
 # A malformed override must fail the task, not run the loop forever: `[ 0 -ge abc ]`
 # exits 2, which as an `if` condition is indistinguishable from "not yet expired".
-_require_seconds() {
+#
+# Prints the value with leading zeros removed, because shell arithmetic reads a leading
+# zero as octal: `$((0300))` is 192 seconds, and `$((08))` is not a number at all.
+_seconds() {
     case "$2" in
         ''|*[!0-9]*)
             echo "entrypoint: $1 must be a non-negative integer, got '$2'" >&2
             exit 1
             ;;
     esac
+    printf '%s' "$2" | sed 's/^0*\([0-9]\)/\1/'
 }
 
 # A real connection, not a TCP handshake: Postgres accepts connections on the port
@@ -116,8 +124,7 @@ PY
 
 _db_host="${POSTGRES_HOST:-db}"
 _db_port="${POSTGRES_PORT:-5432}"
-_wait="${POSTGRES_WAIT_SECONDS:-60}"
-_require_seconds POSTGRES_WAIT_SECONDS "$_wait"
+_wait=$(_seconds POSTGRES_WAIT_SECONDS "${POSTGRES_WAIT_SECONDS:-60}") || exit 1
 
 # A wall-clock deadline, not a per-iteration counter: each probe can itself burn up to
 # its connect timeout, so counting only the sleeps overshoots the documented bound.
@@ -154,8 +161,7 @@ case "${DJANGO_MIGRATE_ON_START:-}" in
         # starts all four backend services at once, so without this barrier a worker
         # can pick up queued work and run it against the previous schema for as long
         # as `backend` takes to migrate.
-        _mwait="${MIGRATION_WAIT_SECONDS:-300}"
-        _require_seconds MIGRATION_WAIT_SECONDS "$_mwait"
+        _mwait=$(_seconds MIGRATION_WAIT_SECONDS "${MIGRATION_WAIT_SECONDS:-300}") || exit 1
         _mdeadline=$(($(date +%s) + _mwait))
 
         while ! python manage.py migrate --check >/dev/null 2>&1; do
