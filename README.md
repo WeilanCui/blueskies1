@@ -188,6 +188,74 @@ curl -s http://direct:5000/v2/_catalog
 curl -s http://direct:5000/v2/blueskies-backend/tags/list
 ```
 
+## Deploying to Docker Swarm
+
+`service-compose.yml` is the Swarm stack file. It runs six services: `web` (Next.js),
+`backend` (Django under gunicorn), `celery`, `celery-beat`, `db`, and `redis`.
+
+**`web` is the only service reachable from outside the swarm.** The browser already talks
+only to the Next.js route handlers in `app/api/`, which proxy to Django over the private
+overlay, so Django never needs to be exposed. Traefik routes
+`blueskies1.tempestnetworks.net` to it over TLS.
+
+### Deploying
+
+```bash
+make push BUILD_ARGS='--build-arg SERVER_API_BASE_URL=http://backend:8000' \
+          BACKEND_TARGET=prod FRONTEND_TARGET=prod
+
+# on the target node, once
+sudo mkdir -p /mnt/persist/blueskies/{postgres,redis,beat}
+
+docker stack deploy -c service-compose.yml blueskies
+docker service ls
+```
+
+Migrations apply themselves: the backend container runs `migrate` on startup, before it
+begins serving. Only `createsuperuser` is a manual step.
+
+### Operating it
+
+Management commands must go through the entrypoint, because `docker exec` bypasses it and
+none of the Redis derivation will have happened:
+
+```bash
+docker exec -it $(docker ps -qf name=blueskies_backend) \
+  /app/deploy/entrypoint.sh python manage.py createsuperuser
+```
+
+Things that will bite you if you don't know them:
+
+- **`backend` must stay at `replicas: 1`** while migrations run from the entrypoint. Django
+  takes no global migration lock, so two replicas starting together race each other.
+  Scaling the Django tier means moving migration to a one-shot service first — not raising
+  the replica count.
+- **An image rollback does not roll back applied migrations.** Write migrations reversibly.
+- **`SERVER_API_BASE_URL` is baked into the frontend image at build time.** Next resolves
+  `rewrites()` during `next build` and writes the destinations into the route manifest.
+  Changing the backend address therefore needs a rebuild and re-push, not just a redeploy.
+- **`celery` and `celery-beat` deliberately do not set `DJANGO_MIGRATE_ON_START`.** They
+  share the backend image, and would otherwise all migrate concurrently on every deploy.
+- **`db`, `redis` and `celery-beat` are pinned by placement constraint** to the node holding
+  their data under `/mnt/persist/blueskies/`. Adjust the `node.labels.name` constraint to
+  match your swarm.
+
+### Credentials
+
+`service-compose.yml` holds its credentials in **plaintext**, matching the convention of
+the other stacks on this swarm. Anyone who can read the repo or run `docker stack config`
+can read the database password and the API keys.
+
+**Do not commit production values.** The checked-in file contains placeholders
+(`change-me-before-deploying`, empty API keys) and is meant to be edited at deploy time.
+Two ways to improve this without restructuring the file:
+
+- Move the sensitive subset into an `env_file:` on a host path under
+  `/mnt/persist/blueskies/config/`, as the keycloak and grafana stacks do.
+- Adopt Swarm `secrets:`. `backend/deploy/entrypoint.sh` is already shaped for this — it
+  exports derived values before `exec`, so reading `*_FILE` secrets is a small edit to one
+  script rather than a change to every service definition.
+
 ## Backend Notes
 
 The backend includes:

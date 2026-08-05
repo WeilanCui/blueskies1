@@ -1,0 +1,302 @@
+version: '3.9'
+
+networks:
+  public:
+    external: true
+  blueskies:
+    driver: overlay
+    attachable: true
+    driver_opts:
+      encrypted: "true"
+
+services:
+
+  web:
+    image: direct:5000/blueskies-frontend:latest
+    environment:
+      - NODE_ENV=production
+      - HOSTNAME=0.0.0.0
+      - PORT=3000
+      # Runtime value for the route handlers in app/api/. The rewrites in
+      # next.config.ts were already resolved at build time from the image's build arg.
+      - SERVER_API_BASE_URL=http://backend:8000
+      - NEXT_PUBLIC_API_BASE_URL=https://blueskies1.tempestnetworks.net
+    networks:
+      - public
+      - blueskies
+    sysctls:
+      - net.ipv4.tcp_keepalive_time=600
+      - net.ipv4.tcp_keepalive_intvl=30
+      - net.ipv4.tcp_keepalive_probes=10
+    healthcheck:
+      test: curl -f http://localhost:3000/ > /dev/null || exit 1
+      interval: 15s
+      timeout: 15s
+      retries: 5
+      start_period: 30s
+    deploy:
+      mode: replicated
+      replicas: 2
+      resources:
+        limits:
+          cpus: "1"
+          memory: 512M
+        reservations:
+          cpus: "0.25"
+          memory: 256M
+      placement:
+        constraints:
+          - node.platform.os == linux
+      update_config:
+        parallelism: 1
+        delay: 10s
+      restart_policy:
+        condition: on-failure
+      labels:
+        - traefik.enable=true
+        - traefik.docker.lbswarm=true
+        - traefik.docker.network=public
+        - traefik.constraint-label=traefik-public
+
+        - traefik.http.routers.blueskies-https.rule=Host(`blueskies1.tempestnetworks.net`)
+        - traefik.http.routers.blueskies-https.entrypoints=https
+        - traefik.http.routers.blueskies-https.tls=true
+        - traefik.http.routers.blueskies-https.tls.certresolver=le
+        - traefik.http.services.blueskies.loadbalancer.server.port=3000
+
+  backend:
+    image: direct:5000/blueskies-backend:latest
+    environment:
+      - POSTGRES_DB=blueskies
+      - POSTGRES_USER=blueskies
+      - POSTGRES_PASSWORD=blueskies
+      - POSTGRES_HOST=db
+      - POSTGRES_PORT=5432
+      - REDIS_URL=redis://redis:6379/0
+      - DJANGO_SECRET_KEY=change-me-before-deploying
+      - DJANGO_DEBUG=False
+      - DJANGO_ALLOWED_HOSTS=backend,localhost,127.0.0.1,blueskies1.tempestnetworks.net
+      - DJANGO_CSRF_TRUSTED_ORIGINS=https://blueskies1.tempestnetworks.net
+      - DJANGO_CORS_ALLOWED_ORIGINS=https://blueskies1.tempestnetworks.net
+      - DJANGO_CORS_ALLOW_CREDENTIALS=True
+      - DJANGO_SESSION_COOKIE_SECURE=True
+      - DJANGO_CSRF_COOKIE_SECURE=True
+      # TLS terminates at Traefik, so Django must not redirect again.
+      - DJANGO_SECURE_SSL_REDIRECT=False
+      # Admin assets sit on their own prefix so they do not collide with Next's /static.
+      - DJANGO_STATIC_URL=/django-static/
+      - OPENAI_API_KEY=
+      - OPENAI_MODEL=gpt-4o-mini
+      - LITERATURE_EXTRACTOR=auto
+      - NCBI_API_KEY=
+      # Set ONLY here. celery and celery-beat share this image and would otherwise
+      # migrate concurrently with this service on every deploy.
+      - DJANGO_MIGRATE_ON_START=true
+    networks:
+      - blueskies
+    sysctls:
+      - net.ipv4.tcp_keepalive_time=600
+      - net.ipv4.tcp_keepalive_intvl=30
+      - net.ipv4.tcp_keepalive_probes=10
+    healthcheck:
+      test: python -c "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8000/api/health/').status==200 else 1)" || exit 1
+      interval: 15s
+      timeout: 15s
+      retries: 5
+      start_period: 30s
+    deploy:
+      mode: replicated
+      # Must stay at 1 while migrations run from the entrypoint: Django takes no
+      # global migration lock, so two replicas starting together would race. Scaling
+      # means moving migration to a one-shot service first, not raising this number.
+      replicas: 1
+      endpoint_mode: dnsrr
+      resources:
+        limits:
+          cpus: "1"
+          memory: 1024M
+        reservations:
+          cpus: "0.25"
+          memory: 256M
+      placement:
+        constraints:
+          - node.platform.os == linux
+      restart_policy:
+        condition: on-failure
+
+  celery:
+    image: direct:5000/blueskies-backend:latest
+    command: celery -A config worker --loglevel=info
+    environment:
+      - POSTGRES_DB=blueskies
+      - POSTGRES_USER=blueskies
+      - POSTGRES_PASSWORD=blueskies
+      - POSTGRES_HOST=db
+      - POSTGRES_PORT=5432
+      - REDIS_URL=redis://redis:6379/0
+      - DJANGO_SECRET_KEY=change-me-before-deploying
+      - DJANGO_DEBUG=False
+      - DJANGO_ALLOWED_HOSTS=backend,localhost,127.0.0.1
+      - OPENAI_API_KEY=
+      - OPENAI_MODEL=gpt-4o-mini
+      - LITERATURE_EXTRACTOR=auto
+      - NCBI_API_KEY=
+    networks:
+      - blueskies
+    sysctls:
+      - net.ipv4.tcp_keepalive_time=600
+      - net.ipv4.tcp_keepalive_intvl=30
+      - net.ipv4.tcp_keepalive_probes=10
+    healthcheck:
+      test: celery -A config inspect ping || exit 1
+      interval: 15s
+      timeout: 15s
+      retries: 5
+      start_period: 45s
+    deploy:
+      mode: replicated
+      replicas: 1
+      endpoint_mode: dnsrr
+      resources:
+        limits:
+          cpus: "1"
+          memory: 1024M
+        reservations:
+          cpus: "0.25"
+          memory: 256M
+      placement:
+        constraints:
+          - node.platform.os == linux
+      restart_policy:
+        condition: on-failure
+
+  celery-beat:
+    image: direct:5000/blueskies-backend:latest
+    # --schedule keeps the state file on the persistent mount. Note it must be passed
+    # here rather than by changing working_dir, since `-A config` resolves relative to
+    # /app where the code lives.
+    command: celery -A config beat --loglevel=info --schedule=/var/lib/celerybeat/celerybeat-schedule
+    environment:
+      - POSTGRES_DB=blueskies
+      - POSTGRES_USER=blueskies
+      - POSTGRES_PASSWORD=blueskies
+      - POSTGRES_HOST=db
+      - POSTGRES_PORT=5432
+      - REDIS_URL=redis://redis:6379/0
+      - DJANGO_SECRET_KEY=change-me-before-deploying
+      - DJANGO_DEBUG=False
+      - DJANGO_ALLOWED_HOSTS=backend,localhost,127.0.0.1
+      - LITERATURE_DAILY_HOUR=3
+      - LITERATURE_DAILY_MINUTE=15
+      - LITERATURE_DAILY_COMPOUND_LIMIT=25
+      - LITERATURE_DAILY_ENRICH=False
+    volumes:
+      # The beat schedule is state: without this it is lost on every restart and the
+      # nightly job can fire twice.
+      - /mnt/persist/blueskies/beat:/var/lib/celerybeat
+      - /etc/localtime:/etc/localtime:ro
+    networks:
+      - blueskies
+    sysctls:
+      - net.ipv4.tcp_keepalive_time=600
+      - net.ipv4.tcp_keepalive_intvl=30
+      - net.ipv4.tcp_keepalive_probes=10
+    healthcheck:
+      test: test -f /var/lib/celerybeat/celerybeat-schedule || exit 1
+      interval: 15s
+      timeout: 15s
+      retries: 5
+      start_period: 30s
+    deploy:
+      mode: replicated
+      # More than one beat means duplicate scheduled tasks.
+      replicas: 1
+      endpoint_mode: dnsrr
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 512M
+        reservations:
+          cpus: "0.1"
+          memory: 128M
+      placement:
+        constraints:
+          - node.labels.name == direct
+      restart_policy:
+        condition: on-failure
+
+  db:
+    image: postgres:16-alpine
+    environment:
+      - POSTGRES_DB=blueskies
+      - POSTGRES_USER=blueskies
+      - POSTGRES_PASSWORD=blueskies
+      - PGDATA=/var/lib/postgresql/data/pgdata
+    volumes:
+      - /mnt/persist/blueskies/postgres:/var/lib/postgresql/data
+      - /etc/localtime:/etc/localtime:ro
+    networks:
+      - blueskies
+    sysctls:
+      - net.ipv4.tcp_keepalive_time=600
+      - net.ipv4.tcp_keepalive_intvl=30
+      - net.ipv4.tcp_keepalive_probes=10
+    healthcheck:
+      test: pg_isready -U blueskies -d blueskies
+      interval: 15s
+      timeout: 15s
+      retries: 5
+      start_period: 10s
+    deploy:
+      mode: replicated
+      replicas: 1
+      endpoint_mode: dnsrr
+      resources:
+        limits:
+          cpus: "2"
+          memory: 2048M
+        reservations:
+          cpus: "0.25"
+          memory: 512M
+      placement:
+        # Pinned: the data lives on this node's disk, not in a shared volume.
+        constraints:
+          - node.labels.name == direct
+      restart_policy:
+        condition: on-failure
+
+  redis:
+    image: redis:7-alpine
+    command: redis-server --appendonly yes
+    volumes:
+      - /mnt/persist/blueskies/redis:/data
+      - /etc/localtime:/etc/localtime:ro
+    networks:
+      - blueskies
+    sysctls:
+      - net.ipv4.tcp_keepalive_time=600
+      - net.ipv4.tcp_keepalive_intvl=30
+      - net.ipv4.tcp_keepalive_probes=10
+    healthcheck:
+      test: redis-cli --raw incr ping || exit 1
+      interval: 15s
+      timeout: 15s
+      retries: 5
+      start_period: 10s
+    deploy:
+      mode: replicated
+      replicas: 1
+      endpoint_mode: dnsrr
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 512M
+        reservations:
+          cpus: "0.1"
+          memory: 128M
+      placement:
+        # Pinned for the same reason as db.
+        constraints:
+          - node.labels.name == direct
+      restart_policy:
+        condition: on-failure

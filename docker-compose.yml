@@ -30,6 +30,7 @@ services:
   backend:
     build:
       context: ./backend
+      target: dev
     command: python manage.py runserver 0.0.0.0:8000
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-blueskies}
@@ -68,6 +69,7 @@ services:
   celery:
     build:
       context: ./backend
+      target: dev
     command: celery -A config worker --loglevel=info
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-blueskies}
@@ -104,6 +106,7 @@ services:
   celery-beat:
     build:
       context: ./backend
+      target: dev
     command: celery -A config beat --loglevel=info
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-blueskies}
@@ -150,6 +153,7 @@ services:
     profiles: ["frontend"]
     build:
       context: ./frontend
+      target: dev
     command: ["sh", "scripts/docker-dev.sh"]
     environment:
       NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-http://localhost:8000}

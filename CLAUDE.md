@@ -93,6 +93,32 @@ Conventions (from `CODEX.md`):
 - Use **HeroUI** for buttons/forms/cards/modals; use **TanStack Query** for client-side API fetching/mutations. Raw `fetch` only in route handlers / server-side utilities.
 - Use `var(--panel)` (`#eef6fc`, light blue) for boxed surfaces (cards, panels, list items).
 
+## Deployment (Docker Swarm)
+
+`service-compose.yml` is the stack file; `make push` publishes the images it references to
+`direct:5000`. Only one service is reachable from outside the swarm: **`web` (Next.js,
+port 3000)**. Django runs privately — the browser already talks only to the route handlers
+in `app/api/`, which proxy via `lib/backendProxy.ts` at `SERVER_API_BASE_URL`.
+
+Things to preserve when changing this area:
+
+- Both Dockerfiles are **multi-stage** (`dev` and `prod`). `docker-compose.yml` pins
+  `target: dev` on every built service — without that pin, compose builds the last stage,
+  which is production. Keep the `dev` stages in sync when adding dependencies.
+- `next.config.ts` `rewrites()` (admin at `/admin`, its assets at `/django-static`) is
+  evaluated at **build time**, so `frontend/Dockerfile` passes `SERVER_API_BASE_URL` as a
+  build `ARG`. The `:path*` destinations deliberately re-append the trailing slash Next
+  strips, or Django's `APPEND_SLASH` loops.
+- `backend/deploy/entrypoint.sh` derives the Celery/cache URLs from one `REDIS_URL`, waits
+  for Postgres, and runs `migrate` **only when `DJANGO_MIGRATE_ON_START` is set** — which
+  the stack file sets on `backend` alone. Celery and beat share the image and must not
+  migrate. This keeps `backend` at `replicas: 1` by necessity, not preference.
+- `docker exec` bypasses the entrypoint, so run management commands as
+  `/app/deploy/entrypoint.sh python manage.py ...`.
+- `settings.py` keeps the discrete `POSTGRES_*` path; `DJANGO_CACHE_URL` switches DRF
+  throttle counters from per-process LocMemCache to shared Redis.
+- The `web` image must keep `curl` and answer 2xx at `/` — that is its healthcheck.
+
 ## Conventions reference
 
 `CODEX.md` holds the full engineering checklist (backend, frontend, styling, review). Commit migrations alongside model changes. Update README/docs when setup or behavior changes.
