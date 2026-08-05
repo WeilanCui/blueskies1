@@ -204,12 +204,19 @@ overlay, so Django never needs to be exposed. Traefik routes
 make push BUILD_ARGS='--build-arg SERVER_API_BASE_URL=http://backend:8000' \
           BACKEND_TARGET=prod FRONTEND_TARGET=prod
 
-# on the target node, once
+# On the node matching the placement constraint, once. Swarm does NOT create bind
+# sources the way `docker run` does -- without these the db/redis/beat tasks are
+# rejected with "bind source path does not exist".
 sudo mkdir -p /mnt/persist/blueskies/{postgres,redis,beat}
 
-docker stack deploy -c service-compose.yml blueskies
-docker service ls
+docker stack deploy -c service-compose.yml blueskies1
+docker stack services blueskies1
 ```
+
+Expect the backend to fail its first attempt or two while Postgres is still being
+scheduled: the entrypoint waits 60s for the database, then exits, and the restart policy
+retries. This is self-correcting — `POSTGRES_WAIT_SECONDS` raises the window if your
+scheduler is slower than that.
 
 Migrations apply themselves: the backend container runs `migrate` on startup, before it
 begins serving. Only `createsuperuser` is a manual step.
@@ -220,9 +227,13 @@ Management commands must go through the entrypoint, because `docker exec` bypass
 none of the Redis derivation will have happened:
 
 ```bash
-docker exec -it $(docker ps -qf name=blueskies_backend) \
+docker exec -it -e DJANGO_MIGRATE_ON_START= $(docker ps -qf name=blueskies1_backend) \
   /app/deploy/entrypoint.sh python manage.py createsuperuser
 ```
+
+`docker exec` inherits the container's environment, so without blanking
+`DJANGO_MIGRATE_ON_START` every management command re-runs `migrate` first. That is
+idempotent and harmless, just noisy.
 
 Things that will bite you if you don't know them:
 

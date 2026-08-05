@@ -64,14 +64,14 @@
 - [x] 7.5 Validate the stack file parses: `docker stack config -c service-compose.yml` succeeds and shows no ignored-key warnings
 - [x] 7.6 Run the entrypoint in isolation with only `REDIS_URL` set; confirm it derives all three URLs and that the result backend uses a different logical database
 - [x] 7.7 Confirm the entrypoint's database wait fails loudly on an unreachable host rather than hanging
-- [ ] 7.8 Deploy the stack to the Swarm; confirm all six services converge to running and pass their healthchecks
-- [ ] 7.9 Confirm the backend service applied migrations itself on first start — its task log shows the migrate output and the schema is present with no manual step
-- [ ] 7.10 Confirm `celery` and `celery-beat` did **not** run migrations: neither task's log contains migrate output, and `DJANGO_MIGRATE_ON_START` is absent from both service definitions
+- [x] 7.8 Deploy the stack to the Swarm; confirm all six services converge to running and pass their healthchecks
+- [x] 7.9 Confirm the backend service applied migrations itself on first start — its task log shows the migrate output and the schema is present with no manual step
+- [x] 7.10 Confirm `celery` and `celery-beat` did **not** run migrations: neither task's log contains migrate output, and `DJANGO_MIGRATE_ON_START` is absent from both service definitions
 - [x] 7.11 Confirm a deliberately failing migration fails the backend task rather than letting it serve against a stale schema
-- [ ] 7.12 Run `createsuperuser` through the entrypoint; confirm it succeeds
-- [ ] 7.13 Confirm `https://blueskies1.tempestnetworks.net/` serves the app over TLS with a valid certificate
-- [ ] 7.14 Confirm `/admin` loads **styled** (assets resolve via `/django-static/`) and does not redirect-loop — the trailing-slash regression manifests only here
-- [ ] 7.15 Confirm an app API route works end to end, proving the Next → Django private-network proxy path
-- [ ] 7.16 Confirm Django, Celery, Postgres and Redis are NOT reachable from outside the Swarm
-- [ ] 7.17 Confirm a Celery task runs, and that beat schedules its nightly job
-- [ ] 7.18 Redeploy the stack and confirm Postgres data survives
+- [x] 7.12 Run `createsuperuser` through the entrypoint; confirm it succeeds
+- [x] 7.13 Confirm `https://blueskies1.tempestnetworks.net/` serves the app over TLS with a valid certificate
+- [x] 7.14 Confirm `/admin` loads **styled** (assets resolve via `/django-static/`) and does not redirect-loop — the trailing-slash regression manifests only here
+- [x] 7.15 Confirm an app API route works end to end, proving the Next → Django private-network proxy path
+- [x] 7.16 Confirm Django, Celery, Postgres and Redis are NOT reachable from outside the Swarm
+- [x] 7.17 Confirm a Celery task runs, and that beat schedules its nightly job
+- [x] 7.18 Redeploy the stack and confirm Postgres data survives
