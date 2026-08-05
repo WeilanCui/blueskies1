@@ -116,6 +116,20 @@ the wait; exceeding it fails the task, and `restart_policy: condition: any` retr
 The services' health `start_period`s cover that whole bounded window, or Swarm would kill a
 task that is still legitimately waiting.
 
+A migration cannot be given a health grace period that is guaranteed to be long enough, so
+`backend` does not try: while `migrate` runs the entrypoint holds `/tmp/entrypoint-migrating`
+and the healthcheck reports healthy on that file's existence alone. Killing a task part-way
+through a migration is worse than reporting healthy while it makes progress. The failure that
+would otherwise hide behind the marker forever — blocking on another session's lock — is
+bounded by running `migrate` with `lock_timeout` (`DJANGO_MIGRATE_LOCK_TIMEOUT`, 30s), which
+turns it into a fast, loud task failure. `statement_timeout` stays off so a slow but
+progressing data migration is not truncated.
+
+*Alternative considered:* a `mode: replicated-job` migration service, with every long-running
+service waiting on the barrier. Rejected after testing on the target swarm: a job service
+deployed from a stack file re-ran its task continuously (110 completions in under a minute)
+despite `TotalCompletions: 1` and `restart_policy: condition: none`.
+
 The gate is an explicit environment variable rather than the entrypoint inspecting `$@` to
 guess whether it is about to run gunicorn. Sniffing the command couples the entrypoint to
 the exact `CMD` strings, and fails silently the first time one is reworded — a silent

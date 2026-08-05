@@ -150,11 +150,27 @@ done
 #
 # `set -e` makes a non-zero migrate exit abort before the exec below, so a failed
 # migration fails the task rather than serving against a stale schema.
+#
+# The marker path is shared with the stack file's healthcheck; changing it here means
+# changing it there.
+
+MIGRATION_MARKER=/tmp/entrypoint-migrating
+rm -f "$MIGRATION_MARKER"
 
 case "${DJANGO_MIGRATE_ON_START:-}" in
     1|true|True|TRUE|yes|on)
         echo "entrypoint: applying migrations"
-        python manage.py migrate --noinput
+        # The marker tells the healthcheck that this task is working, not hung: a
+        # migration can legitimately outlast any fixed start_period, and being killed
+        # part-way through one is far worse than reporting healthy for a few minutes.
+        # It lives in /tmp because the image runs unprivileged.
+        : > "$MIGRATION_MARKER"
+        # lock_timeout bounds the one failure mode a marker would otherwise hide
+        # forever: blocking behind another session's lock. A slow-but-progressing
+        # migration is not affected, and statement_timeout stays off for that reason.
+        PGOPTIONS="-c lock_timeout=${DJANGO_MIGRATE_LOCK_TIMEOUT:-30s}" \
+            python manage.py migrate --noinput
+        rm -f "$MIGRATION_MARKER"
         ;;
     *)
         # Everything else waits for those migrations instead of racing them. Swarm

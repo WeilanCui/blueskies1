@@ -124,6 +124,11 @@ Things to preserve when changing this area:
 - Health `start_period`s must cover the entrypoint's database wait and migration barrier,
   and `restart_policy` is `condition: any`: Swarm stops an unhealthy task gracefully, so it
   exits 0 and `on-failure` would leave the service at zero replicas.
+- While migrating, the entrypoint holds `/tmp/entrypoint-migrating` and the `backend`
+  healthcheck reports healthy on that file alone — no fixed `start_period` can bound an
+  arbitrary migration, and killing one part-way through is worse. The hang case is bounded
+  instead by `lock_timeout` (`DJANGO_MIGRATE_LOCK_TIMEOUT`, default 30s). The path is shared
+  between `entrypoint.sh` and the stack file's healthcheck.
 - Stack image references interpolate `${REGISTRY:-direct:5000}`, `${PROJECT:-blueskies}` and
   `${TAG:-latest}`; the Makefile exports all three, and `make release` deploys `TAG=$(REV)`
   so the live stack names its commit. A bare `docker stack deploy` still resolves defaults.

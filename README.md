@@ -290,6 +290,13 @@ Things that will bite you if you don't know them:
   Scaling the Django tier means moving migration to a one-shot service first — not raising
   the replica count.
 - **An image rollback does not roll back applied migrations.** Write migrations reversibly.
+- **A long migration will not be killed by the healthcheck.** The entrypoint holds
+  `/tmp/entrypoint-migrating` while `migrate` runs and the `backend` check treats that as
+  healthy, because no fixed `start_period` can bound an arbitrary migration. A migration
+  blocked on someone else's lock still fails fast: it runs with
+  `lock_timeout=$DJANGO_MIGRATE_LOCK_TIMEOUT` (default 30s), so the task exits and retries
+  rather than sitting healthy forever. `statement_timeout` is deliberately left off, so a
+  slow-but-progressing data migration runs to completion.
 - **`SERVER_API_BASE_URL` is baked into the frontend image at build time.** Next resolves
   `rewrites()` during `next build` and writes the destinations into the route manifest.
   Changing the backend address therefore needs a rebuild and re-push, not just a redeploy.

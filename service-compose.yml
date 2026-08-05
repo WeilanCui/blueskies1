@@ -128,14 +128,17 @@ services:
       - net.ipv4.tcp_keepalive_intvl=30
       - net.ipv4.tcp_keepalive_probes=10
     healthcheck:
-      test: python -c "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8000/api/health/').status==200 else 1)" || exit 1
+      # While the entrypoint is migrating it holds /tmp/entrypoint-migrating, and this
+      # check reports healthy on that alone. A migration can outlast any fixed
+      # start_period, and killing a task part-way through one is worse than reporting
+      # healthy while it works; the entrypoint bounds the hang case with lock_timeout.
+      test: test -f /tmp/entrypoint-migrating || python -c "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8000/api/health/').status==200 else 1)" || exit 1
       interval: 15s
       timeout: 15s
       retries: 5
-      # Covers the entrypoint's bounded startup before gunicorn binds: the database wait
-      # (POSTGRES_WAIT_SECONDS, 60s) plus `migrate`, which is not itself bounded. A health
-      # failure here kills the task mid-migration, so this is deliberately generous.
-      start_period: 300s
+      # Covers the database wait (POSTGRES_WAIT_SECONDS, 60s) and Django's boot. The
+      # migration itself is covered by the marker above, not by this number.
+      start_period: 120s
     deploy:
       mode: replicated
       # Must stay at 1 while migrations run from the entrypoint: Django takes no

@@ -82,6 +82,18 @@ Celery worker and beat services share the same image and SHALL NOT apply migrati
 - **THEN** it waits for the schema to be current before executing its command
 - **AND** it fails its task rather than waiting indefinitely if the bound is exceeded
 
+#### Scenario: A migration outlasts the health grace period
+
+- **WHEN** applying migrations takes longer than the service's health `start_period`
+- **THEN** the service continues to report healthy for as long as the migration is running
+- **AND** the task is not stopped part-way through it
+
+#### Scenario: A migration is blocked by another session's lock
+
+- **WHEN** a migration cannot acquire a lock it needs
+- **THEN** it fails within a bounded time rather than waiting indefinitely
+- **AND** the task exits so the restart policy retries it
+
 #### Scenario: A migration fails
 
 - **WHEN** applying migrations fails
