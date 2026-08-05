@@ -257,9 +257,10 @@ Things that will bite you if you don't know them:
 the other stacks on this swarm. Anyone who can read the repo or run `docker stack config`
 can read the database password and the API keys.
 
-**Do not commit production values.** The checked-in file contains placeholders
-(`change-me-before-deploying`, empty API keys) and is meant to be edited at deploy time.
-Two ways to improve this without restructuring the file:
+The checked-in values are the ones currently deployed, committed deliberately while this
+is a prototype. **They must be rolled before this serves real users**, and at that point
+the credentials should move out of the file entirely. Two ways to do that without
+restructuring it:
 
 - Move the sensitive subset into an `env_file:` on a host path under
   `/mnt/persist/blueskies/config/`, as the keycloak and grafana stacks do.

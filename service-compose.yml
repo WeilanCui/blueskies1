@@ -1,3 +1,12 @@
+# Docker Swarm stack for blueskies. Deploy with:
+#   docker stack deploy -c service-compose.yml blueskies1
+#
+# PRE-PRODUCTION. The DJANGO_SECRET_KEY and POSTGRES_PASSWORD below are the values
+# currently deployed, committed deliberately while this is a prototype. They must be
+# rolled before this serves real users, at which point move them out of this file --
+# either an env_file: on a host path under /mnt/persist/blueskies/config/, as the
+# keycloak and grafana stacks do, or Swarm secrets: (backend/deploy/entrypoint.sh is
+# already shaped to read *_FILE secrets, so that is a change to one script).
 version: '3.9'
 
 networks:
@@ -69,11 +78,11 @@ services:
     environment:
       - POSTGRES_DB=blueskies
       - POSTGRES_USER=blueskies
-      - POSTGRES_PASSWORD=blueskies
+      - POSTGRES_PASSWORD=9gHGswNaF7AU3hO6iQ40jfbwEpKBcWfC
       - POSTGRES_HOST=db
       - POSTGRES_PORT=5432
       - REDIS_URL=redis://redis:6379/0
-      - DJANGO_SECRET_KEY=change-me-before-deploying
+      - DJANGO_SECRET_KEY=immk5e(RdFe27WhFhgm2i6ckZLK7HubEB(d&XEfq@&D4LrG^NIubYios%0fYM4Ih
       - DJANGO_DEBUG=False
       - DJANGO_ALLOWED_HOSTS=backend,localhost,127.0.0.1,blueskies1.tempestnetworks.net
       - DJANGO_CSRF_TRUSTED_ORIGINS=https://blueskies1.tempestnetworks.net
@@ -130,11 +139,11 @@ services:
     environment:
       - POSTGRES_DB=blueskies
       - POSTGRES_USER=blueskies
-      - POSTGRES_PASSWORD=blueskies
+      - POSTGRES_PASSWORD=9gHGswNaF7AU3hO6iQ40jfbwEpKBcWfC
       - POSTGRES_HOST=db
       - POSTGRES_PORT=5432
       - REDIS_URL=redis://redis:6379/0
-      - DJANGO_SECRET_KEY=change-me-before-deploying
+      - DJANGO_SECRET_KEY=immk5e(RdFe27WhFhgm2i6ckZLK7HubEB(d&XEfq@&D4LrG^NIubYios%0fYM4Ih
       - DJANGO_DEBUG=False
       - DJANGO_ALLOWED_HOSTS=backend,localhost,127.0.0.1
       - OPENAI_API_KEY=
@@ -179,11 +188,11 @@ services:
     environment:
       - POSTGRES_DB=blueskies
       - POSTGRES_USER=blueskies
-      - POSTGRES_PASSWORD=blueskies
+      - POSTGRES_PASSWORD=9gHGswNaF7AU3hO6iQ40jfbwEpKBcWfC
       - POSTGRES_HOST=db
       - POSTGRES_PORT=5432
       - REDIS_URL=redis://redis:6379/0
-      - DJANGO_SECRET_KEY=change-me-before-deploying
+      - DJANGO_SECRET_KEY=immk5e(RdFe27WhFhgm2i6ckZLK7HubEB(d&XEfq@&D4LrG^NIubYios%0fYM4Ih
       - DJANGO_DEBUG=False
       - DJANGO_ALLOWED_HOSTS=backend,localhost,127.0.0.1
       - LITERATURE_DAILY_HOUR=3
@@ -230,7 +239,7 @@ services:
     environment:
       - POSTGRES_DB=blueskies
       - POSTGRES_USER=blueskies
-      - POSTGRES_PASSWORD=blueskies
+      - POSTGRES_PASSWORD=9gHGswNaF7AU3hO6iQ40jfbwEpKBcWfC
       - PGDATA=/var/lib/postgresql/data/pgdata
     volumes:
       - /mnt/persist/blueskies/postgres:/var/lib/postgresql/data
