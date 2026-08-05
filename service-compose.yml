@@ -73,7 +73,10 @@ services:
         parallelism: 1
         delay: 10s
       restart_policy:
-        condition: on-failure
+        # `any`, not `on-failure`: Swarm stops an unhealthy task gracefully, so it exits 0
+        # and `on-failure` would leave the service at zero replicas with nothing retrying.
+        condition: any
+        delay: 10s
       labels:
         - traefik.enable=true
         - traefik.docker.lbswarm=true
@@ -129,7 +132,8 @@ services:
       interval: 15s
       timeout: 15s
       retries: 5
-      start_period: 30s
+      # Covers the entrypoint's database wait plus `migrate` before gunicorn binds.
+      start_period: 120s
     deploy:
       mode: replicated
       # Must stay at 1 while migrations run from the entrypoint: Django takes no
@@ -148,7 +152,10 @@ services:
         constraints:
           - node.platform.os == linux
       restart_policy:
-        condition: on-failure
+        # `any`, not `on-failure`: Swarm stops an unhealthy task gracefully, so it exits 0
+        # and `on-failure` would leave the service at zero replicas with nothing retrying.
+        condition: any
+        delay: 10s
 
   celery:
     image: ${REGISTRY:-direct:5000}/${PROJECT:-blueskies}-backend:${TAG:-latest}
@@ -181,7 +188,9 @@ services:
       interval: 15s
       timeout: 15s
       retries: 5
-      start_period: 45s
+      # Covers the entrypoint's migration barrier: this service waits for `backend` to
+      # finish migrating before the worker starts, which is well past 45s on a deploy.
+      start_period: 180s
     deploy:
       mode: replicated
       replicas: 1
@@ -197,7 +206,10 @@ services:
         constraints:
           - node.platform.os == linux
       restart_policy:
-        condition: on-failure
+        # `any`, not `on-failure`: Swarm stops an unhealthy task gracefully, so it exits 0
+        # and `on-failure` would leave the service at zero replicas with nothing retrying.
+        condition: any
+        delay: 10s
 
   celery-beat:
     image: ${REGISTRY:-direct:5000}/${PROJECT:-blueskies}-backend:${TAG:-latest}
@@ -239,7 +251,8 @@ services:
       interval: 15s
       timeout: 15s
       retries: 5
-      start_period: 30s
+      # Same migration barrier as the worker.
+      start_period: 180s
     deploy:
       mode: replicated
       # More than one beat means duplicate scheduled tasks.
@@ -256,7 +269,10 @@ services:
         constraints:
           - node.labels.name == direct
       restart_policy:
-        condition: on-failure
+        # `any`, not `on-failure`: Swarm stops an unhealthy task gracefully, so it exits 0
+        # and `on-failure` would leave the service at zero replicas with nothing retrying.
+        condition: any
+        delay: 10s
 
   db:
     image: postgres:16-alpine
@@ -300,7 +316,10 @@ services:
         constraints:
           - node.labels.name == direct
       restart_policy:
-        condition: on-failure
+        # `any`, not `on-failure`: Swarm stops an unhealthy task gracefully, so it exits 0
+        # and `on-failure` would leave the service at zero replicas with nothing retrying.
+        condition: any
+        delay: 10s
 
   redis:
     image: redis:7-alpine
@@ -338,4 +357,7 @@ services:
         constraints:
           - node.labels.name == direct
       restart_policy:
-        condition: on-failure
+        # `any`, not `on-failure`: Swarm stops an unhealthy task gracefully, so it exits 0
+        # and `on-failure` would leave the service at zero replicas with nothing retrying.
+        condition: any
+        delay: 10s
