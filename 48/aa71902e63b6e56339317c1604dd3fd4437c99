@@ -1,0 +1,83 @@
+backend/core/migrations/0021_contactsubmission_email_verification.py
+  s_f14d8e5b3f876d::t_4113f60bbf8d7a 40
+  s_f14d8e5b3f876d::t_dfcaabe3c25e53 1-39,41-42
+frontend/app/theme.css
+  s_f14d8e5b3f876d::t_2ee686a534180d 176-180
+  s_f14d8e5b3f876d::t_a0ab7ea1e8f268 183
+frontend/app/api/contact/request-code/route.ts
+  s_f14d8e5b3f876d::t_dd36d0f8c704e2 1-6
+frontend/app/api/contact/verify-code/route.ts
+  s_f14d8e5b3f876d::t_dd36d0f8c704e2 1-6
+.env.example
+  s_f14d8e5b3f876d::t_b2fca25a4c7c44 50-56
+backend/core/services/contact_verification.py
+  s_f14d8e5b3f876d::t_4c0bc256457db3 1-76
+README.md
+  s_f14d8e5b3f876d::t_b2fca25a4c7c44 14,58-60,63,368-369
+  s_f14d8e5b3f876d::t_5b86b404bc9d31 15
+  s_f14d8e5b3f876d::t_b685cf42635cf1 61-62
+backend/core/serializers/auth.py
+  s_f14d8e5b3f876d::t_ec55bfbc1e4641 5,51-55
+backend/core/tests/test_contact_submission.py
+  s_f14d8e5b3f876d::t_cc6fb326e894d5 1-3,5,8,12,176-193,198-203,207-271,276-307,309-312,318-330,333
+  s_f14d8e5b3f876d::t_f0017917f9fcd8 194-197,272-275,308,313-317,332
+  s_f14d8e5b3f876d::t_808231531a80da 204-206
+backend/core/tests/test_auth_intake.py
+  s_f14d8e5b3f876d::t_bfbd25698b75b3 6,9,19-26,61-76
+frontend/app/login/page.tsx
+  s_f14d8e5b3f876d::t_b4bb323a1a0c9e 66-76
+backend/core/admin.py
+  s_f14d8e5b3f876d::t_dfcaabe3c25e53 281-291
+frontend/app/ContactForm.tsx
+  s_f14d8e5b3f876d::t_f4a437573b04e2 5,17,23-26,32,54,71,75,81-87,92,94-95,98-99,102,108-109,112-113,117,122-130,140,160,167,169,183,187,203,206-217,224-230,233,236,238-249,251,253,255-262,264-289,297-300,313,332,334,336,351,353,376,424,428,441-445,450-451,455-461
+  s_f14d8e5b3f876d::t_7d3e704a97cf43 145-147,446-449,452,454
+  s_f14d8e5b3f876d::t_731f17cc4ed5a6 4,6,9,301-304,307-312
+  s_f14d8e5b3f876d::t_f9b27c2c208021 152-153,202,204-205
+  s_f14d8e5b3f876d::t_c8d3f47e9cdd41 14,27-31,33,52-53,56,62,72,76-80,89,93,97,100,103-106,110-111,114-116,118-119,136-139,143-144,148-151,154,161-166,168,170-182,184-186,188-201,218-223,231-232,234-235,237,250,252,254
+  h_e83f79f999df32 263,453
+backend/config/settings.py
+  s_f14d8e5b3f876d::t_4c0bc256457db3 179-185
+backend/core/urls.py
+  s_f14d8e5b3f876d::t_70ff401225b518 47-55
+frontend/app/page.tsx
+  s_f14d8e5b3f876d::t_9dd24900f42229 247-248,250-252
+  h_e83f79f999df32 66
+  s_f14d8e5b3f876d::t_7d3e704a97cf43 69-70
+frontend/app/page.module.css
+  s_f14d8e5b3f876d::t_7d3e704a97cf43 7-11,59-60,305-306,417-418
+  s_f14d8e5b3f876d::t_a0ab7ea1e8f268 65
+  s_f14d8e5b3f876d::t_9dd24900f42229 481,486-487
+frontend/app/ContactForm.module.css
+  s_f14d8e5b3f876d::t_b3e63b881d507e 91,93-99,108-110,115-117,119-121,141,182
+  s_f14d8e5b3f876d::t_83f60708b862c8 39,48-55
+  s_f14d8e5b3f876d::t_9b044dcdbca016 1-27,29-38,41-47,56-89,92,100-107,111-114,118,122-140,142-144,153,166-167,171-181
+  s_f14d8e5b3f876d::t_915194affec079 28,40
+backend/core/models/contact.py
+  s_f14d8e5b3f876d::t_dfcaabe3c25e53 32-36,46
+backend/core/views.py
+  s_f14d8e5b3f876d::t_d22f4a19e9802d 4,758-771,802,804-805
+  s_f14d8e5b3f876d::t_808231531a80da 3
+  s_f14d8e5b3f876d::t_58f266c366d241 56-65,73
+  s_f14d8e5b3f876d::t_74276dc7d344b7 734-740,755-757,772-801,803,806-903
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "48aa71902e63b6e56339317c1604dd3fd4437c99",
+  "prompts": {},
+  "humans": {
+    "h_e83f79f999df32": {
+      "author": "weilan <weilanc@gmail.com>"
+    }
+  },
+  "sessions": {
+    "s_f14d8e5b3f876d": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019fe847-b966-7730-88b2-3d21e055852e",
+        "model": "gpt-5.5"
+      },
+      "human_author": "weilan <weilanc@gmail.com>"
+    }
+  }
+}
