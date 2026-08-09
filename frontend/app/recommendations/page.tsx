@@ -117,24 +117,16 @@ function RecommendationsContent() {
                     {match.coverage.length > 0 && (
                       <ul className={styles.coverage}>
                         {match.coverage.map((cov) => (
-                          <li
-                            key={cov.concern}
-                            className={styles.coverageLine}
-                          >
+                          <li key={cov.concern} className={styles.coverageLine}>
                             <span className={styles.coverageLabel}>
                               {cov.concern_label}:
-                            </span>
-                            {" "}
+                            </span>{" "}
                             {cov.matched}/{cov.total} active
                             {cov.matched_rules.length > 0 && (
                               <>
                                 {" — "}
-                                {cov.matched_rules
-                                  .slice(0, 2)
-                                  .join(", ")}
-                                {cov.matched_rules.length > 2
-                                  ? `…`
-                                  : ""}
+                                {cov.matched_rules.slice(0, 2).join(", ")}
+                                {cov.matched_rules.length > 2 ? `…` : ""}
                               </>
                             )}
                           </li>
@@ -142,9 +134,7 @@ function RecommendationsContent() {
                       </ul>
                     )}
                     {match.confidence_band === "low" && (
-                      <p className={styles.reason}>
-                        Limited ingredient data
-                      </p>
+                      <p className={styles.reason}>Limited ingredient data</p>
                     )}
                   </div>
                   <ScoreBadge
