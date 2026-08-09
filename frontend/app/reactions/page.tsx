@@ -7,16 +7,16 @@ import { useEffect, useMemo, useState } from "react";
 import { AppPageHeader } from "../../components/AppPageHeader";
 import { Button } from "../../components/Button";
 import {
+  type CatalogProduct,
   createReaction,
   getCatalogProducts,
   getMe,
   getReactions,
   getRoutines,
-  updateReaction,
-  type CatalogProduct,
   type ReactionEvent,
   type Routine,
   type RoutineItem,
+  updateReaction,
 } from "../../lib/appApi";
 import {
   goodQuestion,
@@ -25,14 +25,14 @@ import {
   offQuestion,
   orderOptions,
   overallQuestion,
+  type ProductModuleKey,
   productModules,
   productTypeOptions,
+  type QuestionnaireQuestion,
   questionnaireVersion,
   safetyQuestion,
   timingQuestion,
   useAgainQuestion,
-  type ProductModuleKey,
-  type QuestionnaireQuestion,
 } from "./questionnaire";
 import styles from "./reactions.module.css";
 
@@ -143,12 +143,17 @@ function optionLabel(question: QuestionnaireQuestion, value: string): string {
   return question.options.find((option) => option.id === value)?.label ?? "";
 }
 
-function optionLabels(question: QuestionnaireQuestion, values: string[]): string[] {
+function optionLabels(
+  question: QuestionnaireQuestion,
+  values: string[],
+): string[] {
   return values.map((value) => optionLabel(question, value)).filter(Boolean);
 }
 
 function productTypeLabel(value: ProductModuleKey): string {
-  return productTypeOptions.find((option) => option.id === value)?.label ?? "Other";
+  return (
+    productTypeOptions.find((option) => option.id === value)?.label ?? "Other"
+  );
 }
 
 function uniqueValues(values: string[]): string[] {
@@ -211,7 +216,10 @@ function isPositiveEntry(entry: ReactionEvent): boolean {
   return overall === "loved" || overall === "worked";
 }
 
-function hasTriggeredOption(question: QuestionnaireQuestion, values: string[]): boolean {
+function hasTriggeredOption(
+  question: QuestionnaireQuestion,
+  values: string[],
+): boolean {
   return question.options.some(
     (option) => option.triggersSafetyGate && values.includes(option.id),
   );
@@ -247,7 +255,11 @@ function computeSeverity(form: ReactionFormState): ReactionEvent["severity"] {
 }
 
 function computeStatus(form: ReactionFormState): ReactionEvent["status"] {
-  if (form.safety.length > 0 || form.overall === "reaction" || hasSafetyTrigger(form)) {
+  if (
+    form.safety.length > 0 ||
+    form.overall === "reaction" ||
+    hasSafetyTrigger(form)
+  ) {
     return "active";
   }
   return "resolved";
@@ -264,7 +276,10 @@ function ChipQuestion({ question, values, onChange }: ChipQuestionProps) {
           const isSelected = values.includes(option.id);
           return (
             <label
-              className={[styles.answerChip, isSelected ? styles.answerChipSelected : ""]
+              className={[
+                styles.answerChip,
+                isSelected ? styles.answerChipSelected : "",
+              ]
                 .filter(Boolean)
                 .join(" ")}
               key={option.id}
@@ -333,7 +348,9 @@ export default function ReactionsPage() {
       queryClient.invalidateQueries({ queryKey: ["reactions"] });
     },
     onError: (error) => {
-      setMessage(error instanceof Error ? error.message : "Could not save response.");
+      setMessage(
+        error instanceof Error ? error.message : "Could not save response.",
+      );
     },
   });
   const resolveReactionMutation = useMutation({
@@ -347,7 +364,9 @@ export default function ReactionsPage() {
       queryClient.invalidateQueries({ queryKey: ["reactions"] });
     },
     onError: (error) => {
-      setMessage(error instanceof Error ? error.message : "Could not update response.");
+      setMessage(
+        error instanceof Error ? error.message : "Could not update response.",
+      );
     },
   });
 
@@ -357,9 +376,17 @@ export default function ReactionsPage() {
     }
   }, [meQuery.isError, router]);
 
-  const routines = useMemo(() => routinesQuery.data ?? [], [routinesQuery.data]);
-  const products = useMemo(() => productsQuery.data ?? [], [productsQuery.data]);
-  const selectedRoutine = routines.find((routine) => String(routine.id) === form.routine_id);
+  const routines = useMemo(
+    () => routinesQuery.data ?? [],
+    [routinesQuery.data],
+  );
+  const products = useMemo(
+    () => productsQuery.data ?? [],
+    [productsQuery.data],
+  );
+  const selectedRoutine = routines.find(
+    (routine) => String(routine.id) === form.routine_id,
+  );
   const routineItems = selectedRoutine?.items ?? [];
   const selectedRoutineItem = routineItems.find(
     (item) => String(item.id) === form.routine_item_id,
@@ -375,7 +402,9 @@ export default function ReactionsPage() {
   }
 
   const reactionEntries = reactionsQuery.data ?? [];
-  const reviewCount = reactionEntries.filter((entry) => entry.status === "active").length;
+  const reviewCount = reactionEntries.filter(
+    (entry) => entry.status === "active",
+  ).length;
   const positiveCount = reactionEntries.filter(isPositiveEntry).length;
 
   function updateForm<K extends keyof ReactionFormState>(
@@ -402,9 +431,14 @@ export default function ReactionsPage() {
     setForm((current) => ({
       ...current,
       product_id: value,
-      formulation_id: product?.formulation_id ? String(product.formulation_id) : "",
+      formulation_id: product?.formulation_id
+        ? String(product.formulation_id)
+        : "",
       product_type: product
-        ? inferProductModule(product.category, product.display_name || product.name)
+        ? inferProductModule(
+            product.category,
+            product.display_name || product.name,
+          )
         : current.product_type,
       product_answers: product ? {} : current.product_answers,
     }));
@@ -421,14 +455,18 @@ export default function ReactionsPage() {
   }
 
   function selectRoutineItem(value: string) {
-    const item = routineItems.find((routineItem) => String(routineItem.id) === value);
+    const item = routineItems.find(
+      (routineItem) => String(routineItem.id) === value,
+    );
     const inferredType = item
       ? inferProductModule(item.product?.category, displayRoutineItem(item))
       : form.product_type;
     setForm((current) => ({
       ...current,
       routine_item_id: value,
-      product_id: item?.product_id ? String(item.product_id) : current.product_id,
+      product_id: item?.product_id
+        ? String(item.product_id)
+        : current.product_id,
       formulation_id: item?.formulation_id
         ? String(item.formulation_id)
         : current.formulation_id,
@@ -456,7 +494,10 @@ export default function ReactionsPage() {
       `Overall: ${optionLabel(overallQuestion, form.overall) || "None"}`,
       `Product type: ${productTypeLabel(form.product_type)}`,
       ...moduleQuestions.map((question) => {
-        const labels = optionLabels(question, form.product_answers[question.id] ?? []);
+        const labels = optionLabels(
+          question,
+          form.product_answers[question.id] ?? [],
+        );
         return `${question.prompt}: ${joinOrNone(labels)}`;
       }),
       `Improved: ${joinOrNone(optionLabels(goodQuestion, form.good))}`,
@@ -466,7 +507,9 @@ export default function ReactionsPage() {
       `Use again: ${optionLabel(useAgainQuestion, form.use_again) || "None"}`,
     ];
     if (showSafetyGate || form.safety.length > 0) {
-      lines.push(`Care flags: ${joinOrNone(optionLabels(safetyQuestion, form.safety))}`);
+      lines.push(
+        `Care flags: ${joinOrNone(optionLabels(safetyQuestion, form.safety))}`,
+      );
     }
     if (form.notes.trim()) {
       lines.push(`Notes: ${form.notes.trim()}`);
@@ -497,7 +540,8 @@ export default function ReactionsPage() {
       severity,
       status,
       occurred_on: form.occurred_on || todayInputValue(),
-      resolved_on: status === "resolved" ? form.occurred_on || todayInputValue() : null,
+      resolved_on:
+        status === "resolved" ? form.occurred_on || todayInputValue() : null,
       symptoms: buildSelectedLabels(),
       suspected_trigger:
         (selectedRoutineItem ? displayRoutineItem(selectedRoutineItem) : "") ||
@@ -618,7 +662,9 @@ export default function ReactionsPage() {
                   disabled={!form.routine_id || routineItems.length === 0}
                 >
                   <option value="">
-                    {routineItems.length > 0 ? "No item selected" : "No products"}
+                    {routineItems.length > 0
+                      ? "No item selected"
+                      : "No products"}
                   </option>
                   {routineItems.map((item) => (
                     <option value={item.id} key={item.id}>
@@ -661,7 +707,9 @@ export default function ReactionsPage() {
               <ChipQuestion
                 question={noticeabilityQuestion}
                 values={form.noticeability ? [form.noticeability] : []}
-                onChange={(values) => updateForm("noticeability", values[0] ?? "")}
+                onChange={(values) =>
+                  updateForm("noticeability", values[0] ?? "")
+                }
               />
               <ChipQuestion
                 question={timingQuestion}
@@ -679,9 +727,9 @@ export default function ReactionsPage() {
             {showSafetyGate ? (
               <div className={styles.safetyPanel}>
                 <p>
-                  This may be bigger than product feedback. Stop using it and contact
-                  a healthcare professional if symptoms are severe, spreading, painful,
-                  or near your eyes or lips.
+                  This may be bigger than product feedback. Stop using it and
+                  contact a healthcare professional if symptoms are severe,
+                  spreading, painful, or near your eyes or lips.
                 </p>
                 <ChipQuestion
                   question={safetyQuestion}
@@ -690,8 +738,8 @@ export default function ReactionsPage() {
                 />
                 {form.safety.length > 0 ? (
                   <p className={styles.careMessage}>
-                    Seek urgent help for breathing trouble, throat swelling, or rapidly
-                    worsening symptoms.
+                    Seek urgent help for breathing trouble, throat swelling, or
+                    rapidly worsening symptoms.
                   </p>
                 ) : null}
               </div>
@@ -703,7 +751,9 @@ export default function ReactionsPage() {
                 <input
                   type="date"
                   value={form.occurred_on}
-                  onChange={(event) => updateForm("occurred_on", event.target.value)}
+                  onChange={(event) =>
+                    updateForm("occurred_on", event.target.value)
+                  }
                 />
               </label>
               <label className={styles.formField}>
@@ -723,7 +773,9 @@ export default function ReactionsPage() {
                 type="submit"
                 isDisabled={createReactionMutation.isPending || !form.overall}
               >
-                {createReactionMutation.isPending ? "Saving..." : "Save response"}
+                {createReactionMutation.isPending
+                  ? "Saving..."
+                  : "Save response"}
               </Button>
               <Button
                 type="button"
@@ -766,7 +818,9 @@ export default function ReactionsPage() {
                     {reactionContext(entry)} / {formatDate(entry.occurred_on)}
                   </p>
                 </div>
-                <span className={styles.severityBadge}>{responseLabel(entry)}</span>
+                <span className={styles.severityBadge}>
+                  {responseLabel(entry)}
+                </span>
                 {entry.status === "active" ? (
                   <button
                     className={styles.resolveButton}

@@ -42,10 +42,18 @@ const STEPS: { id: Step; label: string }[] = [
 ];
 
 const CONCERNS = [
-  { id: "acne", label: "Acne & breakouts", zones: ["forehead", "chin", "cheeks"] },
+  {
+    id: "acne",
+    label: "Acne & breakouts",
+    zones: ["forehead", "chin", "cheeks"],
+  },
   { id: "redness", label: "Redness & sensitivity", zones: ["cheeks", "nose"] },
   { id: "dryness", label: "Dryness & dehydration", zones: ["cheeks", "lips"] },
-  { id: "oiliness", label: "Oiliness & pores", zones: ["forehead", "nose", "chin"] },
+  {
+    id: "oiliness",
+    label: "Oiliness & pores",
+    zones: ["forehead", "nose", "chin"],
+  },
   { id: "pigmentation", label: "Dark spots", zones: ["cheeks", "forehead"] },
   { id: "aging", label: "Fine lines", zones: ["eyes", "forehead"] },
   { id: "dark_circles", label: "Dark circles", zones: ["eyes"] },
@@ -63,10 +71,13 @@ const SENSITIVITY_PRESETS = [
   "Nickel",
 ];
 
-const CONCERN_TO_ZONES = CONCERNS.reduce<Record<string, string[]>>((acc, concern) => {
-  acc[concern.id] = concern.zones;
-  return acc;
-}, {});
+const CONCERN_TO_ZONES = CONCERNS.reduce<Record<string, string[]>>(
+  (acc, concern) => {
+    acc[concern.id] = concern.zones;
+    return acc;
+  },
+  {},
+);
 
 const SAMPLE_PRODUCTS: CurrentProduct[] = [
   {
@@ -185,10 +196,7 @@ function buildRecommendations(
 
     return {
       ...product,
-      match: Math.max(
-        72,
-        product.match + overlap * 3 - conflictCount * 8,
-      ),
+      match: Math.max(72, product.match + overlap * 3 - conflictCount * 8),
       avoids: relevantAvoids(product, sensitivities),
       relevance: overlap,
     };
@@ -226,11 +234,11 @@ export default function ExperienceFlow() {
     [concerns, sensitivities],
   );
 
-
-
   function toggleConcern(id: string) {
     setConcerns((current) =>
-      current.includes(id) ? current.filter((item) => item !== id) : [...current, id],
+      current.includes(id)
+        ? current.filter((item) => item !== id)
+        : [...current, id],
     );
   }
 
@@ -249,7 +257,11 @@ export default function ExperienceFlow() {
     setCustomSensitivity("");
   }
 
-  function updateProduct(id: string, field: "name" | "ingredients", value: string) {
+  function updateProduct(
+    id: string,
+    field: "name" | "ingredients",
+    value: string,
+  ) {
     setProducts((current) =>
       current.map((product) =>
         product.id === id ? { ...product, [field]: value } : product,
@@ -266,7 +278,9 @@ export default function ExperienceFlow() {
 
   function removeProduct(id: string) {
     setProducts((current) =>
-      current.length === 1 ? current : current.filter((product) => product.id !== id),
+      current.length === 1
+        ? current
+        : current.filter((product) => product.id !== id),
     );
   }
 
@@ -275,7 +289,9 @@ export default function ExperienceFlow() {
       (product) => product.name.trim() && product.ingredients.trim(),
     );
     if (validProducts.length === 0) {
-      setResearchStatus("Add at least one product with an INCI ingredient list.");
+      setResearchStatus(
+        "Add at least one product with an INCI ingredient list.",
+      );
       return;
     }
 
@@ -322,9 +338,7 @@ export default function ExperienceFlow() {
     <div className="experience-flow">
       <ol className="experience-steps" aria-label="Progress">
         {STEPS.map((item, index) => (
-          <li
-            key={item.id}
-          >
+          <li key={item.id}>
             <span className="experience-step-index">{index + 1}</span>
             <span>{item.label}</span>
           </li>
@@ -344,7 +358,11 @@ export default function ExperienceFlow() {
             {photoPreview ? "Replace photo" : "Upload facial photo"}
           </UploadButton>
           {photoPreview ? (
-            <img src={photoPreview} alt="Uploaded facial preview" className="photo-preview" />
+            <img
+              src={photoPreview}
+              alt="Uploaded facial preview"
+              className="photo-preview"
+            />
           ) : (
             <p className="field-hint">
               Photo is optional in this demo — you can continue and map target
@@ -353,7 +371,6 @@ export default function ExperienceFlow() {
           )}
         </div>
         <FaceMap activeZones={activeZones} analyzing={analyzing} />
-
       </Panel>
 
       <Panel>
@@ -367,7 +384,10 @@ export default function ExperienceFlow() {
         <div className="intake-grid">
           <label className="field">
             <span>Skin type</span>
-            <select value={skinType} onChange={(event) => setSkinType(event.target.value)}>
+            <select
+              value={skinType}
+              onChange={(event) => setSkinType(event.target.value)}
+            >
               <option value="dry">Dry</option>
               <option value="oily">Oily</option>
               <option value="combination">Combination</option>
@@ -404,7 +424,6 @@ export default function ExperienceFlow() {
         </div>
 
         <div className="experience-actions">
-
           <button
             className="primary-button"
             type="button"
@@ -440,15 +459,15 @@ export default function ExperienceFlow() {
           </ul>
         </div>
         <FaceMap activeZones={activeZones} />
-        <div className="experience-actions">
-        </div>
+        <div className="experience-actions"></div>
       </Panel>
 
       <Panel>
         <div className="experience-copy">
           <h2>Sensitivities & avoid list</h2>
           <p className="lede">
-            Flag ingredients or categories you want excluded from recommendations.
+            Flag ingredients or categories you want excluded from
+            recommendations.
           </p>
         </div>
 
@@ -472,7 +491,11 @@ export default function ExperienceFlow() {
             onChange={(event) => setCustomSensitivity(event.target.value)}
             placeholder="Add a custom sensitivity"
           />
-          <button className="ghost-button" type="button" onClick={addCustomSensitivity}>
+          <button
+            className="ghost-button"
+            type="button"
+            onClick={addCustomSensitivity}
+          >
             Add
           </button>
         </div>
@@ -551,7 +574,6 @@ export default function ExperienceFlow() {
         {researchStatus && <p className="detail-muted">{researchStatus}</p>}
 
         <div className="experience-actions">
-
           <button
             className="ghost-button"
             type="button"
@@ -560,7 +582,7 @@ export default function ExperienceFlow() {
           >
             {researching ? "Researching…" : "Research ingredients"}
           </button>
-          <button className="primary-button" type="button" onClick={() => { }}>
+          <button className="primary-button" type="button" onClick={() => {}}>
             See recommendations
           </button>
         </div>
@@ -571,14 +593,20 @@ export default function ExperienceFlow() {
           <h2>Recommended routine</h2>
           <p className="lede">
             Sample recommendations ranked for your concerns and sensitivities.
-            Live product matching will replace these once the catalog is connected.
+            Live product matching will replace these once the catalog is
+            connected.
           </p>
-          <p className="demo-note">Demo data — not a live purchase or medical recommendation.</p>
+          <p className="demo-note">
+            Demo data — not a live purchase or medical recommendation.
+          </p>
         </div>
 
         <div className="recommendation-grid">
           {recommendations.map((item) => (
-            <article className="recommendation-card" key={`${item.brand}-${item.name}`}>
+            <article
+              className="recommendation-card"
+              key={`${item.brand}-${item.name}`}
+            >
               <div className="recommendation-head">
                 <div>
                   <span className="tag">{item.category}</span>
@@ -605,13 +633,11 @@ export default function ExperienceFlow() {
         </div>
 
         <div className="experience-actions">
-
           <Link className="primary-button link-button" href="/compounds">
             Review ingredient research
           </Link>
         </div>
       </Panel>
-
-    </div >
+    </div>
   );
 }

@@ -7,20 +7,20 @@ import { useEffect, useMemo, useState } from "react";
 import { AppPageHeader } from "../../components/AppPageHeader";
 import { Button } from "../../components/Button";
 import {
+  type CatalogProduct,
   createRoutine,
   getCatalogProducts,
   getDailyCheckIns,
   getMe,
   getRoutines,
   getTodayCheckIn,
-  saveTodayCheckIn,
-  updateRoutine,
-  type CatalogProduct,
   type Routine,
   type RoutineItem,
   type RoutineItemPayload,
   type RoutinePayload,
   type RoutineTimeOfDay,
+  saveTodayCheckIn,
+  updateRoutine,
 } from "../../lib/appApi";
 import styles from "./routine.module.css";
 
@@ -84,7 +84,10 @@ function itemToPayload(item: RoutineItem): RoutineItemPayload {
   };
 }
 
-function routineToPayload(routine: Routine, items: RoutineItemPayload[]): RoutinePayload {
+function routineToPayload(
+  routine: Routine,
+  items: RoutineItemPayload[],
+): RoutinePayload {
   return {
     name: routine.name,
     time_of_day: routine.time_of_day,
@@ -95,7 +98,10 @@ function routineToPayload(routine: Routine, items: RoutineItemPayload[]): Routin
   };
 }
 
-function productToRoutineItem(product: CatalogProduct, position: number): RoutineItemPayload {
+function productToRoutineItem(
+  product: CatalogProduct,
+  position: number,
+): RoutineItemPayload {
   return {
     position,
     routine_step: product.category.toLowerCase().includes("cleanser")
@@ -111,7 +117,11 @@ function productToRoutineItem(product: CatalogProduct, position: number): Routin
   };
 }
 
-function reorderRoutineItems(items: RoutineItem[], fromId: number, toId: number): RoutineItem[] {
+function reorderRoutineItems(
+  items: RoutineItem[],
+  fromId: number,
+  toId: number,
+): RoutineItem[] {
   const fromIndex = items.findIndex((item) => item.id === fromId);
   const toIndex = items.findIndex((item) => item.id === toId);
   if (fromIndex === -1 || toIndex === -1 || fromIndex === toIndex) {
@@ -132,8 +142,12 @@ type DragState = {
 export default function RoutinePage() {
   const router = useRouter();
   const queryClient = useQueryClient();
-  const [activeView, setActiveView] = useState<"log" | "history" | "routine">("log");
-  const [selectedRoutineId, setSelectedRoutineId] = useState<number | null>(null);
+  const [activeView, setActiveView] = useState<"log" | "history" | "routine">(
+    "log",
+  );
+  const [selectedRoutineId, setSelectedRoutineId] = useState<number | null>(
+    null,
+  );
   const [completed, setCompleted] = useState<number[]>([]);
   const [skinFeel, setSkinFeel] = useState("good");
   const [notes, setNotes] = useState("");
@@ -183,13 +197,19 @@ export default function RoutinePage() {
     },
   });
   const saveRoutineMutation = useMutation({
-    mutationFn: async (payload: { routine?: Routine; item: RoutineItemPayload }) => {
+    mutationFn: async (payload: {
+      routine?: Routine;
+      item: RoutineItemPayload;
+    }) => {
       if (payload.routine) {
         const items = [
           ...payload.routine.items.map(itemToPayload),
           payload.item,
         ].map((item, index) => ({ ...item, position: index + 1 }));
-        return updateRoutine(payload.routine.id, routineToPayload(payload.routine, items));
+        return updateRoutine(
+          payload.routine.id,
+          routineToPayload(payload.routine, items),
+        );
       }
       const label = payload.item.raw_product_name || "Routine";
       return createRoutine({
@@ -218,21 +238,27 @@ export default function RoutinePage() {
         ...itemToPayload(item),
         position: index + 1,
       }));
-      return updateRoutine(payload.routine.id, routineToPayload(payload.routine, items));
+      return updateRoutine(
+        payload.routine.id,
+        routineToPayload(payload.routine, items),
+      );
     },
     onMutate: async (payload) => {
       await queryClient.cancelQueries({ queryKey: ["routines", "active"] });
-      const previous = queryClient.getQueryData<Routine[]>(["routines", "active"]);
+      const previous = queryClient.getQueryData<Routine[]>([
+        "routines",
+        "active",
+      ]);
       queryClient.setQueryData<Routine[]>(["routines", "active"], (current) =>
         current?.map((routine) =>
           routine.id === payload.routine.id
             ? {
-              ...routine,
-              items: payload.items.map((item, index) => ({
-                ...item,
-                position: index + 1,
-              })),
-            }
+                ...routine,
+                items: payload.items.map((item, index) => ({
+                  ...item,
+                  position: index + 1,
+                })),
+              }
             : routine,
         ),
       );
@@ -270,9 +296,15 @@ export default function RoutinePage() {
   const products = productsQuery.data ?? [];
   const selectedRoutine = useMemo(() => {
     if (selectedRoutineId !== null) {
-      return routines.find((routine) => routine.id === selectedRoutineId) ?? null;
+      return (
+        routines.find((routine) => routine.id === selectedRoutineId) ?? null
+      );
     }
-    return routines.find((routine) => routine.time_of_day === "am") ?? routines[0] ?? null;
+    return (
+      routines.find((routine) => routine.time_of_day === "am") ??
+      routines[0] ??
+      null
+    );
   }, [routines, selectedRoutineId]);
   const visibleItems = selectedRoutine?.items ?? [];
   const completionText = `${completed.filter((id) => visibleItems.some((item) => item.id === id)).length}/${visibleItems.length} complete`;
@@ -297,10 +329,11 @@ export default function RoutinePage() {
     const existingRoutine =
       addTimeOfDay === "custom"
         ? routines.find(
-          (routine) =>
-            routine.time_of_day === "custom" &&
-            routine.custom_time_label.toLowerCase() === customLabel.trim().toLowerCase(),
-        )
+            (routine) =>
+              routine.time_of_day === "custom" &&
+              routine.custom_time_label.toLowerCase() ===
+                customLabel.trim().toLowerCase(),
+          )
         : routines.find((routine) => routine.time_of_day === addTimeOfDay);
     const position = (existingRoutine?.items.length ?? 0) + 1;
     const selectedProduct = products.find(
@@ -309,10 +342,10 @@ export default function RoutinePage() {
     const item = selectedProduct
       ? productToRoutineItem(selectedProduct, position)
       : {
-        position,
-        routine_step: selectedStep,
-        raw_product_name: manualProductName.trim(),
-      };
+          position,
+          routine_step: selectedStep,
+          raw_product_name: manualProductName.trim(),
+        };
     if (!selectedProduct && !manualProductName.trim()) {
       setMessage("Choose a catalog product or enter a product name.");
       return;
@@ -324,7 +357,11 @@ export default function RoutinePage() {
     saveRoutineMutation.mutate({ routine: existingRoutine, item });
   }
 
-  function handleRoutineReorder(routine: Routine, fromId: number, toId: number) {
+  function handleRoutineReorder(
+    routine: Routine,
+    fromId: number,
+    toId: number,
+  ) {
     const reordered = reorderRoutineItems(routine.items, fromId, toId);
     if (reordered === routine.items) {
       return;
@@ -387,13 +424,16 @@ export default function RoutinePage() {
                     type="button"
                     onClick={() => setSelectedRoutineId(routine.id)}
                   >
-                    <span aria-hidden="true">{routineIcon(routine.time_of_day)}</span>
+                    <span aria-hidden="true">
+                      {routineIcon(routine.time_of_day)}
+                    </span>
                     {displayRoutineName(routine)}
                   </button>
                 ))
               ) : (
                 <p className={styles.emptyState}>
-                  Build your first routine in My Routine, then come back to log it.
+                  Build your first routine in My Routine, then come back to log
+                  it.
                 </p>
               )}
             </section>
@@ -409,7 +449,10 @@ export default function RoutinePage() {
                     <button
                       className={
                         isComplete
-                          ? [styles.routineItem, styles.routineItemComplete].join(" ")
+                          ? [
+                              styles.routineItem,
+                              styles.routineItemComplete,
+                            ].join(" ")
                           : styles.routineItem
                       }
                       key={item.id}
@@ -484,7 +527,10 @@ export default function RoutinePage() {
                 </div>
               ))
             ) : (
-              <p>Your routine logs will appear here after you save daily check-ins.</p>
+              <p>
+                Your routine logs will appear here after you save daily
+                check-ins.
+              </p>
             )}
           </section>
         )}
@@ -504,7 +550,9 @@ export default function RoutinePage() {
                   <span>Routine</span>
                   <select
                     value={addTimeOfDay}
-                    onChange={(event) => setAddTimeOfDay(event.target.value as RoutineTimeOfDay)}
+                    onChange={(event) =>
+                      setAddTimeOfDay(event.target.value as RoutineTimeOfDay)
+                    }
                   >
                     <option value="am">AM Routine</option>
                     <option value="pm">PM Routine</option>
@@ -525,7 +573,9 @@ export default function RoutinePage() {
                   <span>Catalog product</span>
                   <select
                     value={selectedProductId}
-                    onChange={(event) => setSelectedProductId(event.target.value)}
+                    onChange={(event) =>
+                      setSelectedProductId(event.target.value)
+                    }
                   >
                     <option value="">Choose product...</option>
                     {products.map((product) => (
@@ -539,7 +589,9 @@ export default function RoutinePage() {
                   <span>Manual product</span>
                   <input
                     value={manualProductName}
-                    onChange={(event) => setManualProductName(event.target.value)}
+                    onChange={(event) =>
+                      setManualProductName(event.target.value)
+                    }
                     placeholder="Or type a product name"
                   />
                 </label>
@@ -580,10 +632,13 @@ export default function RoutinePage() {
                 <div className={styles.routineProductList} role="list">
                   {routine.items.length > 0 ? (
                     <>
-                      <p className={styles.dragHint}>Drag products to reorder your routine.</p>
+                      <p className={styles.dragHint}>
+                        Drag products to reorder your routine.
+                      </p>
                       {routine.items.map((item, index) => {
                         const isDragging =
-                          dragState?.routineId === routine.id && dragState.itemId === item.id;
+                          dragState?.routineId === routine.id &&
+                          dragState.itemId === item.id;
                         const isDragOver =
                           dragOverItemId === item.id &&
                           dragState?.routineId === routine.id &&
@@ -593,8 +648,12 @@ export default function RoutinePage() {
                           <div
                             className={[
                               styles.routineProductCard,
-                              isDragging ? styles.routineProductCardDragging : "",
-                              isDragOver ? styles.routineProductCardDragOver : "",
+                              isDragging
+                                ? styles.routineProductCardDragging
+                                : "",
+                              isDragOver
+                                ? styles.routineProductCardDragOver
+                                : "",
                             ]
                               .filter(Boolean)
                               .join(" ")}
@@ -604,11 +663,20 @@ export default function RoutinePage() {
                             aria-grabbed={isDragging}
                             onDragStart={(event) => {
                               event.dataTransfer.effectAllowed = "move";
-                              event.dataTransfer.setData("text/plain", String(item.id));
-                              setDragState({ routineId: routine.id, itemId: item.id });
+                              event.dataTransfer.setData(
+                                "text/plain",
+                                String(item.id),
+                              );
+                              setDragState({
+                                routineId: routine.id,
+                                itemId: item.id,
+                              });
                             }}
                             onDragOver={(event) => {
-                              if (!dragState || dragState.routineId !== routine.id) {
+                              if (
+                                !dragState ||
+                                dragState.routineId !== routine.id
+                              ) {
                                 return;
                               }
                               event.preventDefault();
@@ -622,22 +690,36 @@ export default function RoutinePage() {
                             }}
                             onDrop={(event) => {
                               event.preventDefault();
-                              if (!dragState || dragState.routineId !== routine.id) {
+                              if (
+                                !dragState ||
+                                dragState.routineId !== routine.id
+                              ) {
                                 clearDragState();
                                 return;
                               }
-                              handleRoutineReorder(routine, dragState.itemId, item.id);
+                              handleRoutineReorder(
+                                routine,
+                                dragState.itemId,
+                                item.id,
+                              );
                               clearDragState();
                             }}
                             onDragEnd={clearDragState}
                           >
-                            <span className={styles.dragHandle} aria-hidden="true">
+                            <span
+                              className={styles.dragHandle}
+                              aria-hidden="true"
+                            >
                               ⋮⋮
                             </span>
                             <span>{index + 1}</span>
                             <div>
                               <strong>{item.display_name}</strong>
-                              <em>{item.product?.brand || item.raw_product_name || item.routine_step}</em>
+                              <em>
+                                {item.product?.brand ||
+                                  item.raw_product_name ||
+                                  item.routine_step}
+                              </em>
                             </div>
                             <small>{item.routine_step}</small>
                           </div>
@@ -645,7 +727,9 @@ export default function RoutinePage() {
                       })}
                     </>
                   ) : (
-                    <p className={styles.emptyState}>No products in this routine yet.</p>
+                    <p className={styles.emptyState}>
+                      No products in this routine yet.
+                    </p>
                   )}
                 </div>
               </article>

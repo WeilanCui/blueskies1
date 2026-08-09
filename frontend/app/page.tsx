@@ -80,7 +80,10 @@ export default function Home() {
           </div>
         </div>
 
-        <div className={styles.landingPreview} aria-label="Blueskies app preview">
+        <div
+          className={styles.landingPreview}
+          aria-label="Blueskies app preview"
+        >
           <div className={styles.phoneFrame}>
             <div className={styles.phoneStatus}>
               <span>Today</span>
@@ -88,9 +91,17 @@ export default function Home() {
             </div>
             <div className={styles.scanCard}>
               <div className={styles.facePreview}>
-                <span className={[styles.faceZone, styles.faceZoneForehead].join(" ")} />
-                <span className={[styles.faceZone, styles.faceZoneCheek].join(" ")} />
-                <span className={[styles.faceZone, styles.faceZoneChin].join(" ")} />
+                <span
+                  className={[styles.faceZone, styles.faceZoneForehead].join(
+                    " ",
+                  )}
+                />
+                <span
+                  className={[styles.faceZone, styles.faceZoneCheek].join(" ")}
+                />
+                <span
+                  className={[styles.faceZone, styles.faceZoneChin].join(" ")}
+                />
               </div>
               <div>
                 <strong>Analysis preview</strong>
@@ -124,11 +135,19 @@ export default function Home() {
             </div>
           </div>
 
-          <div className={[styles.floatingPanel, styles.floatingPanelTop].join(" ")}>
+          <div
+            className={[styles.floatingPanel, styles.floatingPanelTop].join(
+              " ",
+            )}
+          >
             <span className={styles.panelKicker}>Journal signal</span>
             <strong>Evidence linked to ingredient role</strong>
           </div>
-          <div className={[styles.floatingPanel, styles.floatingPanelBottom].join(" ")}>
+          <div
+            className={[styles.floatingPanel, styles.floatingPanelBottom].join(
+              " ",
+            )}
+          >
             <span className={styles.panelKicker}>Context</span>
             <strong>Weather, cycle, routine, skin state</strong>
           </div>
@@ -155,14 +174,17 @@ export default function Home() {
         </div>
       </section>
 
-      <section className={[styles.landingSection, styles.scienceSection].join(" ")} id="science">
+      <section
+        className={[styles.landingSection, styles.scienceSection].join(" ")}
+        id="science"
+      >
         <div className={styles.scienceCopy}>
           <p className="landing-eyebrow">Science + you</p>
           <h2>Ingredient research gets personal context.</h2>
           <p>
             Blueskies is designed to look at compounds, formulations, ingredient
-            roles, and journal literature, then weigh that evidence against
-            your changing profile, sensitivities, regimen, and skin history.
+            roles, and journal literature, then weigh that evidence against your
+            changing profile, sensitivities, regimen, and skin history.
           </p>
         </div>
         <div className={styles.sciencePanel}>
@@ -204,7 +226,9 @@ export default function Home() {
         </div>
       </section>
 
-      <section className={[styles.landingSection, styles.platformSection].join(" ")}>
+      <section
+        className={[styles.landingSection, styles.platformSection].join(" ")}
+      >
         <div className={styles.sectionHeading}>
           <p className="landing-eyebrow">Platform vision</p>
           <h2>A consumer app with a deeper skincare intelligence layer.</h2>
@@ -224,9 +248,9 @@ export default function Home() {
           <p className="landing-eyebrow">Contact us</p>
           <h2>Tell us what you want Blueskies to help with.</h2>
           <p>
-            Send your name, email, and feedback. We will reach out shortly as
-            we shape the first consumer experience around skin tracking,
-            regimen capture, product scans, and science-backed personalization.
+            Send your name, email, and feedback. We will reach out shortly as we
+            shape the first consumer experience around skin tracking, regimen
+            capture, product scans, and science-backed personalization.
           </p>
         </div>
         <ContactForm />

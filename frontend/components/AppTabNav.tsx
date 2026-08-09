@@ -1,5 +1,11 @@
+import {
+  HomeIcon,
+  MagnifyingGlassIcon,
+  PresentationChartBarIcon,
+  SparklesIcon,
+  SunIcon,
+} from "@heroicons/react/24/outline";
 import Link from "next/link";
-import { HomeIcon, MagnifyingGlassIcon, SunIcon, PresentationChartBarIcon, SparklesIcon } from '@heroicons/react/24/outline'
 
 import styles from "./AppTabNav.module.css";
 
@@ -20,7 +26,12 @@ const tabs = [
   { id: "home", label: "Home", href: "/home", icon: HomeIcon },
   { id: "scan", label: "Products", href: "/scan", icon: MagnifyingGlassIcon },
   { id: "routine", label: "Routine", href: "/routine", icon: SunIcon },
-  { id: "reactions", label: "Reactions", href: "/reactions", icon: PresentationChartBarIcon },
+  {
+    id: "reactions",
+    label: "Reactions",
+    href: "/reactions",
+    icon: PresentationChartBarIcon,
+  },
   { id: "forYou", label: "For You", href: "/skincareApi", icon: SparklesIcon },
 ] as const;
 

@@ -1,13 +1,13 @@
 "use client";
 
-import Link from "next/link";
 import { FieldError, Input, Label, TextField } from "@heroui/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import { Button } from "../../components/Button";
-import { getMe, login, signup, type AuthResponse } from "../../lib/appApi";
+import { type AuthResponse, getMe, login, signup } from "../../lib/appApi";
 import styles from "./login.module.css";
 
 type AuthMode = "login" | "signup";

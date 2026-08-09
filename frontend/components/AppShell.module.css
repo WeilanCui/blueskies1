@@ -2,7 +2,11 @@
   align-content: start;
   align-items: start;
   background:
-    linear-gradient(180deg, rgba(240, 249, 255, 0.94), rgba(251, 253, 255, 0.98) 46%),
+    linear-gradient(
+      180deg,
+      rgba(240, 249, 255, 0.94),
+      rgba(251, 253, 255, 0.98) 46%
+    ),
     #fbfdff;
   color: #171412;
   display: grid;

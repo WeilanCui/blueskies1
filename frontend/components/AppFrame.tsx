@@ -23,7 +23,8 @@ const appRoutes: Array<{ prefix: string; active: AppTabNavActive }> = [
 export function AppFrame({ children }: AppFrameProps) {
   const pathname = usePathname();
   const route = appRoutes.find(
-    (item) => pathname === item.prefix || pathname.startsWith(`${item.prefix}/`),
+    (item) =>
+      pathname === item.prefix || pathname.startsWith(`${item.prefix}/`),
   );
 
   if (!route) {

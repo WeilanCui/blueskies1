@@ -19,7 +19,10 @@ const variantClass: Record<AppButtonVariant, string> = {
   danger: "danger-button",
 };
 
-const heroVariant: Record<AppButtonVariant, NonNullable<HeroUIButtonProps["variant"]>> = {
+const heroVariant: Record<
+  AppButtonVariant,
+  NonNullable<HeroUIButtonProps["variant"]>
+> = {
   primary: "primary",
   secondary: "outline",
   ghost: "ghost",
@@ -36,7 +39,9 @@ export function Button({
   return (
     <HeroUIButton
       variant={heroVariant[variant]}
-      className={["app-button", variantClass[variant], className].filter(Boolean).join(" ")}
+      className={["app-button", variantClass[variant], className]
+        .filter(Boolean)
+        .join(" ")}
       isDisabled={isDisabled ?? disabled}
       {...props}
     />

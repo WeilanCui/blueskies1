@@ -6,5 +6,8 @@ type RouteContext = {
 
 export async function POST(request: Request, context: RouteContext) {
   const { id } = await context.params;
-  return proxyBackendJson(request, `/api/routines/${encodeURIComponent(id)}/archive/`);
+  return proxyBackendJson(
+    request,
+    `/api/routines/${encodeURIComponent(id)}/archive/`,
+  );
 }

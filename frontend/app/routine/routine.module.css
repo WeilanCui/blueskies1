@@ -350,7 +350,10 @@
   grid-template-columns: auto auto minmax(0, 1fr) auto;
   padding: 14px;
   touch-action: pan-y;
-  transition: border-color 160ms ease, box-shadow 160ms ease, opacity 160ms ease;
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    opacity 160ms ease;
 }
 
 .routineProductCard:active {

@@ -1,7 +1,7 @@
 "use client";
 
-import { useRef, type ReactNode } from "react";
-import { Button, type AppButtonVariant } from "./Button";
+import { type ReactNode, useRef } from "react";
+import { type AppButtonVariant, Button } from "./Button";
 
 type UploadButtonProps = {
   accept?: string;
