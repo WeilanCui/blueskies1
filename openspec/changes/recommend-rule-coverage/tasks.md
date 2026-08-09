@@ -6,7 +6,7 @@
 
 ## 2. API
 
-- [x] 2.1 `RecommendationMatchSerializer` gains `coverage` array (`concern`, `concern_label`, `matched`, `total`, `matched_rules`)
+- [x] 2.1 `RecommendationMatchSerializer` gains `coverage` array (`concern`, `concern_label`, `matched`, `total`, `matched_rules`, `unmatched_rules`)
 - [x] 2.2 Frontend types updated additively
 
 ## 3. Frontend

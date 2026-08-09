@@ -184,10 +184,9 @@ class ConcernRuleEvaluatorTests(TestCase):
         )
 
         context = self.evaluator.prepare(self.profile)
-        result = self.evaluator.evaluate(
+        impacts, coverage = self.evaluator.evaluate(
             self.profile, self.formulation_with_retinol, context=context
         )
-        impacts = result
 
         self.assertEqual(len(impacts), 1)
         self.assertEqual(impacts[0].enforcement, "penalize")
