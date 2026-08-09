@@ -27,7 +27,10 @@ export type QuestionnaireQuestion = {
 
 export const questionnaireVersion = "skincare_feedback_v1";
 
-export const productTypeOptions: Array<{ id: ProductModuleKey; label: string }> = [
+export const productTypeOptions: Array<{
+  id: ProductModuleKey;
+  label: string;
+}> = [
   { id: "cleanser", label: "Cleanser" },
   { id: "moisturizer", label: "Moisturizer" },
   { id: "sunscreen", label: "Sunscreen" },
@@ -161,160 +164,181 @@ export const safetyQuestion: QuestionnaireQuestion = {
   ],
 };
 
-export const productModules: Record<ProductModuleKey, QuestionnaireQuestion[]> = {
-  cleanser: [
-    {
-      id: "cleanser_result",
-      prompt: "How did cleansing go?",
-      type: "multi",
-      options: [
-        { id: "clean", label: "Clean", baseOrder: 1 },
-        { id: "comfort", label: "Comfort", baseOrder: 2 },
-        { id: "stripped", label: "Stripped", baseOrder: 3 },
-        { id: "residue", label: "Residue", baseOrder: 4 },
-        { id: "sunscreen", label: "Sunscreen", baseOrder: 5 },
-        { id: "makeup", label: "Makeup", baseOrder: 6 },
-        { id: "eyes", label: "Eyes", baseOrder: 7, triggersSafetyGate: true },
-        { id: "texture", label: "Texture", baseOrder: 8 },
-      ],
-    },
-  ],
-  moisturizer: [
-    {
-      id: "moisturizer_wear",
-      prompt: "How did hydration wear?",
-      type: "multi",
-      options: [
-        { id: "hydration", label: "Hydration", baseOrder: 1 },
-        { id: "calmness", label: "Calmness", baseOrder: 2 },
-        { id: "softness", label: "Softness", baseOrder: 3 },
-        { id: "lightweight", label: "Lightweight", baseOrder: 4 },
-        { id: "rich", label: "Rich", baseOrder: 5 },
-        { id: "greasiness", label: "Greasiness", baseOrder: 6 },
-        { id: "stickiness", label: "Stickiness", baseOrder: 7 },
-        { id: "clogging", label: "Clogging", baseOrder: 8 },
-        { id: "pilling", label: "Pilling", baseOrder: 9 },
-      ],
-    },
-  ],
-  sunscreen: [
-    {
-      id: "sunscreen_cast",
-      prompt: "How was the cast?",
-      type: "single",
-      options: [
-        { id: "none", label: "None", baseOrder: 1 },
-        { id: "slight", label: "Slight", baseOrder: 2 },
-        { id: "noticeable", label: "Noticeable", baseOrder: 3 },
-        { id: "strong", label: "Strong", baseOrder: 4 },
-      ],
-    },
-    {
-      id: "sunscreen_wear",
-      prompt: "How did sunscreen wear?",
-      type: "multi",
-      options: [
-        { id: "matte", label: "Matte", baseOrder: 1 },
-        { id: "dewy", label: "Dewy", baseOrder: 2 },
-        { id: "greasiness", label: "Greasiness", baseOrder: 3 },
-        { id: "stickiness", label: "Stickiness", baseOrder: 4 },
-        { id: "eyes", label: "Eyes", baseOrder: 5, triggersSafetyGate: true },
-        { id: "pilling", label: "Pilling", baseOrder: 6 },
-        { id: "protection", label: "Protection", baseOrder: 7 },
-        { id: "redness", label: "Redness", baseOrder: 8 },
-      ],
-    },
-  ],
-  treatment: [
-    {
-      id: "treatment_result",
-      prompt: "What changed?",
-      type: "multi",
-      options: [
-        { id: "glow", label: "Glow", baseOrder: 1 },
-        { id: "texture", label: "Texture", baseOrder: 2 },
-        { id: "calmness", label: "Calmness", baseOrder: 3 },
-        { id: "tone", label: "Tone", baseOrder: 4 },
-        { id: "clarity", label: "Clarity", baseOrder: 5 },
-        { id: "breakouts", label: "Breakouts", baseOrder: 6 },
-        { id: "dryness", label: "Dryness", baseOrder: 7 },
-        { id: "stinging", label: "Stinging", baseOrder: 8 },
-        { id: "peeling", label: "Peeling", baseOrder: 9 },
-        { id: "bumps", label: "Bumps", baseOrder: 10 },
-      ],
-    },
-  ],
-  active: [
-    {
-      id: "active_result",
-      prompt: "How did treatment go?",
-      type: "multi",
-      options: [
-        { id: "clarity", label: "Clarity", baseOrder: 1 },
-        { id: "texture", label: "Texture", baseOrder: 2 },
-        { id: "pores", label: "Pores", baseOrder: 3 },
-        { id: "breakouts", label: "Breakouts", baseOrder: 4 },
-        { id: "dryness", label: "Dryness", baseOrder: 5 },
-        { id: "flaking", label: "Flaking", baseOrder: 6 },
-        { id: "sensitivity", label: "Sensitivity", baseOrder: 7 },
-        { id: "strength", label: "Strength", baseOrder: 8 },
-        { id: "consistency", label: "Consistency", baseOrder: 9 },
-      ],
-    },
-  ],
-  eye: [
-    {
-      id: "eye_result",
-      prompt: "How did the eye area respond?",
-      type: "multi",
-      options: [
-        { id: "dryness", label: "Dryness", baseOrder: 1 },
-        { id: "puffiness", label: "Puffiness", baseOrder: 2 },
-        { id: "smoothness", label: "Smoothness", baseOrder: 3 },
-        { id: "stinging", label: "Stinging", baseOrder: 4, triggersSafetyGate: true },
-        { id: "watering", label: "Watering", baseOrder: 5, triggersSafetyGate: true },
-        { id: "bumps", label: "Bumps", baseOrder: 6 },
-        { id: "heaviness", label: "Heaviness", baseOrder: 7 },
-        { id: "creasing", label: "Creasing", baseOrder: 8 },
-      ],
-    },
-  ],
-  lip: [
-    {
-      id: "lip_result",
-      prompt: "How did lips respond?",
-      type: "multi",
-      options: [
-        { id: "dryness", label: "Dryness", baseOrder: 1 },
-        { id: "cracking", label: "Cracking", baseOrder: 2 },
-        { id: "comfort", label: "Comfort", baseOrder: 3 },
-        { id: "stickiness", label: "Stickiness", baseOrder: 4 },
-        { id: "gloss", label: "Gloss", baseOrder: 5 },
-        { id: "tingling", label: "Tingling", baseOrder: 6 },
-        { id: "burning", label: "Burning", baseOrder: 7, triggersSafetyGate: true },
-        { id: "swelling", label: "Swelling", baseOrder: 8, triggersSafetyGate: true },
-        { id: "peeling", label: "Peeling", baseOrder: 9 },
-      ],
-    },
-  ],
-  other: [
-    {
-      id: "other_result",
-      prompt: "How did it perform?",
-      type: "multi",
-      options: [
-        { id: "hydration", label: "Hydration", baseOrder: 1 },
-        { id: "texture", label: "Texture", baseOrder: 2 },
-        { id: "calmness", label: "Calmness", baseOrder: 3 },
-        { id: "brightness", label: "Brightness", baseOrder: 4 },
-        { id: "greasiness", label: "Greasiness", baseOrder: 5 },
-        { id: "stickiness", label: "Stickiness", baseOrder: 6 },
-        { id: "scent", label: "Scent", baseOrder: 7 },
-        { id: "pilling", label: "Pilling", baseOrder: 8 },
-      ],
-    },
-  ],
-};
+export const productModules: Record<ProductModuleKey, QuestionnaireQuestion[]> =
+  {
+    cleanser: [
+      {
+        id: "cleanser_result",
+        prompt: "How did cleansing go?",
+        type: "multi",
+        options: [
+          { id: "clean", label: "Clean", baseOrder: 1 },
+          { id: "comfort", label: "Comfort", baseOrder: 2 },
+          { id: "stripped", label: "Stripped", baseOrder: 3 },
+          { id: "residue", label: "Residue", baseOrder: 4 },
+          { id: "sunscreen", label: "Sunscreen", baseOrder: 5 },
+          { id: "makeup", label: "Makeup", baseOrder: 6 },
+          { id: "eyes", label: "Eyes", baseOrder: 7, triggersSafetyGate: true },
+          { id: "texture", label: "Texture", baseOrder: 8 },
+        ],
+      },
+    ],
+    moisturizer: [
+      {
+        id: "moisturizer_wear",
+        prompt: "How did hydration wear?",
+        type: "multi",
+        options: [
+          { id: "hydration", label: "Hydration", baseOrder: 1 },
+          { id: "calmness", label: "Calmness", baseOrder: 2 },
+          { id: "softness", label: "Softness", baseOrder: 3 },
+          { id: "lightweight", label: "Lightweight", baseOrder: 4 },
+          { id: "rich", label: "Rich", baseOrder: 5 },
+          { id: "greasiness", label: "Greasiness", baseOrder: 6 },
+          { id: "stickiness", label: "Stickiness", baseOrder: 7 },
+          { id: "clogging", label: "Clogging", baseOrder: 8 },
+          { id: "pilling", label: "Pilling", baseOrder: 9 },
+        ],
+      },
+    ],
+    sunscreen: [
+      {
+        id: "sunscreen_cast",
+        prompt: "How was the cast?",
+        type: "single",
+        options: [
+          { id: "none", label: "None", baseOrder: 1 },
+          { id: "slight", label: "Slight", baseOrder: 2 },
+          { id: "noticeable", label: "Noticeable", baseOrder: 3 },
+          { id: "strong", label: "Strong", baseOrder: 4 },
+        ],
+      },
+      {
+        id: "sunscreen_wear",
+        prompt: "How did sunscreen wear?",
+        type: "multi",
+        options: [
+          { id: "matte", label: "Matte", baseOrder: 1 },
+          { id: "dewy", label: "Dewy", baseOrder: 2 },
+          { id: "greasiness", label: "Greasiness", baseOrder: 3 },
+          { id: "stickiness", label: "Stickiness", baseOrder: 4 },
+          { id: "eyes", label: "Eyes", baseOrder: 5, triggersSafetyGate: true },
+          { id: "pilling", label: "Pilling", baseOrder: 6 },
+          { id: "protection", label: "Protection", baseOrder: 7 },
+          { id: "redness", label: "Redness", baseOrder: 8 },
+        ],
+      },
+    ],
+    treatment: [
+      {
+        id: "treatment_result",
+        prompt: "What changed?",
+        type: "multi",
+        options: [
+          { id: "glow", label: "Glow", baseOrder: 1 },
+          { id: "texture", label: "Texture", baseOrder: 2 },
+          { id: "calmness", label: "Calmness", baseOrder: 3 },
+          { id: "tone", label: "Tone", baseOrder: 4 },
+          { id: "clarity", label: "Clarity", baseOrder: 5 },
+          { id: "breakouts", label: "Breakouts", baseOrder: 6 },
+          { id: "dryness", label: "Dryness", baseOrder: 7 },
+          { id: "stinging", label: "Stinging", baseOrder: 8 },
+          { id: "peeling", label: "Peeling", baseOrder: 9 },
+          { id: "bumps", label: "Bumps", baseOrder: 10 },
+        ],
+      },
+    ],
+    active: [
+      {
+        id: "active_result",
+        prompt: "How did treatment go?",
+        type: "multi",
+        options: [
+          { id: "clarity", label: "Clarity", baseOrder: 1 },
+          { id: "texture", label: "Texture", baseOrder: 2 },
+          { id: "pores", label: "Pores", baseOrder: 3 },
+          { id: "breakouts", label: "Breakouts", baseOrder: 4 },
+          { id: "dryness", label: "Dryness", baseOrder: 5 },
+          { id: "flaking", label: "Flaking", baseOrder: 6 },
+          { id: "sensitivity", label: "Sensitivity", baseOrder: 7 },
+          { id: "strength", label: "Strength", baseOrder: 8 },
+          { id: "consistency", label: "Consistency", baseOrder: 9 },
+        ],
+      },
+    ],
+    eye: [
+      {
+        id: "eye_result",
+        prompt: "How did the eye area respond?",
+        type: "multi",
+        options: [
+          { id: "dryness", label: "Dryness", baseOrder: 1 },
+          { id: "puffiness", label: "Puffiness", baseOrder: 2 },
+          { id: "smoothness", label: "Smoothness", baseOrder: 3 },
+          {
+            id: "stinging",
+            label: "Stinging",
+            baseOrder: 4,
+            triggersSafetyGate: true,
+          },
+          {
+            id: "watering",
+            label: "Watering",
+            baseOrder: 5,
+            triggersSafetyGate: true,
+          },
+          { id: "bumps", label: "Bumps", baseOrder: 6 },
+          { id: "heaviness", label: "Heaviness", baseOrder: 7 },
+          { id: "creasing", label: "Creasing", baseOrder: 8 },
+        ],
+      },
+    ],
+    lip: [
+      {
+        id: "lip_result",
+        prompt: "How did lips respond?",
+        type: "multi",
+        options: [
+          { id: "dryness", label: "Dryness", baseOrder: 1 },
+          { id: "cracking", label: "Cracking", baseOrder: 2 },
+          { id: "comfort", label: "Comfort", baseOrder: 3 },
+          { id: "stickiness", label: "Stickiness", baseOrder: 4 },
+          { id: "gloss", label: "Gloss", baseOrder: 5 },
+          { id: "tingling", label: "Tingling", baseOrder: 6 },
+          {
+            id: "burning",
+            label: "Burning",
+            baseOrder: 7,
+            triggersSafetyGate: true,
+          },
+          {
+            id: "swelling",
+            label: "Swelling",
+            baseOrder: 8,
+            triggersSafetyGate: true,
+          },
+          { id: "peeling", label: "Peeling", baseOrder: 9 },
+        ],
+      },
+    ],
+    other: [
+      {
+        id: "other_result",
+        prompt: "How did it perform?",
+        type: "multi",
+        options: [
+          { id: "hydration", label: "Hydration", baseOrder: 1 },
+          { id: "texture", label: "Texture", baseOrder: 2 },
+          { id: "calmness", label: "Calmness", baseOrder: 3 },
+          { id: "brightness", label: "Brightness", baseOrder: 4 },
+          { id: "greasiness", label: "Greasiness", baseOrder: 5 },
+          { id: "stickiness", label: "Stickiness", baseOrder: 6 },
+          { id: "scent", label: "Scent", baseOrder: 7 },
+          { id: "pilling", label: "Pilling", baseOrder: 8 },
+        ],
+      },
+    ],
+  };
 
 export function orderOptions(
   options: QuestionnaireOption[],
@@ -334,7 +358,8 @@ export function orderOptions(
       return -1;
     }
 
-    const countDelta = (selectionCounts[b.id] ?? 0) - (selectionCounts[a.id] ?? 0);
+    const countDelta =
+      (selectionCounts[b.id] ?? 0) - (selectionCounts[a.id] ?? 0);
     return countDelta || a.baseOrder - b.baseOrder;
   });
 }
@@ -344,7 +369,11 @@ export function inferProductModule(
   name = "",
 ): ProductModuleKey {
   const text = `${category ?? ""} ${name}`.toLowerCase();
-  if (text.includes("cleanser") || text.includes("cleanse") || text.includes("wash")) {
+  if (
+    text.includes("cleanser") ||
+    text.includes("cleanse") ||
+    text.includes("wash")
+  ) {
     return "cleanser";
   }
   if (

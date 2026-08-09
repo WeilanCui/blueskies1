@@ -27,9 +27,27 @@ export default function FaceMap({
   return (
     <div className={styles.faceMap}>
       <svg viewBox="0 0 300 300" aria-label="Facial analysis map">
-        <ellipse cx="150" cy="155" rx="95" ry="118" className={styles.faceOutline} />
-        <ellipse cx="118" cy="118" rx="14" ry="10" className={styles.faceFeature} />
-        <ellipse cx="182" cy="118" rx="14" ry="10" className={styles.faceFeature} />
+        <ellipse
+          cx="150"
+          cy="155"
+          rx="95"
+          ry="118"
+          className={styles.faceOutline}
+        />
+        <ellipse
+          cx="118"
+          cy="118"
+          rx="14"
+          ry="10"
+          className={styles.faceFeature}
+        />
+        <ellipse
+          cx="182"
+          cy="118"
+          rx="14"
+          ry="10"
+          className={styles.faceFeature}
+        />
         <path
           d="M 128 198 Q 150 210 172 198"
           className={styles.faceFeature}
@@ -66,7 +84,13 @@ export default function FaceMap({
         })}
 
         {analyzing && (
-          <line x1="20" y1="40" x2="280" y2="40" className={styles.faceScanLine}>
+          <line
+            x1="20"
+            y1="40"
+            x2="280"
+            y2="40"
+            className={styles.faceScanLine}
+          >
             <animate
               attributeName="y1"
               dur="1.4s"
@@ -85,7 +109,9 @@ export default function FaceMap({
 
       <ul className={styles.faceLegend}>
         {activeZones.length === 0 ? (
-          <li className={styles.emptyLegend}>Upload a photo and complete intake to see target areas.</li>
+          <li className={styles.emptyLegend}>
+            Upload a photo and complete intake to see target areas.
+          </li>
         ) : (
           activeZones.map((zoneId) => {
             const zone = ZONES.find((item) => item.id === zoneId);

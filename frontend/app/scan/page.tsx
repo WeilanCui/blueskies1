@@ -8,16 +8,16 @@ import { Button } from "../../components/Button";
 import { ScoreBadge } from "../../components/ScoreBadge";
 import {
   addProductToRoutine,
-  getCatalogProducts,
-  getMe,
-  getRoutines,
-  scanBarcode,
-  scoreFormulation,
   type BarcodeScanResponse,
   type CatalogProduct,
   type Formulation,
+  getCatalogProducts,
+  getMe,
+  getRoutines,
   type Routine,
   type RoutineTimeOfDay,
+  scanBarcode,
+  scoreFormulation,
 } from "../../lib/appApi";
 import styles from "./scan.module.css";
 
@@ -101,14 +101,18 @@ function routineValue(routine: Routine): string {
   return `routine:${routine.id}`;
 }
 
-function routineHasProduct(routine: Routine | undefined, product: CatalogProduct | null): boolean {
+function routineHasProduct(
+  routine: Routine | undefined,
+  product: CatalogProduct | null,
+): boolean {
   if (!routine || !product) {
     return false;
   }
   return routine.items.some(
     (item) =>
       item.product_id === product.product_id ||
-      (product.formulation_id !== null && item.formulation_id === product.formulation_id),
+      (product.formulation_id !== null &&
+        item.formulation_id === product.formulation_id),
   );
 }
 
@@ -132,11 +136,7 @@ function FormulationDetail({
 
   return (
     <section className={styles.productDetail}>
-      <button
-        className={styles.backButton}
-        type="button"
-        onClick={onDismiss}
-      >
+      <button className={styles.backButton} type="button" onClick={onDismiss}>
         <span aria-hidden="true" />
         Back
       </button>
@@ -211,7 +211,7 @@ function FormulationDetail({
 
       <section className={styles.analysisSection}>
         <h2>Ingredient Analysis</h2>
-        {(analysis.beneficial > 0 || analysis.caution > 0) ? (
+        {analysis.beneficial > 0 || analysis.caution > 0 ? (
           <div className={styles.analysisSummary}>
             {analysis.beneficial > 0 ? (
               <span className={styles.beneficialBadge}>
@@ -226,10 +226,10 @@ function FormulationDetail({
           </div>
         ) : null}
         <div className={styles.ingredientList}>
-          {formulation.ingredients.map((ingredient, index) => (
+          {formulation.ingredients.map((ingredient) => (
             <article
               className={styles.ingredientCard}
-              key={`${ingredient.name}-${index}`}
+              key={ingredient.position}
             >
               <span className={styles.shieldIcon} aria-hidden="true" />
               <div>
@@ -253,9 +253,12 @@ export default function ScanPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [selectedFilePurpose, setSelectedFilePurpose] = useState<UploadPurpose | null>(null);
+  const [selectedFilePurpose, setSelectedFilePurpose] =
+    useState<UploadPurpose | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
+  const [selectedProductId, setSelectedProductId] = useState<string | null>(
+    null,
+  );
   const [searchQuery, setSearchQuery] = useState("");
   const [routineTarget, setRoutineTarget] = useState("am");
   const [routineMessage, setRoutineMessage] = useState<string | null>(null);
@@ -264,7 +267,9 @@ export default function ScanPage() {
   // Barcode scan state
   const [decodeError, setDecodeError] = useState<string | null>(null);
   const [manualBarcode, setManualBarcode] = useState("");
-  const [scanResult, setScanResult] = useState<BarcodeScanResponse | null>(null);
+  const [scanResult, setScanResult] = useState<BarcodeScanResponse | null>(
+    null,
+  );
   const latestScanRequestRef = useRef(0);
 
   const meQuery = useQuery({
@@ -291,13 +296,17 @@ export default function ScanPage() {
       preserveRoutineMessageRef.current = true;
       setRoutineTarget(routineValue(data.routine));
       setRoutineMessage(
-        data.created ? `Added to ${routineName}.` : `Already in ${routineName}.`,
+        data.created
+          ? `Added to ${routineName}.`
+          : `Already in ${routineName}.`,
       );
       queryClient.invalidateQueries({ queryKey: ["routines"] });
     },
     onError: (error) => {
       setRoutineMessage(
-        error instanceof Error ? error.message : "Could not add product to routine.",
+        error instanceof Error
+          ? error.message
+          : "Could not add product to routine.",
       );
     },
   });
@@ -315,8 +324,14 @@ export default function ScanPage() {
       if (variables.requestId !== latestScanRequestRef.current) {
         return;
       }
-      const message = error instanceof Error ? error.message : "Could not look up that barcode.";
-      if (message.includes("not found") || message.toLowerCase().includes("404")) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Could not look up that barcode.";
+      if (
+        message.includes("not found") ||
+        message.toLowerCase().includes("404")
+      ) {
         setDecodeError("No product found for that barcode.");
       } else if (
         message.toLowerCase().includes("inci api") ||
@@ -347,6 +362,11 @@ export default function ScanPage() {
   }, [selectedFile]);
 
   // Decode barcode only for barcode-specific uploads.
+  // startBarcodeLookup is a plain function declaration, so it is a new
+  // identity every render; adding it to the deps would re-run the decode on
+  // every render and it calls setState, so that loops. It only touches refs
+  // and stable setters, so the captured closure is never stale.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: adding startBarcodeLookup loops the effect
   useEffect(() => {
     if (!selectedFile) {
       return;
@@ -391,7 +411,10 @@ export default function ScanPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedFile, selectedFilePurpose]);
 
-  function selectImage(event: React.ChangeEvent<HTMLInputElement>, purpose: UploadPurpose) {
+  function selectImage(
+    event: React.ChangeEvent<HTMLInputElement>,
+    purpose: UploadPurpose,
+  ) {
     const file = event.target.files?.[0] ?? null;
     latestScanRequestRef.current += 1;
     setSelectedFile(file);
@@ -462,12 +485,15 @@ export default function ScanPage() {
     );
   }, [products, searchQuery]);
 
-  const selectedProduct = products.find((product) => product.id === selectedProductId);
+  const selectedProduct = products.find(
+    (product) => product.id === selectedProductId,
+  );
   const selectedAnalysis = selectedProduct
     ? analysisCounts(selectedProduct.ingredients)
     : null;
   const selectedRoutineTarget =
-    routineTargets.find((target) => target.value === routineTarget) ?? routineTargets[0];
+    routineTargets.find((target) => target.value === routineTarget) ??
+    routineTargets[0];
   const selectedProductAlreadyInRoutine = routineHasProduct(
     selectedRoutineTarget?.routine,
     selectedProduct ?? null,
@@ -482,6 +508,10 @@ export default function ScanPage() {
     }
   }, [routineTarget, routineTargets]);
 
+  // These deps are the trigger, not values the body reads: the routine message
+  // clears whenever the user picks a different product or routine. Dropping
+  // them would leave the effect running once and the stale message on screen.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: deps are the reset trigger
   useEffect(() => {
     if (preserveRoutineMessageRef.current) {
       preserveRoutineMessageRef.current = false;
@@ -543,7 +573,9 @@ export default function ScanPage() {
               <div
                 className={[
                   styles.detailImage,
-                  styles[`productImage${categorySwatch(selectedProduct.category)}`],
+                  styles[
+                    `productImage${categorySwatch(selectedProduct.category)}`
+                  ],
                 ].join(" ")}
                 aria-hidden="true"
               >
@@ -558,7 +590,9 @@ export default function ScanPage() {
                   <strong>{selectedProduct.category}</strong>
                 </div>
                 <div className={styles.detailMeta}>
-                  <span>{formatEnrichmentStatus(selectedProduct.enrichment_status)}</span>
+                  <span>
+                    {formatEnrichmentStatus(selectedProduct.enrichment_status)}
+                  </span>
                   <span>{selectedProduct.ingredient_count} ingredients</span>
                 </div>
                 <p>{selectedProduct.description}</p>
@@ -567,7 +601,10 @@ export default function ScanPage() {
                     <span>Add to</span>
                     <select
                       value={selectedRoutineTarget?.value ?? routineTarget}
-                      disabled={routinesQuery.isLoading || addToRoutineMutation.isPending}
+                      disabled={
+                        routinesQuery.isLoading ||
+                        addToRoutineMutation.isPending
+                      }
                       onChange={(event) => {
                         setRoutineTarget(event.target.value);
                         setRoutineMessage(null);
@@ -608,7 +645,8 @@ export default function ScanPage() {
             <section className={styles.analysisSection}>
               <h2>Ingredient Analysis</h2>
               {selectedAnalysis &&
-              (selectedAnalysis.beneficial > 0 || selectedAnalysis.caution > 0) ? (
+              (selectedAnalysis.beneficial > 0 ||
+                selectedAnalysis.caution > 0) ? (
                 <div className={styles.analysisSummary}>
                   {selectedAnalysis.beneficial > 0 ? (
                     <span className={styles.beneficialBadge}>
@@ -626,6 +664,10 @@ export default function ScanPage() {
                 {selectedProduct.ingredients.map((ingredient, index) => (
                   <article
                     className={styles.ingredientCard}
+                    // CatalogIngredient carries no id, and INCI position is the
+                    // ingredient's identity — the list is ordered and never
+                    // reordered client-side.
+                    // biome-ignore lint/suspicious/noArrayIndexKey: INCI position is the identity
                     key={`${ingredient.name}-${index}`}
                   >
                     <span className={styles.shieldIcon} aria-hidden="true" />
@@ -648,7 +690,10 @@ export default function ScanPage() {
               <p>Search or scan to analyze ingredients.</p>
             </section>
 
-            <section className={styles.searchRow} aria-label="Product search and scan">
+            <section
+              className={styles.searchRow}
+              aria-label="Product search and scan"
+            >
               <label className={styles.searchField}>
                 <span className={styles.searchIcon} aria-hidden="true" />
                 <input
@@ -675,7 +720,9 @@ export default function ScanPage() {
             {scanMutation.isPending && (
               <section className={styles.uploadPanel}>
                 <div className={styles.uploadPreview}>
-                  {previewUrl ? <img alt="Selected scan preview" src={previewUrl} /> : null}
+                  {previewUrl ? (
+                    <img alt="Selected scan preview" src={previewUrl} />
+                  ) : null}
                 </div>
                 <div>
                   <strong>Looking up barcode…</strong>
@@ -687,7 +734,9 @@ export default function ScanPage() {
             {!scanMutation.isPending && selectedFile && !scanResult && (
               <section className={styles.uploadPanel}>
                 <div className={styles.uploadPreview}>
-                  {previewUrl ? <img alt="Selected scan preview" src={previewUrl} /> : null}
+                  {previewUrl ? (
+                    <img alt="Selected scan preview" src={previewUrl} />
+                  ) : null}
                 </div>
                 <div>
                   <strong>{selectedFile.name}</strong>
@@ -701,8 +750,14 @@ export default function ScanPage() {
 
             {/* Manual barcode entry fallback */}
             <section className={styles.scanPanel}>
-              <form className={styles.scanActions} onSubmit={submitManualBarcode}>
-                <label className={styles.searchField} style={{ borderRadius: 8, minHeight: 48 }}>
+              <form
+                className={styles.scanActions}
+                onSubmit={submitManualBarcode}
+              >
+                <label
+                  className={styles.searchField}
+                  style={{ borderRadius: 8, minHeight: 48 }}
+                >
                   <span className={styles.searchIcon} aria-hidden="true" />
                   <input
                     type="text"
@@ -729,7 +784,12 @@ export default function ScanPage() {
                     type="file"
                   />
                 </label>
-                <label className={[styles.fileAction, styles.fileActionSecondary].join(" ")}>
+                <label
+                  className={[
+                    styles.fileAction,
+                    styles.fileActionSecondary,
+                  ].join(" ")}
+                >
                   Upload photo
                   <input
                     accept="image/*"
@@ -739,7 +799,9 @@ export default function ScanPage() {
                   />
                 </label>
                 {decodeError && !selectedFile ? (
-                  <p className={styles.scanNote} style={{ color: "#b45309" }}>{decodeError}</p>
+                  <p className={styles.scanNote} style={{ color: "#b45309" }}>
+                    {decodeError}
+                  </p>
                 ) : null}
                 <p className={styles.scanNote}>
                   Scan a product barcode to fetch its INCI ingredient list.
@@ -747,12 +809,16 @@ export default function ScanPage() {
               </form>
             </section>
 
-            <section className={styles.productList} aria-label="Product catalog">
+            <section
+              className={styles.productList}
+              aria-label="Product catalog"
+            >
               {productsQuery.isLoading ? (
                 <p className="detail-muted">Loading products...</p>
               ) : productsQuery.isError ? (
                 <p className="detail-muted">
-                  Could not load the product catalog. Check that the backend is running.
+                  Could not load the product catalog. Check that the backend is
+                  running.
                 </p>
               ) : filteredProducts.length === 0 ? (
                 <p className="detail-muted">
@@ -771,7 +837,9 @@ export default function ScanPage() {
                     <div
                       className={[
                         styles.productImage,
-                        styles[`productImage${categorySwatch(product.category)}`],
+                        styles[
+                          `productImage${categorySwatch(product.category)}`
+                        ],
                       ].join(" ")}
                       aria-hidden="true"
                     >
@@ -814,7 +882,6 @@ export default function ScanPage() {
           </>
         )}
       </div>
-
     </>
   );
 }

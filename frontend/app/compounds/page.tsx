@@ -1,12 +1,14 @@
 import Link from "next/link";
 import { Suspense } from "react";
-
-import { getServerApiBaseUrl } from "../../lib/apiBaseUrl";
 import { Panel } from "../../components/Panel";
+import { getServerApiBaseUrl } from "../../lib/apiBaseUrl";
 import CompoundList, { type Compound } from "./CompoundList";
 import styles from "./compounds.module.css";
 
-async function getCompounds(): Promise<{ compounds: Compound[]; error: boolean }> {
+async function getCompounds(): Promise<{
+  compounds: Compound[];
+  error: boolean;
+}> {
   const baseUrl = getServerApiBaseUrl();
 
   try {
@@ -61,7 +63,10 @@ export default async function CompoundsPage() {
       ) : compounds.length === 0 ? (
         <Panel as="div" variant="notice">
           No compounds found yet. Seed or ingest data first, e.g.{" "}
-          <code>docker compose run --rm backend python manage.py ingest_compound</code>.
+          <code>
+            docker compose run --rm backend python manage.py ingest_compound
+          </code>
+          .
         </Panel>
       ) : (
         <Suspense fallback={<p className="detail-muted">Loading compounds…</p>}>

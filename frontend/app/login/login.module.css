@@ -2,8 +2,7 @@
   align-items: center;
   background:
     linear-gradient(135deg, rgba(236, 252, 203, 0.72), transparent 34%),
-    linear-gradient(225deg, rgba(150, 181, 217, 0.28), transparent 38%),
-    #fbfdff;
+    linear-gradient(225deg, rgba(150, 181, 217, 0.28), transparent 38%), #fbfdff;
   display: grid;
   min-height: 100vh;
   padding: 20px;
@@ -29,7 +28,11 @@
 .authShowcase {
   align-content: space-between;
   background:
-    linear-gradient(145deg, rgba(244, 251, 235, 0.95), rgba(238, 246, 252, 0.92)),
+    linear-gradient(
+      145deg,
+      rgba(244, 251, 235, 0.95),
+      rgba(238, 246, 252, 0.92)
+    ),
     #eef6fc;
   border-radius: 18px 18px 0 0;
   gap: 34px;
@@ -173,6 +176,9 @@
   display: grid;
   gap: 4px;
   grid-template-columns: 1fr 1fr;
+  /* Neutralize the <fieldset> UA defaults so this renders as it did as a div. */
+  margin: 0;
+  min-inline-size: 0;
   padding: 4px;
 }
 

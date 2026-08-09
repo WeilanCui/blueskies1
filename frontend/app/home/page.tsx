@@ -1,10 +1,10 @@
 "use client";
 
 import { ArrowPathIcon, MapPinIcon } from "@heroicons/react/24/outline";
-import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState, type FormEvent } from "react";
+import { type FormEvent, useEffect, useState } from "react";
 
 import { Button } from "../../components/Button";
 import {
@@ -12,9 +12,9 @@ import {
   getCurrentLocationContext,
   getIntake,
   getMe,
-  refreshProfileLocationWeather,
   type LocationContext,
   type ProfileLocation,
+  refreshProfileLocationWeather,
 } from "../../lib/appApi";
 import styles from "./home.module.css";
 
@@ -55,7 +55,9 @@ function formatLocation(profileLocation: ProfileLocation): string {
   const location = profileLocation.location;
   return (
     location.display_name ||
-    [location.city, location.region, location.postal_code].filter(Boolean).join(", ") ||
+    [location.city, location.region, location.postal_code]
+      .filter(Boolean)
+      .join(", ") ||
     profileLocation.label
   );
 }
@@ -226,7 +228,9 @@ export default function HomePage() {
     {
       label: "UV max",
       value: formatUvValue(
-        numericSnapshotValue(weatherSnapshot?.uv_max ?? weatherSnapshot?.uv_index),
+        numericSnapshotValue(
+          weatherSnapshot?.uv_max ?? weatherSnapshot?.uv_index,
+        ),
       ),
     },
     {
@@ -299,7 +303,8 @@ export default function HomePage() {
       action: "Browse",
     },
   ];
-  const canSaveLocation = postalCode.trim().length > 0 && !saveLocationMutation.isPending;
+  const canSaveLocation =
+    postalCode.trim().length > 0 && !saveLocationMutation.isPending;
 
   function submitLocation(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -336,9 +341,14 @@ export default function HomePage() {
                 <span
                   className={
                     index < signalCount
-                      ? [styles.signalSegment, styles.signalSegmentActive].join(" ")
+                      ? [styles.signalSegment, styles.signalSegmentActive].join(
+                          " ",
+                        )
                       : styles.signalSegment
                   }
+                  // Decorative aria-hidden progress track generated from a
+                  // length — the index is the segment's only identity.
+                  // biome-ignore lint/suspicious/noArrayIndexKey: index is the segment identity
                   key={index}
                 />
               ))}
@@ -421,28 +431,44 @@ export default function HomePage() {
                     type="button"
                     variant="ghost"
                     isDisabled={refreshWeatherMutation.isPending}
-                    onPress={() => refreshWeatherMutation.mutate(profileLocation.id)}
+                    onPress={() =>
+                      refreshWeatherMutation.mutate(profileLocation.id)
+                    }
                   >
-                    <ArrowPathIcon className={styles.buttonIcon} aria-hidden="true" />
-                    {refreshWeatherMutation.isPending ? "Refreshing" : "Refresh"}
+                    <ArrowPathIcon
+                      className={styles.buttonIcon}
+                      aria-hidden="true"
+                    />
+                    {refreshWeatherMutation.isPending
+                      ? "Refreshing"
+                      : "Refresh"}
                   </Button>
                 )}
               </div>
 
               {locationContextQuery.isLoading ? (
-                <p className={styles.weatherNote}>Loading location context...</p>
+                <p className={styles.weatherNote}>
+                  Loading location context...
+                </p>
               ) : locationContextQuery.isError ? (
-                <p className={styles.weatherError}>Could not load location context.</p>
+                <p className={styles.weatherError}>
+                  Could not load location context.
+                </p>
               ) : profileLocation ? (
                 <>
                   <div className={styles.weatherHero}>
-                    <div className={[styles.uvDial, uvRisk.className].join(" ")}>
+                    <div
+                      className={[styles.uvDial, uvRisk.className].join(" ")}
+                    >
                       <span>UV</span>
                       <strong>{formatUvValue(uvValue)}</strong>
                     </div>
                     <div className={styles.weatherSummary}>
                       <span>
-                        <MapPinIcon className={styles.inlineIcon} aria-hidden="true" />
+                        <MapPinIcon
+                          className={styles.inlineIcon}
+                          aria-hidden="true"
+                        />
                         {formatLocation(profileLocation)}
                       </span>
                       <strong>{uvRisk.label}</strong>
@@ -459,7 +485,10 @@ export default function HomePage() {
                   {weatherSnapshot && (
                     <div className={styles.weatherMetaGrid}>
                       {weatherStats.map((item) => (
-                        <div className={styles.weatherMetaItem} key={item.label}>
+                        <div
+                          className={styles.weatherMetaItem}
+                          key={item.label}
+                        >
                           <span>{item.label}</span>
                           <strong>{item.value}</strong>
                         </div>
@@ -525,7 +554,9 @@ export default function HomePage() {
                     type="submit"
                     isDisabled={!canSaveLocation}
                   >
-                    {saveLocationMutation.isPending ? "Saving..." : "Save location"}
+                    {saveLocationMutation.isPending
+                      ? "Saving..."
+                      : "Save location"}
                   </Button>
                   {saveLocationMutation.isError && (
                     <p className={styles.weatherError}>
@@ -610,7 +641,10 @@ export default function HomePage() {
               <h2>Routine context</h2>
             </div>
           </div>
-          <p>{skinProfile?.routine_notes || "No routine notes have been added yet."}</p>
+          <p>
+            {skinProfile?.routine_notes ||
+              "No routine notes have been added yet."}
+          </p>
           <div className={styles.tagList}>
             {goals.length > 0 ? (
               goals.slice(0, 4).map((goal) => (

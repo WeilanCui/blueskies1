@@ -1,4 +1,8 @@
-import { skinTypeOptions, toggleValue, type ProfileOption } from "../../lib/profileForm";
+import {
+  type ProfileOption,
+  skinTypeOptions,
+  toggleValue,
+} from "../../lib/profileForm";
 
 type SkinTypeSelectorProps = {
   values: string[];
@@ -28,7 +32,9 @@ export function SkinTypeSelector({
             name={name}
             type={multiple ? "checkbox" : "radio"}
             value={value}
-            onChange={() => onChange(multiple ? toggleValue(values, value) : [value])}
+            onChange={() =>
+              onChange(multiple ? toggleValue(values, value) : [value])
+            }
           />
           <span>{label}</span>
         </label>

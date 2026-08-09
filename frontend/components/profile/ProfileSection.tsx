@@ -42,7 +42,11 @@ export function ProfileSection<SectionName extends string>({
           <PencilSquareIcon aria-hidden="true" />
         </button>
       </div>
-      {isEditing ? editor : <div className={classNames.display}>{children}</div>}
+      {isEditing ? (
+        editor
+      ) : (
+        <div className={classNames.display}>{children}</div>
+      )}
     </article>
   );
 }

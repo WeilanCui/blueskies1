@@ -6,22 +6,33 @@ type RouteContext = {
 
 export async function GET(request: Request, context: RouteContext) {
   const { id } = await context.params;
-  return proxyBackendJson(request, `/api/profile-locations/${encodeURIComponent(id)}/`);
+  return proxyBackendJson(
+    request,
+    `/api/profile-locations/${encodeURIComponent(id)}/`,
+  );
 }
 
 export async function PUT(request: Request, context: RouteContext) {
   const { id } = await context.params;
   const body = await request.json();
-  return proxyBackendJson(request, `/api/profile-locations/${encodeURIComponent(id)}/`, {
-    body,
-  });
+  return proxyBackendJson(
+    request,
+    `/api/profile-locations/${encodeURIComponent(id)}/`,
+    {
+      body,
+    },
+  );
 }
 
 export async function PATCH(request: Request, context: RouteContext) {
   const { id } = await context.params;
   const body = await request.json();
-  return proxyBackendJson(request, `/api/profile-locations/${encodeURIComponent(id)}/`, {
-    method: "PATCH",
-    body,
-  });
+  return proxyBackendJson(
+    request,
+    `/api/profile-locations/${encodeURIComponent(id)}/`,
+    {
+      method: "PATCH",
+      body,
+    },
+  );
 }

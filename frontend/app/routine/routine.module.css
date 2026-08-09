@@ -332,6 +332,14 @@
   gap: 10px;
 }
 
+.routineProductItems {
+  display: grid;
+  gap: 10px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
 .dragHint {
   color: #6384a8;
   font-size: 0.84rem;
@@ -350,7 +358,10 @@
   grid-template-columns: auto auto minmax(0, 1fr) auto;
   padding: 14px;
   touch-action: pan-y;
-  transition: border-color 160ms ease, box-shadow 160ms ease, opacity 160ms ease;
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    opacity 160ms ease;
 }
 
 .routineProductCard:active {

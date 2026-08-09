@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
-import { useMutation } from "@tanstack/react-query";
 import { FieldError, Input, Label, TextArea, TextField } from "@heroui/react";
+import { useMutation } from "@tanstack/react-query";
+import { useState } from "react";
 
 import { Button } from "../components/Button";
 import styles from "./ContactForm.module.css";
@@ -35,7 +35,9 @@ function getContactErrorMessage(data: unknown): string {
   return "Could not send your message.";
 }
 
-async function submitContact(payload: ContactPayload): Promise<ContactResponse> {
+async function submitContact(
+  payload: ContactPayload,
+): Promise<ContactResponse> {
   const response = await fetch("/api/contact", {
     method: "POST",
     credentials: "same-origin",
@@ -75,7 +77,8 @@ export default function ContactForm() {
       : !hasValidEmail
         ? "Enter a valid email address."
         : "";
-  const feedbackError = trimmedFeedback.length === 0 ? "Feedback is required." : "";
+  const feedbackError =
+    trimmedFeedback.length === 0 ? "Feedback is required." : "";
   const canSubmit =
     trimmedName.length > 0 &&
     trimmedEmail.length > 0 &&
@@ -96,7 +99,9 @@ export default function ContactForm() {
 
     if (!canSubmit) {
       setMessage(null);
-      setError("Please add your name, a valid email, and feedback before submitting.");
+      setError(
+        "Please add your name, a valid email, and feedback before submitting.",
+      );
       return;
     }
 
@@ -169,15 +174,23 @@ export default function ContactForm() {
           rows={5}
           variant="secondary"
         />
-        {showValidation && feedbackError && <FieldError>{feedbackError}</FieldError>}
+        {showValidation && feedbackError && (
+          <FieldError>{feedbackError}</FieldError>
+        )}
       </TextField>
 
       <Button type="submit" isDisabled={isLocked}>
-        {contactMutation.isPending ? "Sending..." : submitted ? "Submitted" : "Send message"}
+        {contactMutation.isPending
+          ? "Sending..."
+          : submitted
+            ? "Submitted"
+            : "Send message"}
       </Button>
 
       {showValidation && !submitted && !canSubmit && (
-        <p className="contact-help">Complete all fields with a valid email to send.</p>
+        <p className="contact-help">
+          Complete all fields with a valid email to send.
+        </p>
       )}
       {message && <p className="contact-success">{message}</p>}
       {error && <p className="contact-error">{error}</p>}

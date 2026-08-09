@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
 
 import styles from "./compounds.module.css";
 
@@ -110,14 +110,19 @@ function CompoundDetail({ compound }: { compound: Compound }) {
 
   return (
     <div className={styles.compoundDetail}>
-      {normalized.notes && <p className={styles.detailNotes}>{normalized.notes}</p>}
+      {normalized.notes && (
+        <p className={styles.detailNotes}>{normalized.notes}</p>
+      )}
 
       {identifiers.length > 0 && (
         <section className={styles.detailSection}>
           <h3>Identifiers</h3>
           <dl className={styles.kvGrid}>
             {identifiers.map((id) => (
-              <div className={styles.kvRow} key={`${id.id_type}-${id.id_value}`}>
+              <div
+                className={styles.kvRow}
+                key={`${id.id_type}-${id.id_value}`}
+              >
                 <dt>
                   {id.id_type}
                   {id.is_primary ? " (primary)" : ""}
@@ -147,7 +152,7 @@ function CompoundDetail({ compound }: { compound: Compound }) {
                 </div>
               )}
             {structure?.inchikey && (
-                <div className={styles.kvRow}>
+              <div className={styles.kvRow}>
                 <dt>InChIKey</dt>
                 <dd className={styles.mono}>{structure.inchikey}</dd>
               </div>
@@ -167,7 +172,10 @@ function CompoundDetail({ compound }: { compound: Compound }) {
           <h3>Aliases</h3>
           <div className="chip-row">
             {aliases.map((alias) => (
-              <span className="chip" key={`${alias.alias_type}-${alias.alias_text}`}>
+              <span
+                className="chip"
+                key={`${alias.alias_type}-${alias.alias_text}`}
+              >
                 {alias.alias_text}
                 <span className="chip-meta">{alias.alias_type}</span>
               </span>
@@ -189,7 +197,9 @@ function CompoundDetail({ compound }: { compound: Compound }) {
                 }
               >
                 {membership.chemical_class?.name ?? "Unknown class"}
-                {membership.is_primary && <span className="chip-meta">primary</span>}
+                {membership.is_primary && (
+                  <span className="chip-meta">primary</span>
+                )}
               </span>
             ))}
           </div>
@@ -240,7 +250,9 @@ export default function CompoundList({ compounds }: { compounds: Compound[] }) {
     const requestedId = Number(searchParams.get("compound"));
     if (!Number.isFinite(requestedId)) return;
 
-    const match = normalizedCompounds.find((compound) => compound.id === requestedId);
+    const match = normalizedCompounds.find(
+      (compound) => compound.id === requestedId,
+    );
     if (match) {
       setExpandedId(match.id);
       document
@@ -256,13 +268,19 @@ export default function CompoundList({ compounds }: { compounds: Compound[] }) {
         const title = compound.display_name || compound.canonical_inci;
 
         return (
-          <li className={styles.compoundItem} id={`compound-${compound.id}`} key={compound.id}>
+          <li
+            className={styles.compoundItem}
+            id={`compound-${compound.id}`}
+            key={compound.id}
+          >
             <button
               type="button"
               className={styles.compoundRow}
               aria-expanded={isExpanded}
               onClick={() =>
-                setExpandedId((current) => (current === compound.id ? null : compound.id))
+                setExpandedId((current) =>
+                  current === compound.id ? null : compound.id,
+                )
               }
             >
               <span
@@ -279,7 +297,9 @@ export default function CompoundList({ compounds }: { compounds: Compound[] }) {
                 <strong>{title}</strong>
                 {compound.display_name &&
                   compound.display_name !== compound.canonical_inci && (
-                    <span className={styles.compoundSub}>{compound.canonical_inci}</span>
+                    <span className={styles.compoundSub}>
+                      {compound.canonical_inci}
+                    </span>
                   )}
               </span>
               <span className={styles.compoundTags}>
