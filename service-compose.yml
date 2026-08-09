@@ -1,0 +1,369 @@
+# Docker Swarm stack for blueskies. Deploy with:
+#   make release              (builds, pushes, deploys the current revision)
+#   docker stack deploy -c service-compose.yml blueskies1
+#
+# Credentials live in Swarm secrets, never in this file. Create them once per swarm
+# before the first deploy:
+#   openssl rand -base64 48 | docker secret create blueskies_django_secret_key -
+#   openssl rand -base64 24 | docker secret create blueskies_postgres_password -
+# The backend entrypoint expands any FOO_FILE into FOO, so the same mechanism covers
+# OPENAI_API_KEY and NCBI_API_KEY when those stop being empty. See README.md.
+#
+# Image references interpolate REGISTRY, PROJECT and TAG from the deploying shell's
+# environment (the Makefile exports them); the defaults below are what a bare
+# `docker stack deploy` resolves to.
+version: '3.9'
+
+secrets:
+  # external: the values are created with `docker secret create` on the swarm and are
+  # not reproducible from this repository.
+  blueskies_django_secret_key:
+    external: true
+  blueskies_postgres_password:
+    external: true
+
+networks:
+  public:
+    external: true
+  blueskies:
+    driver: overlay
+    attachable: true
+    driver_opts:
+      encrypted: "true"
+
+services:
+
+  web:
+    image: ${REGISTRY:-direct:5000}/${PROJECT:-blueskies}-frontend:${TAG:-latest}
+    environment:
+      - NODE_ENV=production
+      - HOSTNAME=0.0.0.0
+      - PORT=3000
+      # Runtime value for the route handlers in app/api/. The rewrites in
+      # next.config.ts were already resolved at build time from the image's build arg.
+      - SERVER_API_BASE_URL=http://backend:8000
+      - NEXT_PUBLIC_API_BASE_URL=https://blueskies1.tempestnetworks.net
+    networks:
+      - public
+      - blueskies
+    sysctls:
+      - net.ipv4.tcp_keepalive_time=600
+      - net.ipv4.tcp_keepalive_intvl=30
+      - net.ipv4.tcp_keepalive_probes=10
+    healthcheck:
+      test: curl -f http://localhost:3000/ > /dev/null || exit 1
+      interval: 15s
+      timeout: 15s
+      retries: 5
+      start_period: 30s
+    deploy:
+      mode: replicated
+      replicas: 2
+      resources:
+        limits:
+          cpus: "1"
+          memory: 512M
+        reservations:
+          cpus: "0.25"
+          memory: 256M
+      placement:
+        constraints:
+          - node.platform.os == linux
+      update_config:
+        parallelism: 1
+        delay: 10s
+      restart_policy:
+        # `any`, not `on-failure`: Swarm stops an unhealthy task gracefully, so it exits 0
+        # and `on-failure` would leave the service at zero replicas with nothing retrying.
+        condition: any
+        delay: 10s
+      labels:
+        - traefik.enable=true
+        - traefik.docker.lbswarm=true
+        - traefik.docker.network=public
+        - traefik.constraint-label=traefik-public
+
+        - traefik.http.routers.blueskies-https.rule=Host(`blueskies1.tempestnetworks.net`)
+        - traefik.http.routers.blueskies-https.entrypoints=https
+        - traefik.http.routers.blueskies-https.tls=true
+        - traefik.http.routers.blueskies-https.tls.certresolver=le
+        - traefik.http.services.blueskies.loadbalancer.server.port=3000
+
+  backend:
+    image: ${REGISTRY:-direct:5000}/${PROJECT:-blueskies}-backend:${TAG:-latest}
+    secrets:
+      - blueskies_django_secret_key
+      - blueskies_postgres_password
+    environment:
+      - POSTGRES_DB=blueskies
+      - POSTGRES_USER=blueskies
+      # The entrypoint expands these into POSTGRES_PASSWORD / DJANGO_SECRET_KEY.
+      - POSTGRES_PASSWORD_FILE=/run/secrets/blueskies_postgres_password
+      - POSTGRES_HOST=db
+      - POSTGRES_PORT=5432
+      - REDIS_URL=redis://redis:6379/0
+      - DJANGO_SECRET_KEY_FILE=/run/secrets/blueskies_django_secret_key
+      - DJANGO_DEBUG=False
+      - DJANGO_ALLOWED_HOSTS=backend,localhost,127.0.0.1,blueskies1.tempestnetworks.net
+      - DJANGO_CSRF_TRUSTED_ORIGINS=https://blueskies1.tempestnetworks.net
+      - DJANGO_CORS_ALLOWED_ORIGINS=https://blueskies1.tempestnetworks.net
+      - DJANGO_CORS_ALLOW_CREDENTIALS=True
+      - DJANGO_SESSION_COOKIE_SECURE=True
+      - DJANGO_CSRF_COOKIE_SECURE=True
+      # TLS terminates at Traefik, so Django must not redirect again.
+      - DJANGO_SECURE_SSL_REDIRECT=False
+      # Admin assets sit on their own prefix so they do not collide with Next's /static.
+      - DJANGO_STATIC_URL=/django-static/
+      - OPENAI_API_KEY=
+      - OPENAI_MODEL=gpt-4o-mini
+      - LITERATURE_EXTRACTOR=auto
+      - NCBI_API_KEY=
+      # Set ONLY here. celery and celery-beat share this image and would otherwise
+      # migrate concurrently with this service on every deploy.
+      - DJANGO_MIGRATE_ON_START=true
+    networks:
+      - blueskies
+    sysctls:
+      - net.ipv4.tcp_keepalive_time=600
+      - net.ipv4.tcp_keepalive_intvl=30
+      - net.ipv4.tcp_keepalive_probes=10
+    healthcheck:
+      # While the entrypoint is migrating it holds /tmp/entrypoint-migrating, and this
+      # check reports healthy on that alone. A migration can outlast any fixed
+      # start_period, and killing a task part-way through one is worse than reporting
+      # healthy while it works; the entrypoint bounds the hang case with lock_timeout.
+      test: test -f /tmp/entrypoint-migrating || python -c "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8000/api/health/').status==200 else 1)" || exit 1
+      interval: 15s
+      timeout: 15s
+      retries: 5
+      # Covers the database wait (POSTGRES_WAIT_SECONDS, 60s) and Django's boot. The
+      # migration itself is covered by the marker above, not by this number.
+      start_period: 120s
+    deploy:
+      mode: replicated
+      # Must stay at 1 while migrations run from the entrypoint: Django takes no
+      # global migration lock, so two replicas starting together would race. Scaling
+      # means moving migration to a one-shot service first, not raising this number.
+      replicas: 1
+      endpoint_mode: dnsrr
+      resources:
+        limits:
+          cpus: "1"
+          memory: 1024M
+        reservations:
+          cpus: "0.25"
+          memory: 256M
+      placement:
+        constraints:
+          - node.platform.os == linux
+      restart_policy:
+        # `any`, not `on-failure`: Swarm stops an unhealthy task gracefully, so it exits 0
+        # and `on-failure` would leave the service at zero replicas with nothing retrying.
+        condition: any
+        delay: 10s
+
+  celery:
+    image: ${REGISTRY:-direct:5000}/${PROJECT:-blueskies}-backend:${TAG:-latest}
+    command: celery -A config worker --loglevel=info
+    secrets:
+      - blueskies_django_secret_key
+      - blueskies_postgres_password
+    environment:
+      - POSTGRES_DB=blueskies
+      - POSTGRES_USER=blueskies
+      - POSTGRES_PASSWORD_FILE=/run/secrets/blueskies_postgres_password
+      - POSTGRES_HOST=db
+      - POSTGRES_PORT=5432
+      - REDIS_URL=redis://redis:6379/0
+      - DJANGO_SECRET_KEY_FILE=/run/secrets/blueskies_django_secret_key
+      - DJANGO_DEBUG=False
+      - DJANGO_ALLOWED_HOSTS=backend,localhost,127.0.0.1
+      - OPENAI_API_KEY=
+      - OPENAI_MODEL=gpt-4o-mini
+      - LITERATURE_EXTRACTOR=auto
+      - NCBI_API_KEY=
+    networks:
+      - blueskies
+    sysctls:
+      - net.ipv4.tcp_keepalive_time=600
+      - net.ipv4.tcp_keepalive_intvl=30
+      - net.ipv4.tcp_keepalive_probes=10
+    healthcheck:
+      test: celery -A config inspect ping || exit 1
+      interval: 15s
+      timeout: 15s
+      retries: 5
+      # Must cover the entrypoint's whole bounded startup, or the task is killed while
+      # still legitimately waiting: POSTGRES_WAIT_SECONDS (60s) + MIGRATION_WAIT_SECONDS
+      # (300s) + boot. Lower MIGRATION_WAIT_SECONDS if this needs to be shorter.
+      start_period: 420s
+    deploy:
+      mode: replicated
+      replicas: 1
+      endpoint_mode: dnsrr
+      resources:
+        limits:
+          cpus: "1"
+          memory: 1024M
+        reservations:
+          cpus: "0.25"
+          memory: 256M
+      placement:
+        constraints:
+          - node.platform.os == linux
+      restart_policy:
+        # `any`, not `on-failure`: Swarm stops an unhealthy task gracefully, so it exits 0
+        # and `on-failure` would leave the service at zero replicas with nothing retrying.
+        condition: any
+        delay: 10s
+
+  celery-beat:
+    image: ${REGISTRY:-direct:5000}/${PROJECT:-blueskies}-backend:${TAG:-latest}
+    # --schedule keeps the state file on the persistent mount. Note it must be passed
+    # here rather than by changing working_dir, since `-A config` resolves relative to
+    # /app where the code lives.
+    command: celery -A config beat --loglevel=info --schedule=/var/lib/celerybeat/celerybeat-schedule
+    secrets:
+      - blueskies_django_secret_key
+      - blueskies_postgres_password
+    environment:
+      - POSTGRES_DB=blueskies
+      - POSTGRES_USER=blueskies
+      - POSTGRES_PASSWORD_FILE=/run/secrets/blueskies_postgres_password
+      - POSTGRES_HOST=db
+      - POSTGRES_PORT=5432
+      - REDIS_URL=redis://redis:6379/0
+      - DJANGO_SECRET_KEY_FILE=/run/secrets/blueskies_django_secret_key
+      - DJANGO_DEBUG=False
+      - DJANGO_ALLOWED_HOSTS=backend,localhost,127.0.0.1
+      - LITERATURE_DAILY_HOUR=3
+      - LITERATURE_DAILY_MINUTE=15
+      - LITERATURE_DAILY_COMPOUND_LIMIT=25
+      - LITERATURE_DAILY_ENRICH=False
+    volumes:
+      # The beat schedule is state: without this it is lost on every restart and the
+      # nightly job can fire twice. The image runs as uid 10001, so this host path must
+      # be owned by it: chown 10001:10001 /mnt/persist/blueskies/beat
+      - /mnt/persist/blueskies/beat:/var/lib/celerybeat
+      - /etc/localtime:/etc/localtime:ro
+    networks:
+      - blueskies
+    sysctls:
+      - net.ipv4.tcp_keepalive_time=600
+      - net.ipv4.tcp_keepalive_intvl=30
+      - net.ipv4.tcp_keepalive_probes=10
+    healthcheck:
+      test: test -f /var/lib/celerybeat/celerybeat-schedule || exit 1
+      interval: 15s
+      timeout: 15s
+      retries: 5
+      # Same arithmetic as the worker: 60s database wait + 300s migration barrier + boot.
+      start_period: 420s
+    deploy:
+      mode: replicated
+      # More than one beat means duplicate scheduled tasks.
+      replicas: 1
+      endpoint_mode: dnsrr
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 512M
+        reservations:
+          cpus: "0.1"
+          memory: 128M
+      placement:
+        constraints:
+          - node.labels.name == direct
+      restart_policy:
+        # `any`, not `on-failure`: Swarm stops an unhealthy task gracefully, so it exits 0
+        # and `on-failure` would leave the service at zero replicas with nothing retrying.
+        condition: any
+        delay: 10s
+
+  db:
+    image: postgres:16-alpine
+    secrets:
+      - blueskies_postgres_password
+    environment:
+      - POSTGRES_DB=blueskies
+      - POSTGRES_USER=blueskies
+      # The postgres image reads *_FILE itself. Note it only sets the role's password on
+      # first initialisation: on an existing volume, rotate with ALTER ROLE (see README).
+      - POSTGRES_PASSWORD_FILE=/run/secrets/blueskies_postgres_password
+      - PGDATA=/var/lib/postgresql/data/pgdata
+    volumes:
+      - /mnt/persist/blueskies/postgres:/var/lib/postgresql/data
+      - /etc/localtime:/etc/localtime:ro
+    networks:
+      - blueskies
+    sysctls:
+      - net.ipv4.tcp_keepalive_time=600
+      - net.ipv4.tcp_keepalive_intvl=30
+      - net.ipv4.tcp_keepalive_probes=10
+    healthcheck:
+      test: pg_isready -U blueskies -d blueskies
+      interval: 15s
+      timeout: 15s
+      retries: 5
+      start_period: 10s
+    deploy:
+      mode: replicated
+      replicas: 1
+      endpoint_mode: dnsrr
+      resources:
+        limits:
+          cpus: "2"
+          memory: 2048M
+        reservations:
+          cpus: "0.25"
+          memory: 512M
+      placement:
+        # Pinned: the data lives on this node's disk, not in a shared volume.
+        constraints:
+          - node.labels.name == direct
+      restart_policy:
+        # `any`, not `on-failure`: Swarm stops an unhealthy task gracefully, so it exits 0
+        # and `on-failure` would leave the service at zero replicas with nothing retrying.
+        condition: any
+        delay: 10s
+
+  redis:
+    image: redis:7-alpine
+    command: redis-server --appendonly yes
+    volumes:
+      - /mnt/persist/blueskies/redis:/data
+      - /etc/localtime:/etc/localtime:ro
+    networks:
+      - blueskies
+    sysctls:
+      - net.ipv4.tcp_keepalive_time=600
+      - net.ipv4.tcp_keepalive_intvl=30
+      - net.ipv4.tcp_keepalive_probes=10
+    healthcheck:
+      # PING, not `incr ping`: AOF is on, so a write here would be persisted every
+      # interval and would collide with an application key of that name.
+      test: redis-cli ping || exit 1
+      interval: 15s
+      timeout: 15s
+      retries: 5
+      start_period: 10s
+    deploy:
+      mode: replicated
+      replicas: 1
+      endpoint_mode: dnsrr
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 512M
+        reservations:
+          cpus: "0.1"
+          memory: 128M
+      placement:
+        # Pinned for the same reason as db.
+        constraints:
+          - node.labels.name == direct
+      restart_policy:
+        # `any`, not `on-failure`: Swarm stops an unhealthy task gracefully, so it exits 0
+        # and `on-failure` would leave the service at zero replicas with nothing retrying.
+        condition: any
+        delay: 10s

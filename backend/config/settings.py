@@ -11,7 +11,30 @@ env = environ.Env(
 )
 environ.Env.read_env(BASE_DIR.parent / ".env")
 
-SECRET_KEY = env("DJANGO_SECRET_KEY", default="change-me")  # pyright: ignore[reportArgumentType]
+
+def env_or_file(name: str, default: str) -> str:
+    """Read NAME, or NAME_FILE's contents when the value comes from a Swarm secret.
+
+    The deployment entrypoint performs the same expansion for the process it execs, but
+    a container healthcheck and `docker exec` both start from the container's configured
+    environment and never see it. Reading the file here keeps every entry point working.
+
+    NAME wins over NAME_FILE, matching the entrypoint. The two disagreeing is what a
+    stale secret reference looks like, and Django resolving it the other way would give
+    the app a different password than the one the entrypoint proved it could connect with.
+    """
+    value = env(name, default="")  # pyright: ignore[reportArgumentType]
+    if value:
+        return value
+    path = env(f"{name}_FILE", default="")  # pyright: ignore[reportArgumentType]
+    if path:
+        # rstrip("\n") only, matching the entrypoint's `$(cat …)`: a secret may legitimately
+        # end in a space, and stripping it would silently produce a different credential.
+        return Path(path).read_text().rstrip("\n")
+    return default
+
+
+SECRET_KEY = env_or_file("DJANGO_SECRET_KEY", "change-me")
 DEBUG = env("DJANGO_DEBUG")
 ALLOWED_HOSTS = env.list("DJANGO_ALLOWED_HOSTS", default=["localhost", "127.0.0.1"])  # pyright: ignore[reportArgumentType]
 
@@ -35,6 +58,7 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
     "django.middleware.security.SecurityMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -67,7 +91,7 @@ DATABASES = {
         "ENGINE": "django.db.backends.postgresql",
         "NAME": env("POSTGRES_DB", default="blueskies"),  # pyright: ignore[reportArgumentType]
         "USER": env("POSTGRES_USER", default="blueskies"),  # pyright: ignore[reportArgumentType]
-        "PASSWORD": env("POSTGRES_PASSWORD", default="blueskies"),  # pyright: ignore[reportArgumentType]
+        "PASSWORD": env_or_file("POSTGRES_PASSWORD", "blueskies"),
         "HOST": env("POSTGRES_HOST", default="db"),  # pyright: ignore[reportArgumentType]
         "PORT": env("POSTGRES_PORT", default="5432"),  # pyright: ignore[reportArgumentType]
     }
@@ -85,7 +109,14 @@ TIME_ZONE = "UTC"
 USE_I18N = True
 USE_TZ = True
 
-STATIC_URL = "static/"
+# Behind the Next.js proxy the Django admin is reached at /admin/, so its assets must
+# live on a prefix the frontend can rewrite without colliding with Next's own /static.
+STATIC_URL = env("DJANGO_STATIC_URL", default="static/")  # pyright: ignore[reportArgumentType]
+STATIC_ROOT = BASE_DIR / "staticfiles"
+STORAGES = {
+    "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
+    "staticfiles": {"BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage"},
+}
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 CORS_ALLOWED_ORIGINS = env.list(
@@ -144,6 +175,14 @@ EPA_UV_REQUEST_TIMEOUT_SECONDS = env.int("EPA_UV_REQUEST_TIMEOUT_SECONDS", defau
 OPENAI_API_KEY = env("OPENAI_API_KEY", default="")  # pyright: ignore[reportArgumentType]
 OPENAI_MODEL = env("OPENAI_MODEL", default="gpt-4o-mini")  # pyright: ignore[reportArgumentType]
 LITERATURE_EXTRACTOR = env("LITERATURE_EXTRACTOR", default="auto")  # pyright: ignore[reportArgumentType]
+
+# DRF throttle counters live in the cache, and LocMemCache is per-process: every gunicorn
+# worker would keep its own counts. Any multi-process deployment needs the shared backend.
+_cache_url = env("DJANGO_CACHE_URL", default="")  # pyright: ignore[reportArgumentType]
+if _cache_url:
+    CACHES = {"default": {"BACKEND": "django.core.cache.backends.redis.RedisCache", "LOCATION": _cache_url}}
+else:
+    CACHES = {"default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"}}
 
 CELERY_BROKER_URL = env("CELERY_BROKER_URL", default="redis://redis:6379/0")  # pyright: ignore[reportArgumentType]
 CELERY_RESULT_BACKEND = env("CELERY_RESULT_BACKEND", default="redis://redis:6379/1")  # pyright: ignore[reportArgumentType]

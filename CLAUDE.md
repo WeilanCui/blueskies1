@@ -93,6 +93,58 @@ Conventions (from `CODEX.md`):
 - Use **HeroUI** for buttons/forms/cards/modals; use **TanStack Query** for client-side API fetching/mutations. Raw `fetch` only in route handlers / server-side utilities.
 - Use `var(--panel)` (`#eef6fc`, light blue) for boxed surfaces (cards, panels, list items).
 
+## Deployment (Docker Swarm)
+
+`service-compose.yml` is the stack file; `make push` publishes the images it references to
+`direct:5000`. Only one service is reachable from outside the swarm: **`web` (Next.js,
+port 3000)**. Django runs privately — the browser already talks only to the route handlers
+in `app/api/`, which proxy via `lib/backendProxy.ts` at `SERVER_API_BASE_URL`.
+
+Things to preserve when changing this area:
+
+- Both Dockerfiles are **multi-stage** (`dev` and `prod`). `docker-compose.yml` pins
+  `target: dev` on every built service — without that pin, compose builds the last stage,
+  which is production. Keep the `dev` stages in sync when adding dependencies.
+- `next.config.ts` `rewrites()` (admin at `/admin`, its assets at `/django-static`) is
+  evaluated at **build time**, so `frontend/Dockerfile` passes `SERVER_API_BASE_URL` as a
+  build `ARG`. The `:path*` destinations deliberately re-append the trailing slash Next
+  strips, or Django's `APPEND_SLASH` loops.
+- `backend/deploy/entrypoint.sh` expands any `FOO_FILE` into `FOO` (Swarm secrets), derives
+  the Celery/cache URLs from one `REDIS_URL`, waits for Postgres to accept a real
+  connection, and runs `migrate` **only when `DJANGO_MIGRATE_ON_START` is set** — which the
+  stack file sets on `backend` alone. Celery and beat share the image and must not migrate;
+  they instead block on `migrate --check` so they never process work against the old schema.
+  This keeps `backend` at `replicas: 1` by necessity, not preference.
+- Credentials are **external Swarm secrets** (`blueskies_django_secret_key`,
+  `blueskies_postgres_password`), consumed as `*_FILE`. Never inline a secret value in
+  `service-compose.yml`; an earlier revision did, and those values are burned. `settings.py`
+  resolves `*_FILE` through `env_or_file()` as well as the entrypoint, because healthchecks
+  and `docker exec` do not inherit the entrypoint's exports — a settings-importing
+  healthcheck fails with `ImproperlyConfigured` otherwise.
+- Health `start_period`s must cover the entrypoint's database wait and migration barrier,
+  and `restart_policy` is `condition: any`: Swarm stops an unhealthy task gracefully, so it
+  exits 0 and `on-failure` would leave the service at zero replicas.
+- While migrating, the entrypoint holds `/tmp/entrypoint-migrating` and the `backend`
+  healthcheck reports healthy on that file alone — no fixed `start_period` can bound an
+  arbitrary migration, and killing one part-way through is worse. The hang case is bounded
+  instead by `lock_timeout` (`DJANGO_MIGRATE_LOCK_TIMEOUT`, default 30s). The path is shared
+  between `entrypoint.sh` and the stack file's healthcheck.
+- Stack image references interpolate `${REGISTRY:-direct:5000}`, `${PROJECT:-blueskies}` and
+  `${TAG:-latest}`; the Makefile exports all three, and `make release` deploys `TAG=$(REV)`
+  so the live stack names its commit. A bare `docker stack deploy` still resolves defaults.
+- The prod backend image runs as uid 10001, so `/mnt/persist/blueskies/beat` on the host
+  must be owned by it or celery-beat cannot write its schedule.
+- `docker exec` bypasses the entrypoint, so run management commands as
+  `/app/deploy/entrypoint.sh python manage.py ...`.
+- `settings.py` keeps the discrete `POSTGRES_*` path; `DJANGO_CACHE_URL` switches DRF
+  throttle counters from per-process LocMemCache to shared Redis.
+- The `web` image must keep `curl` and answer 2xx at `/` — that is its healthcheck.
+- Traefik runs three replicas that race on ACME, so a newly routed hostname ends up in only
+  one replica's memory; the rest answer `unrecognized_name`. Run
+  `docker service update --force traefik_traefik` after adding a host, and verify per-origin
+  with `openssl s_client -servername` rather than through Cloudflare, which hides which
+  replica answered.
+
 ## Conventions reference
 
 `CODEX.md` holds the full engineering checklist (backend, frontend, styling, review). Commit migrations alongside model changes. Update README/docs when setup or behavior changes.
