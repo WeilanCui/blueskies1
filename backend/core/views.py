@@ -50,6 +50,7 @@ from core.serializers import (
     serialize_catalog_product,
 )
 from core.profiles.recommendations import RecommendationMatcher
+from core.search import paged_search
 from skinconcerns.scoring import ConcernRuleEvaluator
 from core.services.weather import get_or_fetch_uv_snapshot
 from core.throttles import (
@@ -147,6 +148,37 @@ class CompoundViewSet(ReadOnlyResourceViewSet):
             "property_assertions__property_def",
         )
     )
+
+    @action(detail=False, methods=["get"])
+    def search(self, request):
+        """Name-only compound lookup for the catalog's ingredient tab.
+
+        Built from a bare queryset rather than `get_queryset()`: the detail
+        serializer's annotation and prefetches are wasted work here, and a
+        `Count` annotation alongside the alias join would need its own
+        `distinct` handling to stay correct.
+        """
+        query = request.query_params.get("q", "").strip()
+        queryset = Compound.objects.all()
+        if query:
+            queryset = queryset.filter(
+                Q(canonical_inci__icontains=query)
+                | Q(display_name__icontains=query)
+                | Q(aliases__alias_text__icontains=query)
+            )
+        # distinct(): a compound with two matching aliases joins twice.
+        queryset = queryset.distinct().order_by("canonical_inci", "id")
+
+        return Response(
+            paged_search(
+                queryset,
+                lambda compound: {
+                    "id": compound.id,
+                    "ingredient": compound.display_name or compound.canonical_inci,
+                },
+                request,
+            )
+        )
 
 
 class FormulationViewSet(viewsets.ModelViewSet):
@@ -257,6 +289,16 @@ class ProductCatalogViewSet(ReadOnlyResourceViewSet):
         return Response(
             [serialize_catalog_product(product) for product in queryset]
         )
+
+    @action(detail=False, methods=["get"])
+    def search(self, request):
+        """Paged sibling of `list` for the browsable catalog.
+
+        `list` stays unpaged because existing callers rely on getting the whole
+        array back; this is additive rather than a change to that contract.
+        """
+        queryset = self.filter_queryset(self.get_queryset())
+        return Response(paged_search(queryset, serialize_catalog_product, request))
 
     def retrieve(self, request, *args, **kwargs):
         product = self.get_object()

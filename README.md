@@ -54,21 +54,21 @@ Create an environment file:
 cp .env.example .env
 ```
 
-Start the full stack:
+Start the backend stack:
 
 ```bash
 docker compose up --build
 ```
 
-The frontend container installs its npm dependencies before starting, so rebuilt
-images and reused compose volumes stay in sync with `frontend/package-lock.json`.
+This starts Postgres, Redis, Django, the Celery worker, and Celery beat. The
+frontend container is opt-in so everyday frontend work can run through Next.js
+dev mode with hot reload.
 
 Open:
 
-- Frontend: http://localhost:3000
 - Backend health check: http://localhost:8000/api/health/
 
-You can also run the frontend directly:
+Run the frontend directly:
 
 ```bash
 cd frontend
@@ -77,6 +77,15 @@ npm run dev
 ```
 
 If port `3000` is occupied, Next.js will use the next available port.
+
+You can also run the frontend in Docker dev mode:
+
+```bash
+docker compose --profile frontend up --build frontend
+```
+
+The frontend container installs its npm dependencies before starting, so rebuilt
+images and reused compose volumes stay in sync with `frontend/package-lock.json`.
 
 ## Common Commands
 
@@ -141,7 +150,16 @@ pre-commit install
 
 The `pyright` hook runs on every commit, configured via `pyrightconfig.json` at standard type-checking mode scoped to the `backend/` directory. Django-aware typing comes from `django-types` and `djangorestframework-stubs`. A handful of standard-mode diagnostics are downgraded to warnings where they fire on framework/stub limitations (e.g. reverse-relation accessors, abstract-model `Meta`); each downgrade is documented inline in `pyrightconfig.json`.
 
-Note: the hook resolves imports from your installed environment, so install `backend/requirements-dev.txt` (which pulls in the runtime deps) before committing — otherwise pyright reports unresolved third-party imports.
+Note: the hook resolves imports from your installed environment, so install `backend/requirements-dev.txt` (which pulls in the runtime deps) before committing — otherwise pyright reports unresolved third-party imports. `pyrightconfig.json` sets `venvPath`/`venv` to `./.venv`, the layout `.gitignore` already assumes, so a repo-root virtualenv is picked up whether or not it is activated. Resolution order:
+
+1. `./.venv`, if it exists — this takes priority over an activated virtualenv, so a stale `./.venv` will shadow the environment you think you are using. Delete it, or point it at the right place.
+2. Otherwise pyright prints one "subdirectory not found" notice and falls back to the `python` on your PATH, which is what an activated virtualenv or a global install gives you.
+
+If you keep your virtualenv somewhere else and do not want to move it, symlink it — `.venv` is gitignored, so this stays local to your checkout:
+
+```bash
+ln -s /path/to/your/venv .venv
+```
 
 ## Layout
 

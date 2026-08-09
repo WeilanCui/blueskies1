@@ -134,11 +134,6 @@ REST_FRAMEWORK = {
 INCI_API_KEY = env("INCI_API_KEY", default="")  # pyright: ignore[reportArgumentType]
 INCI_API_BASE = env("INCI_API_BASE", default="https://inciapi.com/v1")  # pyright: ignore[reportArgumentType]
 
-SKINCARE_API_BASE = env(
-    "SKINCARE_API_BASE",
-    default="https://skincare-api.herokuapp.com",  # pyright: ignore[reportArgumentType]
-)
-
 EPA_UV_API_BASE = env(
     "EPA_UV_API_BASE",
     default="https://data.epa.gov/efservice",  # pyright: ignore[reportArgumentType]

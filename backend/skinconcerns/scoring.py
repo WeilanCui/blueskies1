@@ -1,5 +1,7 @@
 """Concern rule scoring and evaluation."""
 
+from dataclasses import dataclass
+
 from django.db.models import Prefetch
 
 from core.models import Formulation, Profile
@@ -12,6 +14,18 @@ from core.profiles.matching import (
 )
 from core.profiles.constraints import ConstraintImpact
 from skinconcerns.models import RuleTargetType, ConcernRule
+
+
+@dataclass(frozen=True)
+class CoverageSummary:
+    """Coverage summary for a concern's RECOMMEND rules."""
+
+    concern_slug: str
+    concern_label: str
+    matched_labels: tuple[str, ...] | list[str]
+    unmatched_labels: tuple[str, ...] | list[str]
+    matched: int
+    total: int
 
 
 class ConcernRuleEvaluator:
@@ -47,19 +61,22 @@ class ConcernRuleEvaluator:
 
     def evaluate(
         self, profile: Profile, formulation: Formulation, context: dict | None = None
-    ) -> list[ConstraintImpact]:
-        """Evaluate concern rules against formulation; return list of impacts."""
+    ) -> tuple[list[ConstraintImpact], list[CoverageSummary]]:
+        """Evaluate concern rules against formulation; return list of impacts and coverage summaries."""
         if context is None:
             context = self.prepare(profile)
 
         impacts = []
+        coverage_summaries = []
         concerns_data = context.get("concerns_data", [])
 
         for concern, link_confidence, rules in concerns_data:
+            matched_labels = []
+            unmatched_labels = []
+
             for rule in rules:
                 # Check if rule target matches formulation
-                if not self._matches_rule_target(rule, formulation):
-                    continue
+                rule_matches = self._matches_rule_target(rule, formulation)
 
                 # Calculate delta. `weight` is a magnitude — its sign in seed
                 # data is incidental (e.g. PENALIZE stores -10); `rule_kind`
@@ -68,17 +85,39 @@ class ConcernRuleEvaluator:
 
                 # Determine enforcement and score_delta based on rule kind
                 if rule.rule_kind == "penalize":
-                    enforcement = "penalize"
-                    score_delta = -delta
+                    if rule_matches:
+                        enforcement = "penalize"
+                        score_delta = -delta
+                    else:
+                        continue
                 elif rule.rule_kind == "boost":
-                    enforcement = "boost"
-                    score_delta = max(1, delta)
+                    if rule_matches:
+                        enforcement = "boost"
+                        score_delta = max(1, delta)
+                    else:
+                        continue
                 elif rule.rule_kind == "avoid":
-                    enforcement = "warn"
-                    score_delta = -delta
-                elif rule.rule_kind in ("refer", "recommend"):
-                    enforcement = "inform"
-                    score_delta = 0
+                    if rule_matches:
+                        enforcement = "warn"
+                        score_delta = -delta
+                    else:
+                        continue
+                elif rule.rule_kind == "refer":
+                    if rule_matches:
+                        enforcement = "inform"
+                        score_delta = 0
+                    else:
+                        continue
+                elif rule.rule_kind == "recommend":
+                    # RECOMMEND rules: track coverage
+                    if rule_matches:
+                        matched_labels.append(rule.label)
+                        # Matched RECOMMEND produces boost impact
+                        enforcement = "boost"
+                        score_delta = max(1, delta)
+                    else:
+                        unmatched_labels.append(rule.label)
+                        continue
                 else:
                     continue
 
@@ -102,7 +141,22 @@ class ConcernRuleEvaluator:
                 )
                 impacts.append(impact)
 
-        return impacts
+            # Aggregate coverage for RECOMMEND rules (if any)
+            recommend_rules = [r for r in rules if r.rule_kind == "recommend"]
+            if recommend_rules:  # Only emit coverage if concern has RECOMMEND rules
+                total = len(recommend_rules)
+                matched = len(matched_labels)
+                coverage = CoverageSummary(
+                    concern_slug=concern.slug,
+                    concern_label=concern.consumer_label,
+                    matched_labels=tuple(matched_labels),
+                    unmatched_labels=tuple(unmatched_labels),
+                    matched=matched,
+                    total=total,
+                )
+                coverage_summaries.append(coverage)
+
+        return impacts, coverage_summaries
 
     def _matches_rule_target(self, rule, formulation: Formulation) -> bool:
         """Check if rule target matches formulation."""

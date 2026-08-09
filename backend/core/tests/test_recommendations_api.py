@@ -456,13 +456,12 @@ class RecommendationConcernRuleAPITests(APITestCase):
 
         # Check penalties include concern-sourced impact
         self.assertGreater(len(data["penalties"]), 0)
-        concern_impact = None
-        for impact in data["penalties"]:
-            if impact.get("source") == "concern":
-                concern_impact = impact
-                break
+        concern_impacts = [
+            impact for impact in data["penalties"] if impact.get("source") == "concern"
+        ]
 
-        self.assertIsNotNone(concern_impact)
+        self.assertTrue(concern_impacts, "expected a concern-sourced penalty")
+        concern_impact = concern_impacts[0]
         self.assertEqual(concern_impact["source"], "concern")
         self.assertEqual(concern_impact["concern"], "sensitivity")
         self.assertIn("sensitive skin", concern_impact["reason"].lower())
@@ -547,6 +546,16 @@ class RecommendationConcernRuleAPITests(APITestCase):
 
     def test_list_endpoint_includes_concern_impacts(self):
         """GET /api/recommendations/ includes concern-sourced impacts."""
+        # Add a RECOMMEND rule so the rank endpoint carries coverage too
+        ConcernRule.objects.create(
+            concern=self.concern,
+            key="recommend-retinol-alt",
+            label="Retinol",
+            rule_kind=RuleKind.RECOMMEND,
+            target_type=RuleTargetType.COMPOUND,
+            compound=self.retinol,
+            weight=10,
+        )
         # Link user to concern
         SkinProfileConcern.objects.create(
             skin_profile=self.skin_profile,
@@ -561,20 +570,34 @@ class RecommendationConcernRuleAPITests(APITestCase):
         data = response.json()
         results = data["results"]
 
-        # Find our test formulation
-        test_result = None
+        # Every ranked result carries a coverage array
         for result in results:
-            if result["formulation_id"] == self.formulation.id:
-                test_result = result
-                break
+            self.assertIn("coverage", result)
+            self.assertIsInstance(result["coverage"], list)
 
-        self.assertIsNotNone(test_result)
+        # Find our test formulation
+        matches = [
+            result
+            for result in results
+            if result["formulation_id"] == self.formulation.id
+        ]
+
+        self.assertTrue(matches, "expected the test formulation in the results")
+        test_result = matches[0]
         # Should have penalties from concern rule
         self.assertGreater(len(test_result["penalties"]), 0)
 
         # Check that at least one penalty has source="concern"
         concern_penalties = [p for p in test_result["penalties"] if p.get("source") == "concern"]
         self.assertGreater(len(concern_penalties), 0)
+
+        # Rank endpoint carries the coverage shape for the RECOMMEND match
+        self.assertEqual(len(test_result["coverage"]), 1)
+        cov = test_result["coverage"][0]
+        self.assertEqual(cov["concern"], "sensitivity")
+        self.assertEqual(cov["matched"], 1)
+        self.assertEqual(cov["total"], 1)
+        self.assertIn("Retinol", cov["matched_rules"])
 
     def test_avoid_rule_warns_never_excludes(self):
         """AVOID rule produces warnings but never excludes formulation."""
@@ -614,3 +637,90 @@ class RecommendationConcernRuleAPITests(APITestCase):
         self.assertGreater(len(data["warnings"]), 0)
         self.assertFalse(data["excluded"])
         self.assertEqual(len(data["penalties"]), 0)
+
+    def test_coverage_array_in_score_response(self):
+        """Score response includes coverage array with correct shape."""
+        glycerin = Compound.objects.create(
+            canonical_inci="GLYCERIN",
+            display_name="Glycerin",
+        )
+
+        # Create formulation with glycerin
+        formulation = Formulation.objects.create(
+            product=self.product,
+            raw_inci_text="Water, Glycerin",
+        )
+        FormulationIngredient.objects.create(
+            formulation=formulation,
+            position=1,
+            raw_text="Water",
+        )
+        FormulationIngredient.objects.create(
+            formulation=formulation,
+            position=2,
+            raw_text="Glycerin",
+            compound=glycerin,
+        )
+
+        # Create RECOMMEND rule
+        ConcernRule.objects.create(
+            concern=self.concern,
+            key="recommend-glycerin",
+            label="Glycerin",
+            rule_kind=RuleKind.RECOMMEND,
+            target_type=RuleTargetType.COMPOUND,
+            compound=glycerin,
+            weight=10,
+        )
+
+        # Link user to concern
+        SkinProfileConcern.objects.create(
+            skin_profile=self.skin_profile,
+            concern=self.concern,
+            confidence=1.0,
+        )
+
+        self.client.force_login(self.user)
+        response = self.client.post(
+            "/api/recommendations/score/",
+            {"formulation_id": formulation.id},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+
+        # Check coverage array exists
+        self.assertIn("coverage", data)
+        self.assertIsInstance(data["coverage"], list)
+
+        # Verify coverage shape
+        self.assertEqual(len(data["coverage"]), 1)
+        cov = data["coverage"][0]
+        self.assertEqual(cov["concern"], "sensitivity")
+        self.assertEqual(cov["concern_label"], "Sensitive skin")
+        self.assertEqual(cov["matched"], 1)
+        self.assertEqual(cov["total"], 1)
+        self.assertIn("Glycerin", cov["matched_rules"])
+
+    def test_coverage_empty_when_no_recommend_rules(self):
+        """Coverage array is empty when no RECOMMEND rules active."""
+        # Link the concern so the evaluator actually runs; coverage must be
+        # empty because the linked concern's only rule is PENALIZE.
+        SkinProfileConcern.objects.create(
+            skin_profile=self.skin_profile,
+            concern=self.concern,
+            confidence=1.0,
+        )
+        self.client.force_login(self.user)
+        response = self.client.post(
+            "/api/recommendations/score/",
+            {"formulation_id": self.formulation.id},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+
+        # Coverage should be empty (rule is PENALIZE, not RECOMMEND)
+        self.assertEqual(data["coverage"], [])

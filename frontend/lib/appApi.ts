@@ -734,6 +734,15 @@ export type ConstraintImpact = {
   concern: string | null;
 };
 
+export type CoverageSummary = {
+  concern: string;
+  concern_label: string;
+  matched: number;
+  total: number;
+  matched_rules: string[];
+  unmatched_rules: string[];
+};
+
 export type RecommendationMatch = {
   formulation_id: number;
   product_name: string;
@@ -744,6 +753,7 @@ export type RecommendationMatch = {
   warnings: ConstraintImpact[];
   penalties: ConstraintImpact[];
   boosts: ConstraintImpact[];
+  coverage: CoverageSummary[];
 };
 
 export type PaginatedRecommendations = {

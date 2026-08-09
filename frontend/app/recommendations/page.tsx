@@ -114,6 +114,33 @@ function RecommendationsContent() {
                     {match.reasons.length > 0 && (
                       <p className={styles.reason}>{match.reasons[0]}</p>
                     )}
+                    {match.coverage.length > 0 && (
+                      <ul className={styles.coverage}>
+                        {match.coverage.map((cov) => (
+                          <li
+                            key={cov.concern}
+                            className={styles.coverageLine}
+                          >
+                            <span className={styles.coverageLabel}>
+                              {cov.concern_label}:
+                            </span>
+                            {" "}
+                            {cov.matched}/{cov.total} active
+                            {cov.matched_rules.length > 0 && (
+                              <>
+                                {" — "}
+                                {cov.matched_rules
+                                  .slice(0, 2)
+                                  .join(", ")}
+                                {cov.matched_rules.length > 2
+                                  ? `…`
+                                  : ""}
+                              </>
+                            )}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
                   </div>
                   <ScoreBadge
                     score={match.final_score}

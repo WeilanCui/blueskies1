@@ -10,10 +10,10 @@ if TYPE_CHECKING:
     from django.db.models import Manager
 
     from core.models.formulation import FormulationIngredient
-    from core.models.interactions import InteractionAssertion
-    from core.models.literature import CompoundLiterature, CompoundRelationship
-    from core.models.literature_discovery_target import LiteratureDiscoveryEvent, LiteratureDiscoveryTarget
-    from core.models.profiles import ProfileConstraint
+    from literature.models.interactions import InteractionAssertion
+    from literature.models.literature import CompoundLiterature, CompoundRelationship
+    from literature.models.discovery_target import LiteratureDiscoveryEvent, LiteratureDiscoveryTarget
+    from core.models.profile_constraint import ProfileConstraint
     from core.models.properties import PropertyAssertion
 
 

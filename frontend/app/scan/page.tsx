@@ -158,11 +158,40 @@ function FormulationDetail({
               <h1>{product.name}</h1>
             </div>
             {scoreQuery.isSuccess ? (
-              <ScoreBadge
-                score={scoreQuery.data.final_score}
-                excluded={scoreQuery.data.excluded}
-                hasWarnings={scoreQuery.data.warnings.length > 0}
-              />
+              <div className={styles.scoreSection}>
+                <ScoreBadge
+                  score={scoreQuery.data.final_score}
+                  excluded={scoreQuery.data.excluded}
+                  hasWarnings={scoreQuery.data.warnings.length > 0}
+                />
+                {scoreQuery.data.coverage.length > 0 && (
+                  <div className={styles.coverageBreakdown}>
+                    {scoreQuery.data.coverage.map((cov) => (
+                      <div key={cov.concern} className={styles.coverageItem}>
+                        <div className={styles.coverageHeader}>
+                          {cov.concern_label}
+                        </div>
+                        <div className={styles.coverageMatches}>
+                          {[...new Set(cov.matched_rules)].map((label) => (
+                            <span
+                              key={label}
+                              className={styles.coverageMatch}
+                            >
+                              ✓ {label}
+                            </span>
+                          ))}
+                          {cov.total > cov.matched && (
+                            <span className={styles.coverageUnmatched}>
+                              ✗ not present:{" "}
+                              {[...new Set(cov.unmatched_rules)].join(", ")}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             ) : (
               <strong>{product.category}</strong>
             )}

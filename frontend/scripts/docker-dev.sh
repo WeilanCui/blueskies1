@@ -2,4 +2,5 @@
 set -eu
 
 sh scripts/install-container-deps.sh
-exec npm run dev -- --hostname 0.0.0.0
+echo "Starting Next.js dev server with hot reload..."
+exec npm run dev

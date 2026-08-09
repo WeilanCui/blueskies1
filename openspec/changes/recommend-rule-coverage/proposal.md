@@ -5,7 +5,7 @@ After `bridge-concern-rules`, RECOMMEND rules are recognized but inert. RECOMMEN
 ## What Changes
 
 - Per scored formulation and per active user concern, compute **coverage**: of the concern's active RECOMMEND rules, how many match the formulation (`matched / total`).
-- Coverage contributes to the score: each matched RECOMMEND rule adds `round(rule.weight × concern confidence)` (like BOOST), and the match gains a per-concern coverage summary (`concern`, `matched_rules`, `total_rules`, matched rule labels) in a new `coverage` section of the recommendation payload.
+- Coverage contributes to the score: each matched RECOMMEND rule adds `max(1, round(rule.weight × concern confidence))` (like BOOST), and the match gains a per-concern coverage summary (`concern`, `concern_label`, `matched`, `total`, `matched_rules` labels, `unmatched_rules` labels) in a new `coverage` section of the recommendation payload.
 - Ranked catalog sorting is unchanged (still by final score); coverage is explanatory plus its score contribution.
 - Frontend: "For You" list items and the score detail view render coverage lines ("Targets your breakouts: salicylic acid ✓, niacinamide ✗").
 

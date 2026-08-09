@@ -3,13 +3,13 @@
 import { useState } from "react";
 
 import { Panel } from "../../components/Panel";
+import styles from "./skincareApi.module.css";
 import type {
   IngredientSearchResponse,
   ProductSearchResponse,
   SkincareIngredient,
   SkincareProduct,
 } from "./types";
-import styles from "./skincareApi.module.css";
 
 type Tab = "products" | "ingredients";
 
@@ -31,13 +31,17 @@ export default function SkincareCatalog({
   const [limit, setLimit] = useState(10);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(initialError ? "Could not load catalog." : "");
+  const [error, setError] = useState(
+    initialError ? "Could not load catalog." : "",
+  );
   const [products, setProducts] = useState<SkincareProduct[]>(initialProducts);
   const [ingredients, setIngredients] = useState<SkincareIngredient[]>([]);
-  const [selectedProduct, setSelectedProduct] = useState<SkincareProduct | null>(null);
-  const [searchMeta, setSearchMeta] = useState<{ count: number; query: string } | null>(
-    null,
-  );
+  const [selectedProduct, setSelectedProduct] =
+    useState<SkincareProduct | null>(null);
+  const [searchMeta, setSearchMeta] = useState<{
+    count: number;
+    query: string;
+  } | null>(null);
   const [createForm, setCreateForm] = useState({
     brand: "",
     name: "",
@@ -45,20 +49,30 @@ export default function SkincareCatalog({
   });
   const [createMessage, setCreateMessage] = useState("");
 
-  async function loadAllProducts() {
+  async function browseCatalog() {
     setLoading(true);
     setError("");
     setSearchMeta(null);
     setSelectedProduct(null);
 
+    const params = new URLSearchParams({
+      limit: String(limit),
+      page: String(page),
+    });
+
     try {
-      const response = await fetch("/api/skincareApi/products");
+      const response = await fetch(`/api/skincareApi/products?${params}`);
       if (!response.ok) {
-        const payload = (await response.json().catch(() => ({}))) as { detail?: string };
-        throw new Error(payload.detail ?? `Request failed (${response.status})`);
+        const payload = (await response.json().catch(() => ({}))) as {
+          detail?: string;
+        };
+        throw new Error(
+          payload.detail ?? `Request failed (${response.status})`,
+        );
       }
-      const data = (await response.json()) as SkincareProduct[];
-      setProducts(data);
+      const data = (await response.json()) as ProductSearchResponse;
+      setProducts(data.results);
+      setSearchMeta({ count: data.count, query: "" });
       setTab("products");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load products.");
@@ -93,7 +107,9 @@ export default function SkincareCatalog({
     try {
       const response = await fetch(endpoint);
       if (!response.ok) {
-        const payload = (await response.json().catch(() => ({}))) as { detail?: string };
+        const payload = (await response.json().catch(() => ({}))) as {
+          detail?: string;
+        };
         throw new Error(payload.detail ?? `Search failed (${response.status})`);
       }
 
@@ -115,15 +131,21 @@ export default function SkincareCatalog({
     }
   }
 
-  async function loadProductDetail(productId: number) {
+  async function loadProductDetail(productId: string) {
     setLoading(true);
     setError("");
 
     try {
-      const response = await fetch(`/api/skincareApi/products/${productId}`);
+      const response = await fetch(
+        `/api/skincareApi/products/${encodeURIComponent(productId)}`,
+      );
       if (!response.ok) {
-        const payload = (await response.json().catch(() => ({}))) as { detail?: string };
-        throw new Error(payload.detail ?? `Product not found (${response.status})`);
+        const payload = (await response.json().catch(() => ({}))) as {
+          detail?: string;
+        };
+        throw new Error(
+          payload.detail ?? `Product not found (${response.status})`,
+        );
       }
       const data = (await response.json()) as SkincareProduct;
       setSelectedProduct(data);
@@ -146,17 +168,29 @@ export default function SkincareCatalog({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(createForm),
       });
-      const data = (await response.json()) as SkincareProduct & { detail?: string };
+      const data = (await response.json()) as SkincareProduct & {
+        detail?: string;
+      };
       if (!response.ok) {
+        // Submitting a formulation is an authenticated, throttled action; the
+        // bare DRF wording for both is not much help in a catalog form.
+        if (response.status === 401 || response.status === 403) {
+          throw new Error("Sign in before adding a product to the catalog.");
+        }
+        if (response.status === 429) {
+          throw new Error("Too many submissions for now — try again later.");
+        }
         throw new Error(data.detail ?? `Create failed (${response.status})`);
       }
-      setCreateMessage(`Added product #${data.id}: ${data.brand} — ${data.name}`);
+      setCreateMessage(`Added ${data.brand} — ${data.name}`);
       setCreateForm({ brand: "", name: "", ingredients: "" });
       setProducts((current) => [data, ...current]);
       setSelectedProduct(data);
       setTab("products");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to create product.");
+      setError(
+        err instanceof Error ? err.message : "Failed to create product.",
+      );
     } finally {
       setLoading(false);
     }
@@ -195,7 +229,11 @@ export default function SkincareCatalog({
               <input
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
-                placeholder={tab === "products" ? "brand, product, or ingredient" : "ingredient name"}
+                placeholder={
+                  tab === "products"
+                    ? "brand, product, or category"
+                    : "ingredient name"
+                }
               />
             </label>
             <label className={cx("field", styles.fieldCompact)}>
@@ -232,10 +270,10 @@ export default function SkincareCatalog({
               <button
                 type="button"
                 className="nav-button"
-                onClick={loadAllProducts}
+                onClick={browseCatalog}
                 disabled={loading}
               >
-                Load all products
+                Browse catalog
               </button>
             ) : null}
           </div>
@@ -250,14 +288,16 @@ export default function SkincareCatalog({
 
       {searchMeta ? (
         <p className="lede">
-          {searchMeta.count} result{searchMeta.count === 1 ? "" : "s"} for “{searchMeta.query}”
+          {searchMeta.count} result{searchMeta.count === 1 ? "" : "s"}
+          {searchMeta.query ? ` for “${searchMeta.query}”` : " in the catalog"}
+          {searchMeta.count > limit ? `, showing page ${page}` : ""}
         </p>
       ) : null}
 
       {tab === "products" ? (
         <Panel as="section" variant="results">
           {products.length === 0 ? (
-            <p>No products to show. Try search or load the full catalog.</p>
+            <p>No products to show. Search, or browse the catalog.</p>
           ) : (
             <ul className={styles.catalogList}>
               {products.map((product) => (
@@ -268,8 +308,11 @@ export default function SkincareCatalog({
                     onClick={() => loadProductDetail(product.id)}
                   >
                     <strong>{product.brand}</strong>
-                    <span>{product.name}</span>
-                    <small>{product.ingredient_list.length} ingredients</small>
+                    <span>{product.display_name || product.name}</span>
+                    <small>
+                      {product.ingredient_count} ingredient
+                      {product.ingredient_count === 1 ? "" : "s"}
+                    </small>
                   </button>
                 </li>
               ))}
@@ -295,14 +338,32 @@ export default function SkincareCatalog({
       {selectedProduct ? (
         <Panel as="section" variant="default">
           <h2 className={styles.pageTitle}>
-            {selectedProduct.brand} — {selectedProduct.name}
+            {selectedProduct.brand} —{" "}
+            {selectedProduct.display_name || selectedProduct.name}
           </h2>
-          <p className="lede">Product #{selectedProduct.id}</p>
-          <ul className={styles.propertyList}>
-            {selectedProduct.ingredient_list.map((ingredient) => (
-              <li key={ingredient}>{ingredient}</li>
-            ))}
-          </ul>
+          {selectedProduct.category || selectedProduct.description ? (
+            <p className="lede">
+              {[selectedProduct.category, selectedProduct.description]
+                .filter(Boolean)
+                .join(" — ")}
+            </p>
+          ) : null}
+          {selectedProduct.ingredients.length === 0 ? (
+            <p>No ingredients recorded for this product.</p>
+          ) : (
+            <ul className={styles.propertyList}>
+              {selectedProduct.ingredients.map((ingredient) => (
+                // Keyed on INCI position: names repeat within a formulation.
+                <li key={ingredient.position}>
+                  {ingredient.name}
+                  {ingredient.is_key_active ? (
+                    <strong> — key active</strong>
+                  ) : null}
+                  {ingredient.note ? <small> {ingredient.note}</small> : null}
+                </li>
+              ))}
+            </ul>
+          )}
         </Panel>
       ) : null}
 
@@ -315,7 +376,10 @@ export default function SkincareCatalog({
               required
               value={createForm.brand}
               onChange={(event) =>
-                setCreateForm((current) => ({ ...current, brand: event.target.value }))
+                setCreateForm((current) => ({
+                  ...current,
+                  brand: event.target.value,
+                }))
               }
             />
           </label>
@@ -325,7 +389,10 @@ export default function SkincareCatalog({
               required
               value={createForm.name}
               onChange={(event) =>
-                setCreateForm((current) => ({ ...current, name: event.target.value }))
+                setCreateForm((current) => ({
+                  ...current,
+                  name: event.target.value,
+                }))
               }
             />
           </label>
@@ -344,7 +411,11 @@ export default function SkincareCatalog({
               placeholder="water,glycerin,citric acid"
             />
           </label>
-          <button type="submit" className={styles.actionButton} disabled={loading}>
+          <button
+            type="submit"
+            className={styles.actionButton}
+            disabled={loading}
+          >
             {loading ? "Saving…" : "Create product"}
           </button>
           {createMessage ? <p className="lede">{createMessage}</p> : null}
