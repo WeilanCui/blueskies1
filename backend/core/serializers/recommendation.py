@@ -15,6 +15,8 @@ class RecommendationImpactSerializer(serializers.Serializer):
     source = serializers.CharField(read_only=True)
     concern = serializers.CharField(source="concern_slug", allow_null=True, read_only=True)
     position_factor = serializers.FloatField(allow_null=True, read_only=True)
+    evidence_count = serializers.IntegerField(allow_null=True, read_only=True)
+    evidence_multiplier = serializers.FloatField(allow_null=True, read_only=True)
 
 
 class CoverageSummarySerializer(serializers.Serializer):

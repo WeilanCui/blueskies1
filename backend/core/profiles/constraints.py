@@ -41,6 +41,8 @@ class ConstraintImpact:
     source: str = "constraint"
     concern_slug: str | None = None
     position_factor: float | None = None
+    evidence_count: int | None = None
+    evidence_multiplier: float | None = None
 
 
 @dataclass
