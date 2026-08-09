@@ -755,6 +755,8 @@ export type RecommendationMatch = {
   penalties: ConstraintImpact[];
   boosts: ConstraintImpact[];
   coverage: CoverageSummary[];
+  data_confidence: number;
+  confidence_band: "high" | "medium" | "low";
 };
 
 export type PaginatedRecommendations = {

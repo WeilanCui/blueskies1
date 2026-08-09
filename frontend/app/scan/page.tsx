@@ -164,6 +164,11 @@ function FormulationDetail({
                   excluded={scoreQuery.data.excluded}
                   hasWarnings={scoreQuery.data.warnings.length > 0}
                 />
+                {scoreQuery.data.confidence_band === "low" && (
+                  <p style={{ fontSize: "12px", color: "var(--muted)", margin: "0 0 8px 0" }}>
+                    Limited ingredient data
+                  </p>
+                )}
                 {scoreQuery.data.coverage.length > 0 && (
                   <div className={styles.coverageBreakdown}>
                     {scoreQuery.data.coverage.map((cov) => (
