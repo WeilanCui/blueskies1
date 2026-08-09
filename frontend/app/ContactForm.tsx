@@ -106,7 +106,9 @@ function BetaSignupForm() {
   const isBusy = requestCodeMutation.isPending || verifyCodeMutation.isPending;
 
   function continueToSignup() {
-    router.push(`/login?mode=signup&email=${encodeURIComponent(trimmedEmail)}`);
+    router.push(
+      `/login?mode=signup&email=${encodeURIComponent(trimmedEmail)}&verified=1`,
+    );
   }
 
   function resetToEmail() {

@@ -70,9 +70,9 @@ export default function Home() {
             evidence says—then helps you decide what belongs in today's routine.
           </p>
           <div className={styles.landingActions}>
-            <Link className="primary-button link-button" href="/login">
-              Start intake
-            </Link>
+            <a className="primary-button link-button" href="#contact">
+              Join private beta
+            </a>
             <a className={styles.secondaryButton} href="#how-it-works">
               See how it works
             </a>
