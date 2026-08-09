@@ -456,13 +456,12 @@ class RecommendationConcernRuleAPITests(APITestCase):
 
         # Check penalties include concern-sourced impact
         self.assertGreater(len(data["penalties"]), 0)
-        concern_impact = None
-        for impact in data["penalties"]:
-            if impact.get("source") == "concern":
-                concern_impact = impact
-                break
+        concern_impacts = [
+            impact for impact in data["penalties"] if impact.get("source") == "concern"
+        ]
 
-        self.assertIsNotNone(concern_impact)
+        self.assertTrue(concern_impacts, "expected a concern-sourced penalty")
+        concern_impact = concern_impacts[0]
         self.assertEqual(concern_impact["source"], "concern")
         self.assertEqual(concern_impact["concern"], "sensitivity")
         self.assertIn("sensitive skin", concern_impact["reason"].lower())
@@ -562,13 +561,14 @@ class RecommendationConcernRuleAPITests(APITestCase):
         results = data["results"]
 
         # Find our test formulation
-        test_result = None
-        for result in results:
-            if result["formulation_id"] == self.formulation.id:
-                test_result = result
-                break
+        matches = [
+            result
+            for result in results
+            if result["formulation_id"] == self.formulation.id
+        ]
 
-        self.assertIsNotNone(test_result)
+        self.assertTrue(matches, "expected the test formulation in the results")
+        test_result = matches[0]
         # Should have penalties from concern rule
         self.assertGreater(len(test_result["penalties"]), 0)
 
