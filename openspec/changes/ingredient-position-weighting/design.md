@@ -23,7 +23,7 @@ INCI rules require descending-concentration order above 1%; below 1% order is fr
 A chemical-class target matching ingredients at positions 3 and 30 uses position 3's factor (the strongest occurrence governs the effect).
 
 **3. Applied to magnitudes only, and only for scoring kinds.**
-`PENALIZE`/`BOOST`/`RECOMMEND` deltas: `round(base × factor)` with the existing `max(1, …)` guard on positive deltas. `EXCLUDE` stays absolute; `WARN`/`AVOID` warnings unscaled (their delta portion, where AVOID carries one, IS scaled — caution text stays, numeric sting shrinks). REFER unaffected (zero delta).
+`PENALIZE`/`BOOST`/`RECOMMEND` deltas: `round(base × factor)` with the existing `max(1, …)` guard on positive deltas. `EXCLUDE` stays absolute; `WARN`/`AVOID` are fully position-immune — both the caution text and, where AVOID carries one, the numeric delta stay unscaled, because a trace amount of something you must avoid is still worth avoiding. REFER unaffected (zero delta).
 
 **4. Matching helpers return match detail, not booleans.**
 `core/profiles/matching.py` functions return `MatchResult(matched: bool, best_position: int | None, total_ingredients: int | None)`. Both evaluators consume it; factor computed in one shared function `position_factor(result)`. Missing position/total → factor 1.0.

@@ -732,6 +732,18 @@ export type ConstraintImpact = {
   score_delta: number;
   source: "constraint" | "concern";
   concern: string | null;
+  position_factor: number | null;
+  evidence_count: number | null;
+  evidence_multiplier: number | null;
+};
+
+export type CoverageSummary = {
+  concern: string;
+  concern_label: string;
+  matched: number;
+  total: number;
+  matched_rules: string[];
+  unmatched_rules: string[];
 };
 
 export type RecommendationMatch = {
@@ -744,6 +756,9 @@ export type RecommendationMatch = {
   warnings: ConstraintImpact[];
   penalties: ConstraintImpact[];
   boosts: ConstraintImpact[];
+  coverage: CoverageSummary[];
+  data_confidence: number;
+  confidence_band: "high" | "medium" | "low";
 };
 
 export type PaginatedRecommendations = {
