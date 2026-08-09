@@ -12,7 +12,7 @@
 
 .tabList {
   align-items: stretch;
-  background: #ffffff;
+  background: var(--surface-raised);
   display: grid;
   gap: 2px;
   grid-template-columns: repeat(5, minmax(76px, 1fr));
@@ -22,7 +22,7 @@
 .tabLink {
   align-items: center;
   border-radius: 8px;
-  color: #6384a8;
+  color: var(--text-muted);
   display: grid;
   font-size: 0.72rem;
   font-weight: 900;
@@ -36,11 +36,11 @@
 }
 
 .tabLink:hover {
-  color: #171412;
+  color: var(--text-primary);
 }
 
 .tabLinkActive {
-  color: #171412;
+  color: var(--text-primary);
 }
 
 .tabIcon {
@@ -52,10 +52,10 @@
 
 @media (min-width: 760px) {
   .tabList {
-    background: #ffffff;
+    background: var(--surface-raised);
     border: 0;
     border-radius: 8px;
-    box-shadow: 0 8px 20px rgba(35, 49, 58, 0.05);
+    box-shadow: 0 8px 20px color-mix(in srgb, var(--text-secondary) 5.0%, transparent);
     gap: 2px;
     min-width: 0;
     padding: 6px 8px;
@@ -73,7 +73,7 @@
   }
 
   .tabLinkActive {
-    background: #ffffff;
+    background: var(--surface-raised);
     box-shadow: none;
   }
 

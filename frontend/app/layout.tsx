@@ -15,7 +15,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html className="light" data-theme="light" lang="en">
+    <html
+      className="light"
+      data-accent="brighter-rose"
+      data-theme="mint-champagne"
+      lang="en"
+    >
       <body>
         <Providers>
           <AppFrame>{children}</AppFrame>

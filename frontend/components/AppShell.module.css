@@ -2,9 +2,9 @@
   align-content: start;
   align-items: start;
   background:
-    linear-gradient(180deg, rgba(240, 249, 255, 0.94), rgba(251, 253, 255, 0.98) 46%),
-    #fbfdff;
-  color: #171412;
+    linear-gradient(180deg, color-mix(in srgb, var(--surface-tint) 94.0%, transparent), color-mix(in srgb, var(--page) 98.0%, transparent) 46%),
+    var(--page);
+  color: var(--text-primary);
   display: grid;
   gap: 8px;
   grid-auto-rows: max-content;

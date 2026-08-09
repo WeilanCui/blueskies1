@@ -1,7 +1,8 @@
 .panel {
-  background: var(--panel);
+  backdrop-filter: blur(var(--glass-blur, 0));
+  background: var(--glass-card, var(--panel));
   border: 1px solid var(--border);
-  box-shadow: 0 8px 24px rgba(52, 111, 170, 0.08);
+  box-shadow: var(--card-shadow, 0 8px 24px color-mix(in srgb, var(--accent-strong) 8.0%, transparent));
 }
 
 .default {
@@ -29,16 +30,16 @@
 
 .notice {
   border-radius: 8px;
-  color: rgba(15, 45, 74, 0.78);
+  color: color-mix(in srgb, var(--text-primary) 78.0%, transparent);
   margin-top: 28px;
   padding: 20px;
 }
 
 .error {
   box-shadow:
-    0 8px 24px rgba(52, 111, 170, 0.08),
+    0 8px 24px color-mix(in srgb, var(--accent-strong) 8.0%, transparent),
     inset 0 0 0 2px var(--warning);
-  color: #9a3412;
+  color: var(--status-warning-text);
 }
 
 .split {
@@ -53,33 +54,33 @@
 .panel :global(.experience-copy) h2,
 .panel :global(.experience-copy) :global(.lede),
 .panel :global(.results-header) h2 {
-  color: #0f2d4a;
+  color: var(--text-primary);
 }
 
 .panel :global(.field-hint),
 .panel :global(.analysis-summary),
 .panel :global(.detail-muted),
 .panel :global(.demo-note) {
-  color: rgba(15, 45, 74, 0.78);
+  color: color-mix(in srgb, var(--text-primary) 78.0%, transparent);
 }
 
 .panel :global(.choice-group) legend,
 .panel :global(.field) > span {
-  color: #0f2d4a;
+  color: var(--text-primary);
 }
 
 .panel :global(.face-outline) {
-  fill: rgba(255, 255, 255, 0.55);
-  stroke: rgba(15, 45, 74, 0.28);
+  fill: color-mix(in srgb, var(--surface-raised) 55.0%, transparent);
+  stroke: color-mix(in srgb, var(--text-primary) 28.0%, transparent);
   stroke-width: 1.5;
 }
 
 .panel :global(.face-feature) {
-  stroke: rgba(15, 45, 74, 0.45);
+  stroke: color-mix(in srgb, var(--text-primary) 45.0%, transparent);
 }
 
 .panel :global(.face-legend) {
-  color: #0f2d4a;
+  color: var(--text-primary);
 }
 
 .notice code {

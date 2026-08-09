@@ -7,14 +7,14 @@
 }
 
 .appHero h1 {
-  color: #171412;
+  color: var(--text-primary);
   font-size: clamp(34px, 10vw, 54px);
   line-height: 1;
   margin: 0;
 }
 
 .appHero p {
-  color: #4b5563;
+  color: var(--text-secondary);
   font-size: 17px;
   line-height: 1.5;
   margin: 14px 0 0;
@@ -29,8 +29,8 @@
 }
 
 .intakeCard {
-  background: #ffffff;
-  border: 1px solid #dfe6ea;
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
   border-radius: 8px;
   display: grid;
   gap: 16px;
@@ -38,21 +38,21 @@
 }
 
 .intakeCard h2 {
-  color: #171412;
+  color: var(--text-primary);
   font-size: 24px;
   line-height: 1.1;
   margin: 0;
 }
 
 .intakeCard p {
-  color: #4b5563;
+  color: var(--text-secondary);
   line-height: 1.5;
   margin: 0;
 }
 
 .facialPlaceholder {
-  background: #f4fbeb;
-  border-color: #d9f99d;
+  background: var(--highlight-soft);
+  border-color: var(--highlight);
 }
 
 .facialPlaceholder :global(.face-map) {
@@ -99,12 +99,12 @@
 
 .skinTypeTile:has(input:checked) {
   background: var(--fresh-lime-soft);
-  border-color: #a3e635;
-  color: #274f1a;
+  border-color: var(--highlight);
+  color: var(--accent-ink);
 }
 
 .skinTypeTile:has(input:focus-visible) {
-  outline: 3px solid rgba(52, 111, 170, 0.24);
+  outline: 3px solid color-mix(in srgb, var(--accent-strong) 24.0%, transparent);
   outline-offset: 2px;
 }
 
@@ -116,7 +116,7 @@
 
 .fitzpatrickTile {
   align-content: stretch;
-  border-color: rgba(23, 20, 18, 0.14);
+  border-color: color-mix(in srgb, var(--text-primary) 14.0%, transparent);
   display: grid;
   gap: 8px;
   min-height: 168px;
@@ -138,10 +138,10 @@
 
 .fitzpatrickType {
   align-items: center;
-  background: rgba(255, 255, 255, 0.78);
-  border: 1px solid rgba(255, 255, 255, 0.64);
+  background: color-mix(in srgb, var(--surface-raised) 78.0%, transparent);
+  border: 1px solid color-mix(in srgb, var(--surface-raised) 64.0%, transparent);
   border-radius: 6px;
-  color: #171412;
+  color: var(--text-primary);
   display: flex;
   font-size: 0.82rem;
   font-weight: 900;
@@ -154,8 +154,8 @@
 
 .fitzpatrickInfo {
   align-content: center;
-  background: rgba(255, 255, 255, 0.82);
-  border: 1px solid rgba(255, 255, 255, 0.64);
+  background: color-mix(in srgb, var(--surface-raised) 82.0%, transparent);
+  border: 1px solid color-mix(in srgb, var(--surface-raised) 64.0%, transparent);
   border-radius: 6px;
   display: grid;
   gap: 8px;
@@ -164,58 +164,58 @@
 }
 
 .fitzpatrickTone {
-  color: #171412;
+  color: var(--text-primary);
   font-size: 0.74rem;
   font-weight: 800;
   line-height: 1.12;
 }
 
 .fitzpatrickResponse {
-  color: #2f2a26;
+  color: var(--text-primary);
   font-size: 0.66rem;
   font-weight: 700;
   line-height: 1.18;
 }
 
 .fitzpatrickTile:has(input:checked) {
-  border-color: #67a94a;
+  border-color: var(--highlight-strong);
   box-shadow:
-    0 0 0 2px rgba(103, 169, 74, 0.18),
-    0 12px 28px rgba(23, 20, 18, 0.14);
+    0 0 0 2px color-mix(in srgb, var(--highlight-strong) 18.0%, transparent),
+    0 12px 28px color-mix(in srgb, var(--text-primary) 14.0%, transparent);
   transform: translateY(-1px);
 }
 
 .fitzpatrickTile:has(input:focus-visible) {
-  outline: 3px solid rgba(52, 111, 170, 0.24);
+  outline: 3px solid color-mix(in srgb, var(--accent-strong) 24.0%, transparent);
   outline-offset: 2px;
 }
 
 .fitzpatrickTileNotProvided {
-  background: #e9eff4;
+  background: var(--surface-subtle);
 }
 
 .fitzpatrickTileTypeI {
-  background: #f5e3d8;
+  background: var(--skin-tone-i);
 }
 
 .fitzpatrickTileTypeII {
-  background: #e9cc9f;
+  background: var(--skin-tone-ii);
 }
 
 .fitzpatrickTileTypeIII {
-  background: #d2ad7c;
+  background: var(--skin-tone-iii);
 }
 
 .fitzpatrickTileTypeIV {
-  background: #a97661;
+  background: var(--skin-tone-iv);
 }
 
 .fitzpatrickTileTypeV {
-  background: #6b3f2d;
+  background: var(--skin-tone-v);
 }
 
 .fitzpatrickTileTypeVI {
-  background: #3a2114;
+  background: var(--skin-tone-vi);
 }
 
 .sensitivityAdd {

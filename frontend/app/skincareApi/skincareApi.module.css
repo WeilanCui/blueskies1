@@ -30,10 +30,11 @@
 }
 
 .actionButton {
-  background: var(--accent-strong);
+  background: var(--accent);
   border: none;
   border-radius: 8px;
-  color: #fff;
+  box-shadow: var(--button-shadow, none);
+  color: var(--on-accent, var(--surface-raised));
   cursor: pointer;
   font: inherit;
   font-weight: 600;
@@ -41,8 +42,8 @@
 }
 
 .actionButton:hover:not(:disabled) {
-  background: var(--accent);
-  color: var(--foreground);
+  background: var(--accent-mid);
+  color: var(--on-accent);
 }
 
 .actionButton:disabled {

@@ -18,7 +18,7 @@
 
 .faceFeature {
   fill: none;
-  stroke: #a8daf8;
+  stroke: var(--border-accent);
   stroke-width: 2;
 }
 

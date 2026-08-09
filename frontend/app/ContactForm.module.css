@@ -1,6 +1,6 @@
 .contactForm {
-  background: #ffffff;
-  border: 1px solid #dfe6ea;
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
   border-radius: 8px;
   display: grid;
   gap: 10px;
@@ -8,10 +8,11 @@
 }
 
 .contactForm button {
-  background: #274f1a;
+  background: var(--accent);
   border: none;
   border-radius: 8px;
-  color: #ffffff;
+  box-shadow: var(--button-shadow, none);
+  color: var(--on-accent, var(--surface-raised));
   cursor: pointer;
   font: inherit;
   font-weight: 800;

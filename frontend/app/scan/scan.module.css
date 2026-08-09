@@ -13,18 +13,22 @@
 }
 
 .scanHero h1 {
-  color: #171412;
+  color: var(--text-primary);
   font-size: 3.2rem;
   line-height: 0.95;
   margin: 0;
 }
 
 .scanHero p {
-  color: #6384a8;
+  color: var(--text-muted);
   font-size: 1.22rem;
   font-weight: 700;
   line-height: 1.35;
   margin: 0;
+}
+
+.scanWarning {
+  color: var(--status-warning-text);
 }
 
 .searchRow {
@@ -36,8 +40,8 @@
 
 .searchField {
   align-items: center;
-  background: rgba(240, 249, 255, 0.58);
-  border: 1px solid rgba(52, 111, 170, 0.18);
+  background: color-mix(in srgb, var(--surface-tint) 58.0%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent-strong) 18.0%, transparent);
   border-radius: 999px;
   display: grid;
   gap: 12px;
@@ -48,13 +52,13 @@
 
 .searchField:focus-within {
   border-color: var(--accent-strong);
-  box-shadow: 0 0 0 4px rgba(52, 111, 170, 0.1);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent-strong) 10.0%, transparent);
 }
 
 .searchField input {
   background: transparent;
   border: 0;
-  color: #171412;
+  color: var(--text-primary);
   font: inherit;
   font-size: 1rem;
   font-weight: 700;
@@ -63,11 +67,11 @@
 }
 
 .searchField input::placeholder {
-  color: #7c8da2;
+  color: var(--text-faint);
 }
 
 .searchIcon {
-  border: 2px solid #6384a8;
+  border: 2px solid var(--text-muted);
   border-radius: 999px;
   display: block;
   height: 19px;
@@ -76,7 +80,7 @@
 }
 
 .searchIcon::after {
-  background: #6384a8;
+  background: var(--text-muted);
   border-radius: 999px;
   bottom: -6px;
   content: "";
@@ -89,10 +93,11 @@
 
 .scanButton {
   align-items: center;
-  background: var(--accent-strong);
-  border: 1px solid var(--accent-strong);
+  background: var(--accent);
+  border: 1px solid var(--accent);
   border-radius: 999px;
-  color: #ffffff;
+  box-shadow: var(--button-shadow, none);
+  color: var(--on-accent, var(--surface-raised));
   cursor: pointer;
   display: inline-flex;
   font-size: 1rem;
@@ -145,8 +150,8 @@
 
 .uploadPanel {
   align-items: center;
-  background: #ffffff;
-  border: 1px solid rgba(52, 111, 170, 0.18);
+  background: var(--surface-raised);
+  border: 1px solid color-mix(in srgb, var(--accent-strong) 18.0%, transparent);
   border-radius: 8px;
   display: grid;
   gap: 14px;
@@ -173,14 +178,14 @@
 }
 
 .uploadPanel span {
-  color: #6384a8;
+  color: var(--text-muted);
   font-size: 0.9rem;
   font-weight: 800;
   margin-top: 3px;
 }
 
 .uploadPanel p {
-  color: #66737c;
+  color: var(--text-muted);
   font-size: 0.88rem;
   line-height: 1.42;
   margin: 8px 0 0;
@@ -193,10 +198,10 @@
 
 .productCard {
   align-items: center;
-  background: rgba(255, 255, 255, 0.92);
-  border: 1px solid rgba(207, 217, 223, 0.82);
+  background: color-mix(in srgb, var(--surface-raised) 92.0%, transparent);
+  border: 1px solid color-mix(in srgb, var(--border) 82.0%, transparent);
   border-radius: 8px;
-  box-shadow: 0 12px 30px rgba(35, 49, 58, 0.05);
+  box-shadow: 0 12px 30px color-mix(in srgb, var(--text-secondary) 5.0%, transparent);
   color: inherit;
   cursor: pointer;
   display: grid;
@@ -210,18 +215,18 @@
 }
 
 .productCard:nth-child(3) {
-  border-color: rgba(52, 111, 170, 0.28);
-  box-shadow: 0 14px 34px rgba(52, 111, 170, 0.08);
+  border-color: color-mix(in srgb, var(--accent-strong) 28.0%, transparent);
+  box-shadow: 0 14px 34px color-mix(in srgb, var(--accent-strong) 8.0%, transparent);
 }
 
 .productCard:hover {
-  border-color: rgba(52, 111, 170, 0.36);
-  box-shadow: 0 18px 38px rgba(52, 111, 170, 0.1);
+  border-color: color-mix(in srgb, var(--accent-strong) 36.0%, transparent);
+  box-shadow: 0 18px 38px color-mix(in srgb, var(--accent-strong) 10.0%, transparent);
   transform: translateY(-1px);
 }
 
 .productCard:focus-visible {
-  outline: 3px solid rgba(52, 111, 170, 0.18);
+  outline: 3px solid color-mix(in srgb, var(--accent-strong) 18.0%, transparent);
   outline-offset: 3px;
 }
 
@@ -236,7 +241,7 @@
 }
 
 .productImage span {
-  color: #171412;
+  color: var(--text-primary);
   font-size: 0.82rem;
   font-weight: 900;
   line-height: 1;
@@ -246,38 +251,38 @@
 
 .productImagecream {
   background:
-    linear-gradient(135deg, transparent 45%, rgba(23, 20, 18, 0.18) 46% 54%, transparent 55%),
-    #ebe5e5;
+    linear-gradient(135deg, transparent 45%, color-mix(in srgb, var(--text-primary) 18.0%, transparent) 46% 54%, transparent 55%),
+    var(--surface-subtle);
 }
 
 .productImageserum {
   background:
-    radial-gradient(circle at 62% 38%, rgba(255, 255, 255, 0.86) 0 16%, transparent 17%),
-    linear-gradient(135deg, #ffffff, #dde5ea);
+    radial-gradient(circle at 62% 38%, color-mix(in srgb, var(--surface-raised) 86.0%, transparent) 0 16%, transparent 17%),
+    linear-gradient(135deg, var(--surface-raised), var(--border));
 }
 
 .productImagespf {
   background:
-    linear-gradient(100deg, transparent 48%, rgba(52, 111, 170, 0.28) 49% 56%, transparent 57%),
-    #eef4fb;
+    linear-gradient(100deg, transparent 48%, color-mix(in srgb, var(--accent-strong) 28.0%, transparent) 49% 56%, transparent 57%),
+    var(--surface-tint);
 }
 
 .productImagecleanser {
   background:
-    radial-gradient(circle at 34% 38%, #f7d46b 0 18%, transparent 19%),
-    linear-gradient(135deg, #101820, #5f7891);
+    radial-gradient(circle at 34% 38%, var(--status-warning-border) 0 18%, transparent 19%),
+    linear-gradient(135deg, var(--text-primary), var(--scan-art-dark));
 }
 
 .productImagetreatment {
   background:
-    linear-gradient(90deg, rgba(52, 111, 170, 0.18), transparent 48%),
-    #e7f2fc;
+    linear-gradient(90deg, color-mix(in srgb, var(--accent-strong) 18.0%, transparent), transparent 48%),
+    var(--accent-soft);
 }
 
 .productImagetoner {
   background:
-    radial-gradient(circle at 34% 64%, rgba(163, 230, 53, 0.42) 0 18%, transparent 19%),
-    linear-gradient(135deg, #f8fafb, #dbe8ef);
+    radial-gradient(circle at 34% 64%, color-mix(in srgb, var(--highlight) 42.0%, transparent) 0 18%, transparent 19%),
+    linear-gradient(135deg, var(--surface-subtle), var(--surface-subtle));
 }
 
 .productInfo {
@@ -287,13 +292,13 @@
 }
 
 .productInfo > span {
-  color: #6384a8;
+  color: var(--text-muted);
   font-size: 0.96rem;
   font-weight: 900;
 }
 
 .productInfo h2 {
-  color: #171412;
+  color: var(--text-primary);
   font-size: 1.08rem;
   line-height: 1.15;
   margin: 0;
@@ -308,21 +313,21 @@
 
 .productMeta strong {
   background: var(--accent-soft);
-  border: 1px solid rgba(52, 111, 170, 0.18);
+  border: 1px solid color-mix(in srgb, var(--accent-strong) 18.0%, transparent);
   border-radius: 999px;
-  color: #6384a8;
+  color: var(--text-muted);
   font-size: 0.88rem;
   padding: 3px 10px;
 }
 
 .productMeta em {
-  color: #6384a8;
+  color: var(--text-muted);
   font-style: normal;
   font-weight: 900;
 }
 
 .productMeta em::first-letter {
-  color: #f59e0b;
+  color: var(--status-warning-text);
 }
 
 .checkMark {
@@ -342,10 +347,10 @@
 
 .secondaryUpload {
   align-items: center;
-  background: #ffffff;
-  border: 1px solid rgba(207, 217, 223, 0.9);
+  background: var(--surface-raised);
+  border: 1px solid color-mix(in srgb, var(--border) 90.0%, transparent);
   border-radius: 999px;
-  color: #23313a;
+  color: var(--text-secondary);
   cursor: pointer;
   display: inline-flex;
   font-size: 0.88rem;
@@ -357,8 +362,8 @@
 }
 
 .scanPanel {
-  background: rgba(255, 255, 255, 0.76);
-  border: 1px solid rgba(207, 217, 223, 0.82);
+  background: color-mix(in srgb, var(--surface-raised) 76.0%, transparent);
+  border: 1px solid color-mix(in srgb, var(--border) 82.0%, transparent);
   border-radius: 8px;
   display: grid;
   gap: 12px;
@@ -372,10 +377,11 @@
 
 .fileAction {
   align-items: center;
-  background: var(--accent-strong);
-  border: 1px solid var(--accent-strong);
+  background: var(--accent);
+  border: 1px solid var(--accent);
   border-radius: 999px;
-  color: #ffffff;
+  box-shadow: var(--button-shadow, none);
+  color: var(--on-accent, var(--surface-raised));
   cursor: pointer;
   display: inline-flex;
   font-size: 0.95rem;
@@ -387,13 +393,13 @@
 }
 
 .fileActionSecondary {
-  background: #ffffff;
-  border-color: #b7c5cc;
-  color: #171412;
+  background: var(--surface-raised);
+  border-color: var(--border-strong);
+  color: var(--text-primary);
 }
 
 .scanNote {
-  color: #66737c;
+  color: var(--text-muted);
   font-size: 0.88rem;
   line-height: 1.45;
   margin: 0;
@@ -408,7 +414,7 @@
   align-items: center;
   background: transparent;
   border: 0;
-  color: #6384a8;
+  color: var(--text-muted);
   cursor: pointer;
   display: inline-flex;
   font: inherit;
@@ -420,7 +426,7 @@
 }
 
 .backButton:hover {
-  color: #171412;
+  color: var(--text-primary);
 }
 
 .backButton span {
@@ -433,10 +439,10 @@
 }
 
 .detailHeroCard {
-  background: #ffffff;
-  border: 1px solid rgba(207, 217, 223, 0.82);
+  background: var(--surface-raised);
+  border: 1px solid color-mix(in srgb, var(--border) 82.0%, transparent);
   border-radius: 8px;
-  box-shadow: 0 16px 40px rgba(35, 49, 58, 0.06);
+  box-shadow: 0 16px 40px color-mix(in srgb, var(--text-secondary) 6.0%, transparent);
   overflow: hidden;
 }
 
@@ -453,15 +459,15 @@
 
 .detailImage::after {
   background:
-    linear-gradient(104deg, transparent 36%, rgba(255, 255, 255, 0.82) 37% 55%, transparent 56%),
-    linear-gradient(128deg, transparent 51%, rgba(23, 20, 18, 0.28) 52% 57%, transparent 58%);
+    linear-gradient(104deg, transparent 36%, color-mix(in srgb, var(--surface-raised) 82.0%, transparent) 37% 55%, transparent 56%),
+    linear-gradient(128deg, transparent 51%, color-mix(in srgb, var(--text-primary) 28.0%, transparent) 52% 57%, transparent 58%);
   content: "";
   inset: 0;
   position: absolute;
 }
 
 .detailImage span {
-  color: #171412;
+  color: var(--text-primary);
   font-size: 2rem;
   font-weight: 900;
   opacity: 0.86;
@@ -483,7 +489,7 @@
 }
 
 .detailTitleRow span {
-  color: #6384a8;
+  color: var(--text-muted);
   display: block;
   font-size: 1.05rem;
   font-weight: 900;
@@ -491,7 +497,7 @@
 }
 
 .detailTitleRow h1 {
-  color: #171412;
+  color: var(--text-primary);
   font-size: 2rem;
   line-height: 1.03;
   margin: 0;
@@ -499,9 +505,9 @@
 
 .detailTitleRow > strong {
   background: var(--accent-soft);
-  border: 1px solid rgba(52, 111, 170, 0.18);
+  border: 1px solid color-mix(in srgb, var(--accent-strong) 18.0%, transparent);
   border-radius: 999px;
-  color: #6384a8;
+  color: var(--text-muted);
   font-size: 0.95rem;
   padding: 8px 13px;
   white-space: nowrap;
@@ -509,7 +515,7 @@
 
 .detailMeta {
   align-items: center;
-  color: #6384a8;
+  color: var(--text-muted);
   display: flex;
   flex-wrap: wrap;
   font-size: 1rem;
@@ -518,22 +524,22 @@
 }
 
 .detailMeta span + span::before {
-  color: #6384a8;
+  color: var(--text-muted);
   content: "·";
   margin-right: 12px;
 }
 
 .detailMeta em {
-  color: #171412;
+  color: var(--text-primary);
   font-style: normal;
 }
 
 .detailMeta em::first-letter {
-  color: #f59e0b;
+  color: var(--status-warning-text);
 }
 
 .detailBody > p {
-  color: #6384a8;
+  color: var(--text-muted);
   font-size: 1.12rem;
   font-weight: 700;
   line-height: 1.55;
@@ -547,10 +553,10 @@
 }
 
 .fitTagList span {
-  background: rgba(236, 253, 245, 0.82);
-  border: 1px solid rgba(16, 185, 129, 0.18);
+  background: color-mix(in srgb, var(--status-success-bg) 82.0%, transparent);
+  border: 1px solid color-mix(in srgb, var(--status-success-text) 18.0%, transparent);
   border-radius: 999px;
-  color: #5ccfb4;
+  color: var(--status-success-border);
   font-weight: 900;
   padding: 6px 13px;
 }
@@ -566,7 +572,7 @@
 }
 
 .routineSelectLabel span {
-  color: #6384a8;
+  color: var(--text-muted);
   font-size: 0.82rem;
   font-weight: 900;
 }
@@ -574,14 +580,14 @@
 .routineSelectLabel select {
   appearance: none;
   background:
-    linear-gradient(45deg, transparent 50%, #6384a8 50%) calc(100% - 18px) 50% / 7px 7px
+    linear-gradient(45deg, transparent 50%, var(--text-muted) 50%) calc(100% - 18px) 50% / 7px 7px
       no-repeat,
-    linear-gradient(135deg, #6384a8 50%, transparent 50%) calc(100% - 13px) 50% / 7px 7px
+    linear-gradient(135deg, var(--text-muted) 50%, transparent 50%) calc(100% - 13px) 50% / 7px 7px
       no-repeat,
-    rgba(240, 249, 255, 0.58);
-  border: 1px solid rgba(52, 111, 170, 0.18);
+    color-mix(in srgb, var(--surface-tint) 58.0%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent-strong) 18.0%, transparent);
   border-radius: 8px;
-  color: #171412;
+  color: var(--text-primary);
   font: inherit;
   font-weight: 900;
   min-height: 48px;
@@ -592,7 +598,7 @@
 
 .routineSelectLabel select:focus-visible {
   border-color: var(--accent-strong);
-  box-shadow: 0 0 0 4px rgba(52, 111, 170, 0.1);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent-strong) 10.0%, transparent);
 }
 
 .routineSelectLabel select:disabled {
@@ -602,19 +608,19 @@
 
 .addedButton {
   background: var(--accent-soft);
-  color: #6384a8;
+  color: var(--text-muted);
   justify-content: center;
   min-height: 56px;
   width: 100%;
 }
 
 .addedButton:hover:not([data-disabled="true"]) {
-  background: #dcecf9;
-  color: #171412;
+  background: var(--accent-soft);
+  color: var(--text-primary);
 }
 
 .routineStatus {
-  color: #6384a8;
+  color: var(--text-muted);
   font-size: 0.9rem;
   font-weight: 800;
   line-height: 1.4;
@@ -627,7 +633,7 @@
 }
 
 .analysisSection h2 {
-  color: #171412;
+  color: var(--text-primary);
   font-size: 1.55rem;
   line-height: 1.1;
   margin: 0;
@@ -651,15 +657,15 @@
 }
 
 .beneficialBadge {
-  background: rgba(240, 253, 244, 0.82);
-  border: 1px solid rgba(34, 197, 94, 0.34);
-  color: #008a3d;
+  background: color-mix(in srgb, var(--status-success-bg) 82.0%, transparent);
+  border: 1px solid color-mix(in srgb, var(--status-success-text) 34.0%, transparent);
+  color: var(--status-success-text);
 }
 
 .cautionBadge {
-  background: rgba(255, 251, 235, 0.9);
-  border: 1px solid rgba(245, 158, 11, 0.42);
-  color: #b45309;
+  background: color-mix(in srgb, var(--status-warning-bg) 90.0%, transparent);
+  border: 1px solid color-mix(in srgb, var(--status-warning-text) 42.0%, transparent);
+  color: var(--status-warning-text);
 }
 
 .ingredientList {
@@ -669,8 +675,8 @@
 
 .ingredientCard {
   align-items: start;
-  background: rgba(240, 253, 244, 0.72);
-  border: 1px solid rgba(34, 197, 94, 0.28);
+  background: color-mix(in srgb, var(--status-success-bg) 72.0%, transparent);
+  border: 1px solid color-mix(in srgb, var(--status-success-text) 28.0%, transparent);
   border-radius: 8px;
   display: grid;
   gap: 12px;
@@ -679,7 +685,7 @@
 }
 
 .shieldIcon {
-  border: 2px solid #00a84f;
+  border: 2px solid var(--status-success-text);
   border-radius: 8px 8px 10px 10px;
   display: block;
   height: 20px;
@@ -689,9 +695,9 @@
 }
 
 .shieldIcon::after {
-  background: rgba(240, 253, 244, 0.72);
-  border-bottom: 2px solid #00a84f;
-  border-right: 2px solid #00a84f;
+  background: color-mix(in srgb, var(--status-success-bg) 72.0%, transparent);
+  border-bottom: 2px solid var(--status-success-text);
+  border-right: 2px solid var(--status-success-text);
   content: "";
   height: 8px;
   left: 2px;
@@ -709,20 +715,20 @@
 }
 
 .ingredientTitleRow h3 {
-  color: #00a84f;
+  color: var(--status-success-text);
   font-size: 1.16rem;
   line-height: 1.2;
   margin: 0;
 }
 
 .ingredientTitleRow strong {
-  color: #6384a8;
+  color: var(--text-muted);
   font-size: 0.94rem;
   white-space: nowrap;
 }
 
 .ingredientCard p {
-  color: #6384a8;
+  color: var(--text-muted);
   font-weight: 800;
   line-height: 1.42;
   margin: 12px 0 0;

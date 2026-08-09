@@ -19,7 +19,7 @@
   background: transparent;
   border: 0;
   border-radius: 999px;
-  color: #6384a8;
+  color: var(--text-muted);
   cursor: pointer;
   font: inherit;
   font-size: 0.94rem;
@@ -29,9 +29,9 @@
 }
 
 .viewTabActive {
-  background: #ffffff;
-  box-shadow: 0 10px 24px rgba(35, 49, 58, 0.1);
-  color: #171412;
+  background: var(--surface-raised);
+  box-shadow: 0 10px 24px color-mix(in srgb, var(--text-secondary) 10.0%, transparent);
+  color: var(--text-primary);
 }
 
 .dayToggle {
@@ -43,9 +43,9 @@
 .dayButton {
   align-items: center;
   background: transparent;
-  border: 2px solid rgba(207, 217, 223, 0.86);
+  border: 2px solid color-mix(in srgb, var(--border) 86.0%, transparent);
   border-radius: 999px;
-  color: #6384a8;
+  color: var(--text-muted);
   cursor: pointer;
   display: inline-flex;
   font: inherit;
@@ -74,8 +74,8 @@
 
 .routineItem {
   align-items: center;
-  background: rgba(255, 255, 255, 0.94);
-  border: 1px solid rgba(207, 217, 223, 0.82);
+  background: color-mix(in srgb, var(--surface-raised) 94.0%, transparent);
+  border: 1px solid color-mix(in srgb, var(--border) 82.0%, transparent);
   border-radius: 8px;
   color: inherit;
   cursor: pointer;
@@ -90,16 +90,16 @@
 }
 
 .routineItem:hover {
-  border-color: rgba(52, 111, 170, 0.34);
+  border-color: color-mix(in srgb, var(--accent-strong) 34.0%, transparent);
 }
 
 .routineItemComplete {
-  background: rgba(240, 253, 244, 0.84);
-  border-color: rgba(34, 197, 94, 0.26);
+  background: color-mix(in srgb, var(--status-success-bg) 84.0%, transparent);
+  border-color: color-mix(in srgb, var(--status-success-text) 26.0%, transparent);
 }
 
 .checkCircle {
-  border: 3px solid #6384a8;
+  border: 3px solid var(--text-muted);
   border-radius: 999px;
   display: block;
   height: 26px;
@@ -113,8 +113,8 @@
 }
 
 .routineItemComplete .checkCircle::after {
-  border-bottom: 2px solid #ffffff;
-  border-right: 2px solid #ffffff;
+  border-bottom: 2px solid var(--surface-raised);
+  border-right: 2px solid var(--surface-raised);
   content: "";
   height: 10px;
   left: 8px;
@@ -130,21 +130,21 @@
 }
 
 .routineItem strong {
-  color: #171412;
+  color: var(--text-primary);
   font-size: 1.08rem;
   line-height: 1.18;
 }
 
 .routineItem em {
-  color: #6384a8;
+  color: var(--text-muted);
   font-style: normal;
   font-weight: 900;
   margin-top: 5px;
 }
 
 .skinFeelCard {
-  background: #ffffff;
-  border: 1px solid rgba(207, 217, 223, 0.82);
+  background: var(--surface-raised);
+  border: 1px solid color-mix(in srgb, var(--border) 82.0%, transparent);
   border-radius: 8px;
   display: grid;
   gap: 18px;
@@ -159,14 +159,14 @@
 }
 
 .cardHeading h2 {
-  color: #171412;
+  color: var(--text-primary);
   font-size: 1.2rem;
   line-height: 1.2;
   margin: 0;
 }
 
 .cardHeading span {
-  color: #6384a8;
+  color: var(--text-muted);
   flex: 0 0 auto;
   font-size: 0.84rem;
   font-weight: 900;
@@ -180,10 +180,10 @@
 
 .moodButton {
   align-items: center;
-  background: #ffffff;
-  border: 2px solid rgba(207, 217, 223, 0.82);
+  background: var(--surface-raised);
+  border: 2px solid color-mix(in srgb, var(--border) 82.0%, transparent);
   border-radius: 8px;
-  color: #6384a8;
+  color: var(--text-muted);
   cursor: pointer;
   display: grid;
   font: inherit;
@@ -196,7 +196,7 @@
 .moodButton:hover,
 .moodButtonActive {
   border-color: var(--accent-strong);
-  color: #171412;
+  color: var(--text-primary);
 }
 
 .moodButton span {
@@ -209,10 +209,10 @@
 }
 
 .notesField textarea {
-  background: rgba(240, 249, 255, 0.58);
-  border: 1px solid rgba(52, 111, 170, 0.18);
+  background: color-mix(in srgb, var(--surface-tint) 58.0%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent-strong) 18.0%, transparent);
   border-radius: 8px;
-  color: #171412;
+  color: var(--text-primary);
   font: inherit;
   font-size: 1rem;
   font-weight: 700;
@@ -223,12 +223,12 @@
 }
 
 .notesField textarea::placeholder {
-  color: #7c8da2;
+  color: var(--text-faint);
 }
 
 .notesField textarea:focus {
   border-color: var(--accent-strong);
-  box-shadow: 0 0 0 4px rgba(52, 111, 170, 0.1);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent-strong) 10.0%, transparent);
   outline: 0;
 }
 
@@ -240,10 +240,10 @@
 
 .statusMessage,
 .emptyState {
-  background: rgba(240, 249, 255, 0.66);
-  border: 1px solid rgba(52, 111, 170, 0.16);
+  background: color-mix(in srgb, var(--surface-tint) 66.0%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent-strong) 16.0%, transparent);
   border-radius: 8px;
-  color: #6384a8;
+  color: var(--text-muted);
   font-weight: 800;
   line-height: 1.45;
   margin: 0;
@@ -252,8 +252,8 @@
 
 .historyPanel,
 .routineGroup {
-  background: #ffffff;
-  border: 1px solid rgba(207, 217, 223, 0.82);
+  background: var(--surface-raised);
+  border: 1px solid color-mix(in srgb, var(--border) 82.0%, transparent);
   border-radius: 8px;
   display: grid;
   gap: 14px;
@@ -262,14 +262,14 @@
 
 .historyPanel h2,
 .routineGroupHeader h2 {
-  color: #171412;
+  color: var(--text-primary);
   font-size: 1.35rem;
   line-height: 1.15;
   margin: 0;
 }
 
 .historyPanel p {
-  color: #6384a8;
+  color: var(--text-muted);
   font-weight: 700;
   line-height: 1.45;
   margin: 0;
@@ -277,8 +277,8 @@
 
 .historyPreview {
   align-items: center;
-  background: rgba(240, 249, 255, 0.62);
-  border: 1px solid rgba(52, 111, 170, 0.16);
+  background: color-mix(in srgb, var(--surface-tint) 62.0%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent-strong) 16.0%, transparent);
   border-radius: 8px;
   display: flex;
   flex-wrap: wrap;
@@ -289,7 +289,7 @@
 
 .historyPreview span,
 .historyPreview em {
-  color: #6384a8;
+  color: var(--text-muted);
   font-style: normal;
   font-weight: 900;
 }
@@ -321,7 +321,7 @@
 .routineGroupHeader strong {
   background: var(--accent-soft);
   border-radius: 999px;
-  color: #6384a8;
+  color: var(--text-muted);
   flex: 0 0 auto;
   font-size: 0.82rem;
   padding: 6px 10px;
@@ -333,7 +333,7 @@
 }
 
 .dragHint {
-  color: #6384a8;
+  color: var(--text-muted);
   font-size: 0.84rem;
   font-weight: 800;
   margin: 0;
@@ -341,8 +341,8 @@
 
 .routineProductCard {
   align-items: center;
-  background: rgba(240, 249, 255, 0.52);
-  border: 1px solid rgba(52, 111, 170, 0.14);
+  background: color-mix(in srgb, var(--surface-tint) 52.0%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent-strong) 14.0%, transparent);
   border-radius: 8px;
   cursor: grab;
   display: grid;
@@ -363,11 +363,11 @@
 
 .routineProductCardDragOver {
   border-color: var(--accent-strong);
-  box-shadow: 0 0 0 3px rgba(52, 111, 170, 0.12);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-strong) 12.0%, transparent);
 }
 
 .dragHandle {
-  color: #9bb3cc;
+  color: var(--text-faint);
   cursor: grab;
   font-size: 0.95rem;
   font-weight: 900;
@@ -379,10 +379,10 @@
 
 .routineProductCard > span {
   align-items: center;
-  background: #ffffff;
-  border: 1px solid rgba(52, 111, 170, 0.18);
+  background: var(--surface-raised);
+  border: 1px solid color-mix(in srgb, var(--accent-strong) 18.0%, transparent);
   border-radius: 999px;
-  color: #6384a8;
+  color: var(--text-muted);
   display: inline-flex;
   font-size: 0.84rem;
   font-weight: 900;
@@ -397,22 +397,22 @@
 }
 
 .routineProductCard strong {
-  color: #171412;
+  color: var(--text-primary);
   font-size: 1rem;
   line-height: 1.18;
 }
 
 .routineProductCard em {
-  color: #6384a8;
+  color: var(--text-muted);
   font-style: normal;
   font-weight: 900;
   margin-top: 4px;
 }
 
 .routineProductCard small {
-  background: rgba(236, 253, 245, 0.86);
+  background: color-mix(in srgb, var(--surface-raised) 86.0%, transparent);
   border-radius: 999px;
-  color: #5ccfb4;
+  color: var(--status-success-border);
   font-size: 0.78rem;
   font-weight: 900;
   padding: 5px 9px;
@@ -429,17 +429,17 @@
 }
 
 .routineAddGrid label > span {
-  color: #6384a8;
+  color: var(--text-muted);
   font-size: 0.82rem;
   font-weight: 900;
 }
 
 .routineAddGrid input,
 .routineAddGrid select {
-  background: rgba(240, 249, 255, 0.58);
-  border: 1px solid rgba(52, 111, 170, 0.18);
+  background: color-mix(in srgb, var(--surface-tint) 58.0%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent-strong) 18.0%, transparent);
   border-radius: 8px;
-  color: #171412;
+  color: var(--text-primary);
   font: inherit;
   font-size: 0.95rem;
   font-weight: 800;
@@ -451,7 +451,7 @@
 .routineAddGrid input:focus,
 .routineAddGrid select:focus {
   border-color: var(--accent-strong);
-  box-shadow: 0 0 0 4px rgba(52, 111, 170, 0.1);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent-strong) 10.0%, transparent);
   outline: 0;
 }
 

@@ -14,10 +14,10 @@
 .regimenPanel,
 .notesPanel,
 .nextCard {
-  background: rgba(255, 255, 255, 0.86);
-  border: 1px solid rgba(207, 217, 223, 0.86);
+  background: color-mix(in srgb, var(--surface-raised) 86.0%, transparent);
+  border: 1px solid color-mix(in srgb, var(--border) 86.0%, transparent);
   border-radius: 8px;
-  box-shadow: 0 18px 46px rgba(35, 49, 58, 0.07);
+  box-shadow: 0 18px 46px color-mix(in srgb, var(--text-secondary) 7.0%, transparent);
 }
 
 .welcomePanel {
@@ -30,8 +30,8 @@
 
 .welcomePanel::after {
   background:
-    linear-gradient(90deg, rgba(52, 111, 170, 0.1), rgba(163, 230, 53, 0.14)),
-    rgba(255, 255, 255, 0.2);
+    linear-gradient(90deg, color-mix(in srgb, var(--accent-strong) 10.0%, transparent), color-mix(in srgb, var(--highlight) 14.0%, transparent)),
+    color-mix(in srgb, var(--surface-raised) 20.0%, transparent);
   bottom: 0;
   content: "";
   height: 5px;
@@ -48,7 +48,7 @@
 .todayRow,
 .signalHeader {
   align-items: center;
-  color: #5d6972;
+  color: var(--text-muted);
   display: flex;
   font-size: 0.86rem;
   font-weight: 800;
@@ -73,14 +73,14 @@
 .weatherSummary p,
 .nextCard p,
 .notesPanel p {
-  color: #52616a;
+  color: var(--text-secondary);
   line-height: 1.48;
   margin: 0;
 }
 
 .profileSignalCard {
-  background: rgba(248, 250, 251, 0.78);
-  border: 1px solid rgba(223, 230, 234, 0.9);
+  background: color-mix(in srgb, var(--surface-subtle) 78.0%, transparent);
+  border: 1px solid color-mix(in srgb, var(--border) 90.0%, transparent);
   border-radius: 8px;
   display: grid;
   gap: 10px;
@@ -94,7 +94,7 @@
 }
 
 .signalSegment {
-  background: #dce8ef;
+  background: var(--surface-subtle);
   border-radius: 999px;
   height: 5px;
 }
@@ -122,11 +122,11 @@
   background:
     linear-gradient(
       135deg,
-      rgba(236, 252, 203, 0.62),
-      rgba(240, 249, 255, 0.82)
+      color-mix(in srgb, var(--highlight-soft) 62.0%, transparent),
+      color-mix(in srgb, var(--surface-tint) 82.0%, transparent)
     ),
-    #f8fafb;
-  border: 1px dashed rgba(52, 111, 170, 0.24);
+    var(--surface-subtle);
+  border: 1px dashed color-mix(in srgb, var(--accent-strong) 24.0%, transparent);
   border-radius: 8px;
   display: grid;
   justify-items: center;
@@ -135,7 +135,7 @@
 }
 
 .scanRing {
-  border: 2px solid rgba(52, 111, 170, 0.32);
+  border: 2px solid color-mix(in srgb, var(--accent-strong) 32.0%, transparent);
   border-radius: 999px;
   height: 118px;
   position: absolute;
@@ -143,7 +143,7 @@
 }
 
 .scanRing::after {
-  border: 1px solid rgba(77, 124, 15, 0.24);
+  border: 1px solid color-mix(in srgb, var(--highlight-strong) 24.0%, transparent);
   border-radius: 999px;
   content: "";
   inset: 18px;
@@ -151,7 +151,7 @@
 }
 
 .scanLine {
-  background: rgba(52, 111, 170, 0.7);
+  background: color-mix(in srgb, var(--accent-strong) 70.0%, transparent);
   border-radius: 999px;
   height: 3px;
   position: absolute;
@@ -160,10 +160,10 @@
 
 .scanDotOne,
 .scanDotTwo {
-  background: #ffffff;
-  border: 1px solid rgba(52, 111, 170, 0.2);
+  background: var(--surface-raised);
+  border: 1px solid color-mix(in srgb, var(--accent-strong) 20.0%, transparent);
   border-radius: 999px;
-  box-shadow: 0 8px 22px rgba(35, 49, 58, 0.1);
+  box-shadow: 0 8px 22px color-mix(in srgb, var(--text-secondary) 10.0%, transparent);
   height: 38px;
   position: absolute;
   width: 38px;
@@ -187,7 +187,7 @@
 .scanCopy h2,
 .panelHeader h2,
 .nextCard h2 {
-  color: #171412;
+  color: var(--text-primary);
   font-size: 1.25rem;
   line-height: 1.12;
   margin: 0;
@@ -232,9 +232,9 @@
 
 .soonBadge {
   background: var(--fresh-lime-soft);
-  border: 1px solid #d9f99d;
+  border: 1px solid var(--highlight);
   border-radius: 999px;
-  color: #274f1a;
+  color: var(--accent-ink);
   flex: 0 0 auto;
   font-size: 0.72rem;
   font-weight: 900;
@@ -259,9 +259,9 @@
 .weatherHero {
   align-items: center;
   background:
-    linear-gradient(135deg, rgba(255, 251, 235, 0.9), rgba(240, 249, 255, 0.92)),
-    #f8fafb;
-  border: 1px solid #e5ecef;
+    linear-gradient(135deg, color-mix(in srgb, var(--status-warning-bg) 90.0%, transparent), color-mix(in srgb, var(--surface-tint) 92.0%, transparent)),
+    var(--surface-subtle);
+  border: 1px solid var(--border);
   border-radius: 8px;
   display: grid;
   gap: 12px;
@@ -272,7 +272,7 @@
 
 .uvDial {
   align-items: center;
-  border: 1px solid rgba(23, 20, 18, 0.08);
+  border: 1px solid color-mix(in srgb, var(--text-primary) 8.0%, transparent);
   border-radius: 999px;
   display: grid;
   height: 76px;
@@ -282,7 +282,7 @@
 }
 
 .uvDial span {
-  color: rgba(23, 20, 18, 0.66);
+  color: color-mix(in srgb, var(--text-primary) 66.0%, transparent);
   font-size: 0.68rem;
   font-weight: 900;
   line-height: 1;
@@ -290,33 +290,33 @@
 }
 
 .uvDial strong {
-  color: #171412;
+  color: var(--text-primary);
   font-size: 1.9rem;
   line-height: 1;
 }
 
 .uvUnavailable {
-  background: #eef4f6;
+  background: var(--surface-tint);
 }
 
 .uvLow {
-  background: #d9f99d;
+  background: var(--highlight);
 }
 
 .uvModerate {
-  background: #fde68a;
+  background: var(--status-warning-border);
 }
 
 .uvHigh {
-  background: #fdba74;
+  background: var(--status-warning-border);
 }
 
 .uvVeryHigh {
-  background: #fca5a5;
+  background: var(--status-danger-border);
 }
 
 .uvExtreme {
-  background: #e9d5ff;
+  background: var(--accent-soft);
 }
 
 .weatherSummary {
@@ -327,7 +327,7 @@
 
 .weatherSummary > span {
   align-items: center;
-  color: #66737c;
+  color: var(--text-muted);
   display: flex;
   font-size: 0.82rem;
   font-weight: 800;
@@ -341,7 +341,7 @@
 }
 
 .weatherSummary strong {
-  color: #171412;
+  color: var(--text-primary);
   font-size: 1.18rem;
   line-height: 1.1;
 }
@@ -353,8 +353,8 @@
 }
 
 .weatherMetaItem {
-  background: #f8fafb;
-  border: 1px solid #e5ecef;
+  background: var(--surface-subtle);
+  border: 1px solid var(--border);
   border-radius: 8px;
   display: grid;
   gap: 4px;
@@ -364,14 +364,14 @@
 
 .weatherMetaItem span,
 .locationForm label span {
-  color: #66737c;
+  color: var(--text-muted);
   font-size: 0.76rem;
   font-weight: 900;
   text-transform: uppercase;
 }
 
 .weatherMetaItem strong {
-  color: #171412;
+  color: var(--text-primary);
   font-size: 0.92rem;
   overflow-wrap: anywhere;
 }
@@ -384,11 +384,11 @@
 }
 
 .weatherNote {
-  color: #52616a;
+  color: var(--text-secondary);
 }
 
 .weatherError {
-  color: #9f1239;
+  color: var(--status-danger-text);
   font-weight: 800;
 }
 
@@ -403,10 +403,10 @@
 }
 
 .locationForm input {
-  background: #ffffff;
-  border: 1px solid #d8e3e9;
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
   border-radius: 8px;
-  color: #171412;
+  color: var(--text-primary);
   font: inherit;
   min-height: 42px;
   padding: 9px 10px;
@@ -415,7 +415,7 @@
 
 .locationForm input:focus {
   border-color: var(--accent-strong);
-  outline: 2px solid rgba(52, 111, 170, 0.15);
+  outline: 2px solid color-mix(in srgb, var(--accent-strong) 15.0%, transparent);
   outline-offset: 1px;
 }
 
@@ -456,15 +456,15 @@
 .timelineItem strong,
 .vitalItem strong,
 .connectionList strong {
-  color: #171412;
+  color: var(--text-primary);
   display: block;
   font-size: 0.96rem;
 }
 
 .vitalItem,
 .connectionList div {
-  background: #f8fafb;
-  border: 1px solid #e5ecef;
+  background: var(--surface-subtle);
+  border: 1px solid var(--border);
   border-radius: 8px;
   display: grid;
   gap: 4px;
@@ -473,7 +473,7 @@
 
 .vitalItem span,
 .connectionList span {
-  color: #66737c;
+  color: var(--text-muted);
   font-size: 0.82rem;
   font-weight: 700;
 }
@@ -511,8 +511,8 @@
 .mobileActionDock {
   background: linear-gradient(
     180deg,
-    rgba(251, 253, 255, 0),
-    rgba(251, 253, 255, 0.95) 28%
+    color-mix(in srgb, var(--page) 0.0%, transparent),
+    color-mix(in srgb, var(--page) 95.0%, transparent) 28%
   );
   bottom: 0;
   left: 0;

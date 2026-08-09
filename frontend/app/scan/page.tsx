@@ -659,7 +659,7 @@ export default function ScanPage() {
                   <strong>{selectedFile.name}</strong>
                   <span>{formatBytes(selectedFile.size)}</span>
                   {decodeError ? (
-                    <p style={{ color: "#b45309" }}>{decodeError}</p>
+                    <p className={styles.scanWarning}>{decodeError}</p>
                   ) : null}
                 </div>
               </section>
@@ -705,7 +705,7 @@ export default function ScanPage() {
                   />
                 </label>
                 {decodeError && !selectedFile ? (
-                  <p className={styles.scanNote} style={{ color: "#b45309" }}>{decodeError}</p>
+                  <p className={[styles.scanNote, styles.scanWarning].join(" ")}>{decodeError}</p>
                 ) : null}
                 <p className={styles.scanNote}>
                   Scan a product barcode to fetch its INCI ingredient list.

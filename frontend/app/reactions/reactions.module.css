@@ -24,8 +24,8 @@
 }
 
 .statsCard {
-  background: #ffffff;
-  border: 1px solid rgba(207, 217, 223, 0.82);
+  background: var(--surface-raised);
+  border: 1px solid color-mix(in srgb, var(--border) 82.0%, transparent);
   border-radius: 8px;
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -41,17 +41,17 @@
 }
 
 .statsCard div + div {
-  border-left: 1px solid rgba(207, 217, 223, 0.82);
+  border-left: 1px solid color-mix(in srgb, var(--border) 82.0%, transparent);
 }
 
 .statsCard strong {
-  color: #171412;
+  color: var(--text-primary);
   font-size: 2.2rem;
   line-height: 1;
 }
 
 .statsCard span {
-  color: #6384a8;
+  color: var(--text-muted);
   font-size: 0.96rem;
   font-weight: 800;
   margin-top: 10px;
@@ -60,10 +60,10 @@
 
 .statusMessage,
 .emptyState {
-  background: rgba(255, 255, 255, 0.78);
-  border: 1px solid rgba(207, 217, 223, 0.82);
+  background: color-mix(in srgb, var(--surface-raised) 78.0%, transparent);
+  border: 1px solid color-mix(in srgb, var(--border) 82.0%, transparent);
   border-radius: 8px;
-  color: #6384a8;
+  color: var(--text-muted);
   font-weight: 800;
   line-height: 1.45;
   margin: 0;
@@ -71,10 +71,10 @@
 }
 
 .reactionForm {
-  background: rgba(255, 255, 255, 0.94);
-  border: 1px solid rgba(207, 217, 223, 0.82);
+  background: color-mix(in srgb, var(--surface-raised) 94.0%, transparent);
+  border: 1px solid color-mix(in srgb, var(--border) 82.0%, transparent);
   border-radius: 8px;
-  box-shadow: 0 14px 34px rgba(35, 49, 58, 0.05);
+  box-shadow: 0 14px 34px color-mix(in srgb, var(--text-secondary) 5.0%, transparent);
   display: grid;
   gap: 14px;
   padding: 18px;
@@ -92,7 +92,7 @@
 }
 
 .formField span {
-  color: #6384a8;
+  color: var(--text-muted);
   font-size: 0.82rem;
   font-weight: 900;
 }
@@ -100,10 +100,10 @@
 .formField input,
 .formField select,
 .formField textarea {
-  background: rgba(240, 249, 255, 0.58);
-  border: 1px solid rgba(52, 111, 170, 0.18);
+  background: color-mix(in srgb, var(--surface-tint) 58.0%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent-strong) 18.0%, transparent);
   border-radius: 8px;
-  color: #171412;
+  color: var(--text-primary);
   font: inherit;
   font-weight: 800;
   min-height: 46px;
@@ -121,12 +121,12 @@
 .formField select:focus,
 .formField textarea:focus {
   border-color: var(--accent-strong);
-  box-shadow: 0 0 0 4px rgba(52, 111, 170, 0.1);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent-strong) 10.0%, transparent);
 }
 
 .formField input::placeholder,
 .formField textarea::placeholder {
-  color: #7c8da2;
+  color: var(--text-faint);
 }
 
 .chipQuestion {
@@ -138,7 +138,7 @@
 }
 
 .chipQuestion legend {
-  color: #6384a8;
+  color: var(--text-muted);
   font-size: 0.82rem;
   font-weight: 900;
   padding: 0;
@@ -152,10 +152,10 @@
 
 .answerChip {
   align-items: center;
-  background: rgba(240, 249, 255, 0.58);
-  border: 1px solid rgba(52, 111, 170, 0.18);
+  background: color-mix(in srgb, var(--surface-tint) 58.0%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent-strong) 18.0%, transparent);
   border-radius: 8px;
-  color: #171412;
+  color: var(--text-primary);
   cursor: pointer;
   display: flex;
   font-weight: 800;
@@ -175,13 +175,13 @@
 
 .answerChip:has(input:focus-visible) {
   border-color: var(--accent-strong);
-  box-shadow: 0 0 0 4px rgba(52, 111, 170, 0.1);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent-strong) 10.0%, transparent);
 }
 
 .answerChipSelected {
-  background: #dceffc;
-  border-color: #5aa7e3;
-  color: #346faa;
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  color: var(--accent-strong);
 }
 
 .formActions {
@@ -202,8 +202,8 @@
 
 .reactionCard {
   align-items: center;
-  background: rgba(255, 255, 255, 0.94);
-  border: 1px solid rgba(207, 217, 223, 0.82);
+  background: color-mix(in srgb, var(--surface-raised) 94.0%, transparent);
+  border: 1px solid color-mix(in srgb, var(--border) 82.0%, transparent);
   border-radius: 8px;
   color: inherit;
   cursor: pointer;
@@ -218,7 +218,7 @@
 }
 
 .reactionCard:hover {
-  border-color: rgba(52, 111, 170, 0.34);
+  border-color: color-mix(in srgb, var(--accent-strong) 34.0%, transparent);
 }
 
 .reactionDot {
@@ -229,19 +229,19 @@
 }
 
 .reactionDotamber {
-  background: #f5b400;
+  background: var(--status-warning-text);
 }
 
 .reactionDotyellow {
-  background: #ffd35f;
+  background: var(--status-warning-border);
 }
 
 .reactionDotgreen {
-  background: #70dc95;
+  background: var(--status-success-border);
 }
 
 .reactionDotred {
-  background: #f87171;
+  background: var(--status-danger-border);
 }
 
 .reactionInfo {
@@ -257,14 +257,14 @@
 }
 
 .reactionInfo h2 {
-  color: #171412;
+  color: var(--text-primary);
   font-size: 1.18rem;
   line-height: 1.15;
   margin: 0;
 }
 
 .reactionInfo p {
-  color: #6384a8;
+  color: var(--text-muted);
   font-size: 1rem;
   font-weight: 900;
   line-height: 1.25;
@@ -272,7 +272,7 @@
 }
 
 .resolvedIcon {
-  border: 2px solid #70dc95;
+  border: 2px solid var(--status-success-border);
   border-radius: 999px;
   display: inline-flex;
   height: 22px;
@@ -281,8 +281,8 @@
 }
 
 .resolvedIcon::after {
-  border-bottom: 2px solid #70dc95;
-  border-right: 2px solid #70dc95;
+  border-bottom: 2px solid var(--status-success-border);
+  border-right: 2px solid var(--status-success-border);
   content: "";
   height: 8px;
   left: 7px;
@@ -293,20 +293,20 @@
 }
 
 .severityBadge {
-  background: rgba(255, 251, 235, 0.9);
-  border: 1px solid rgba(245, 158, 11, 0.42);
+  background: color-mix(in srgb, var(--status-warning-bg) 90.0%, transparent);
+  border: 1px solid color-mix(in srgb, var(--status-warning-text) 42.0%, transparent);
   border-radius: 999px;
-  color: #d97706;
+  color: var(--status-warning-text);
   font-weight: 900;
   padding: 9px 16px;
   text-transform: capitalize;
 }
 
 .resolveButton {
-  background: rgba(240, 249, 255, 0.72);
-  border: 1px solid rgba(52, 111, 170, 0.18);
+  background: color-mix(in srgb, var(--surface-tint) 72.0%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent-strong) 18.0%, transparent);
   border-radius: 999px;
-  color: #6384a8;
+  color: var(--text-muted);
   cursor: pointer;
   font: inherit;
   font-size: 0.88rem;
@@ -316,8 +316,8 @@
 }
 
 .resolveButton:hover:not(:disabled) {
-  border-color: rgba(52, 111, 170, 0.34);
-  color: #171412;
+  border-color: color-mix(in srgb, var(--accent-strong) 34.0%, transparent);
+  color: var(--text-primary);
 }
 
 .resolveButton:disabled {
@@ -326,8 +326,8 @@
 }
 
 .chevron {
-  border-right: 2px solid #6384a8;
-  border-top: 2px solid #6384a8;
+  border-right: 2px solid var(--text-muted);
+  border-top: 2px solid var(--text-muted);
   display: block;
   height: 11px;
   transform: rotate(45deg);

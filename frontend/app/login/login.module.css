@@ -1,9 +1,9 @@
 .authShell {
   align-items: center;
   background:
-    linear-gradient(135deg, rgba(236, 252, 203, 0.72), transparent 34%),
-    linear-gradient(225deg, rgba(150, 181, 217, 0.28), transparent 38%),
-    #fbfdff;
+    linear-gradient(135deg, color-mix(in srgb, var(--highlight-soft) 72.0%, transparent), transparent 34%),
+    linear-gradient(225deg, color-mix(in srgb, var(--accent) 28.0%, transparent), transparent 38%),
+    var(--page);
   display: grid;
   min-height: 100vh;
   padding: 20px;
@@ -20,17 +20,17 @@
 
 .authShowcase,
 .authPanel {
-  background: #ffffff;
-  border: 1px solid rgba(28, 25, 23, 0.08);
-  box-shadow: 0 24px 70px rgba(45, 80, 102, 0.12);
+  background: var(--surface-raised);
+  border: 1px solid color-mix(in srgb, var(--text-primary) 8.0%, transparent);
+  box-shadow: 0 24px 70px color-mix(in srgb, var(--text-secondary) 12.0%, transparent);
   display: grid;
 }
 
 .authShowcase {
   align-content: space-between;
   background:
-    linear-gradient(145deg, rgba(244, 251, 235, 0.95), rgba(238, 246, 252, 0.92)),
-    #eef6fc;
+    linear-gradient(145deg, color-mix(in srgb, var(--highlight-soft) 95.0%, transparent), color-mix(in srgb, var(--surface-tint) 92.0%, transparent)),
+    var(--surface-tint);
   border-radius: 18px 18px 0 0;
   gap: 34px;
   min-height: 360px;
@@ -44,7 +44,7 @@
 }
 
 .authBrand {
-  color: #171412;
+  color: var(--text-primary);
   font-size: 22px;
   font-weight: 800;
   text-decoration: none;
@@ -63,14 +63,14 @@
 }
 
 .authShowcaseCopy h1 {
-  color: #171412;
+  color: var(--text-primary);
   font-size: clamp(36px, 9vw, 58px);
   line-height: 0.98;
   margin: 0;
 }
 
 .authCopy h2 {
-  color: #171412;
+  color: var(--text-primary);
   font-size: clamp(32px, 9vw, 46px);
   line-height: 1;
   margin: 0;
@@ -78,7 +78,7 @@
 
 .authCopy p:not(:global(.landing-eyebrow)),
 .authShowcaseCopy p:not(:global(.landing-eyebrow)) {
-  color: #4b5563;
+  color: var(--text-secondary);
   font-size: 17px;
   line-height: 1.5;
   margin: 14px 0 0;
@@ -93,8 +93,8 @@
 .authPreviewCard,
 .authPreviewGrid > div,
 .authPreviewNote {
-  background: rgba(255, 255, 255, 0.82);
-  border: 1px solid rgba(207, 217, 223, 0.9);
+  background: color-mix(in srgb, var(--surface-raised) 82.0%, transparent);
+  border: 1px solid color-mix(in srgb, var(--border) 90.0%, transparent);
   border-radius: 8px;
 }
 
@@ -106,7 +106,7 @@
 
 .authPreviewCard span,
 .authPreviewGrid span {
-  color: #64748b;
+  color: var(--text-muted);
   display: block;
   font-size: 13px;
   font-weight: 700;
@@ -115,12 +115,12 @@
 
 .authPreviewCard strong,
 .authPreviewGrid strong {
-  color: #171412;
+  color: var(--text-primary);
   font-size: 20px;
 }
 
 .authPreviewMeter {
-  background: #e7eef2;
+  background: var(--border);
   border-radius: 999px;
   height: 10px;
   overflow: hidden;
@@ -153,22 +153,22 @@
 
 .authPreviewNote span {
   background: var(--fresh-lime);
-  border: 3px solid #d9f99d;
+  border: 3px solid var(--highlight);
   border-radius: 999px;
   height: 12px;
   width: 12px;
 }
 
 .authPreviewNote p {
-  color: #365314;
+  color: var(--highlight-strong);
   font-size: 14px;
   line-height: 1.45;
   margin: 0;
 }
 
 .authTabs {
-  background: #f1f5f9;
-  border: 1px solid #dfe6ea;
+  background: var(--surface-subtle);
+  border: 1px solid var(--border);
   border-radius: 8px;
   display: grid;
   gap: 4px;
@@ -180,7 +180,7 @@
   background: transparent;
   border: none;
   border-radius: 6px;
-  color: #475569;
+  color: var(--text-secondary);
   cursor: pointer;
   font: inherit;
   font-weight: 800;
@@ -188,9 +188,9 @@
 }
 
 .authTabActive {
-  background: #ffffff;
-  box-shadow: 0 1px 8px rgba(15, 23, 42, 0.08);
-  color: #171412;
+  background: var(--surface-raised);
+  box-shadow: 0 1px 8px color-mix(in srgb, var(--text-primary) 8.0%, transparent);
+  color: var(--text-primary);
 }
 
 .authForm {
@@ -204,19 +204,19 @@
 }
 
 .authFooterActions {
-  border-top: 1px solid #e5eaee;
+  border-top: 1px solid var(--border);
   padding-top: 16px;
 }
 
 .authFooterActions a {
-  color: #346faa;
+  color: var(--accent-strong);
   font-size: 14px;
   font-weight: 800;
   text-decoration: none;
 }
 
 .authFooterActions a:hover {
-  color: #274f1a;
+  color: var(--accent-ink);
 }
 
 @media (min-width: 760px) {
