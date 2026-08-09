@@ -1,10 +1,11 @@
 import Link from "next/link";
-
-import { getServerApiBaseUrl } from "../../lib/apiBaseUrl";
 import { Panel } from "../../components/Panel";
+import { getServerApiBaseUrl } from "../../lib/apiBaseUrl";
 import SkincareCatalog from "./SkincareCatalog";
 import styles from "./skincareApi.module.css";
-import type { SkincareProduct } from "./types";
+import type { ProductSearchResponse, SkincareProduct } from "./types";
+
+const INITIAL_PAGE_SIZE = 25;
 
 async function getInitialProducts(): Promise<{
   products: SkincareProduct[];
@@ -13,17 +14,20 @@ async function getInitialProducts(): Promise<{
   const baseUrl = getServerApiBaseUrl();
 
   try {
-    const response = await fetch(`${baseUrl}/api/skincare/products/`, {
-      cache: "no-store",
-      signal: AbortSignal.timeout(8000),
-    });
+    const response = await fetch(
+      `${baseUrl}/api/products/search/?limit=${INITIAL_PAGE_SIZE}`,
+      {
+        cache: "no-store",
+        signal: AbortSignal.timeout(8000),
+      },
+    );
 
     if (!response.ok) {
       return { products: [], error: true };
     }
 
-    const data = (await response.json()) as SkincareProduct[];
-    return { products: data, error: false };
+    const data = (await response.json()) as ProductSearchResponse;
+    return { products: data.results, error: false };
   } catch {
     return { products: [], error: true };
   }
@@ -51,28 +55,20 @@ export default async function SkincareApiPage() {
       <section className={styles.pageHead}>
         <h1 className={styles.pageTitle}>Skincare catalog</h1>
         <p className="lede">
-          Browse and search 2,000+ skincare products via the{" "}
-          <a
-            href="https://github.com/LauraAddams/skincareAPI"
-            target="_blank"
-            rel="noreferrer"
-          >
-            LauraAddams skincareAPI
-          </a>
-          . The Blueskies backend proxies all requests so the frontend talks to{" "}
-          <code>/api/skincareApi/*</code> only.
+          Browse and search the Blueskies product catalog and its resolved
+          ingredients. The frontend talks to <code>/api/skincareApi/*</code>,
+          which proxies the Django catalog endpoints.
         </p>
       </section>
 
       {error ? (
         <Panel as="div" variant="notice" error>
-          The upstream Skincare API may be offline (the Heroku deployment has been
-          retired). Search and create still route through Django at{" "}
-          <code>/api/skincare/</code> and will work when the service is reachable.
+          Could not reach the catalog API. If the backend is up, its catalog may
+          not be seeded yet — run <code>seed_catalog</code> to populate it.
         </Panel>
       ) : null}
 
-      <SkincareCatalog initialProducts={products.slice(0, 25)} initialError={error} />
+      <SkincareCatalog initialProducts={products} initialError={error} />
     </main>
   );
 }
