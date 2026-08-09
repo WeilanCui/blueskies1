@@ -1,8 +1,26 @@
+export type CatalogIngredient = {
+  /** Position in the INCI list; unique within a formulation. */
+  position: number;
+  name: string;
+  role: string;
+  note: string;
+  is_key_active: boolean;
+  parse_status: string;
+};
+
 export type SkincareProduct = {
-  id: number;
+  /** Catalog slug for seeded rows, stringified pk otherwise. */
+  id: string;
+  product_id: number;
+  formulation_id: number | null;
   brand: string;
   name: string;
-  ingredient_list: string[];
+  display_name: string;
+  category: string;
+  description: string;
+  enrichment_status: string;
+  ingredient_count: number;
+  ingredients: CatalogIngredient[];
 };
 
 export type SkincareIngredient = {
@@ -10,18 +28,14 @@ export type SkincareIngredient = {
   ingredient: string;
 };
 
-export type ProductSearchResponse = {
+type SearchResponse<T> = {
   query: string;
   limit: number;
   page: number;
+  /** Size of the whole match set, not of `results`. */
   count: number;
-  results: SkincareProduct[];
+  results: T[];
 };
 
-export type IngredientSearchResponse = {
-  query: string;
-  limit: number;
-  page: number;
-  count: number;
-  results: SkincareIngredient[];
-};
+export type ProductSearchResponse = SearchResponse<SkincareProduct>;
+export type IngredientSearchResponse = SearchResponse<SkincareIngredient>;

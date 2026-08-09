@@ -17,6 +17,9 @@ def serialize_catalog_product(product: Product) -> dict:
         for ingredient in formulation.ingredients.all():
             ingredients.append(
                 {
+                    # Position in the INCI list, and the only stable identity an
+                    # ingredient row has — names repeat within a formulation.
+                    "position": ingredient.position,
                     "name": ingredient.raw_text,
                     "role": "Active" if ingredient.is_key_active else "Ingredient",
                     "note": ingredient.active_note,
