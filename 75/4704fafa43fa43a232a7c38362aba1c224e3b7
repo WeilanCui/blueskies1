@@ -1,0 +1,37 @@
+.env.example
+  s_f14d8e5b3f876d::t_5ed2548f952908 31
+docker-compose.yml
+  s_f14d8e5b3f876d::t_2a185011912322 53-58
+  s_f14d8e5b3f876d::t_dc221262d43c1f 65-70
+  s_f14d8e5b3f876d::t_5ed2548f952908 172
+frontend/app/login/page.tsx
+  s_f14d8e5b3f876d::t_3e30b7fd5b33b2 355
+  s_f14d8e5b3f876d::t_e1cf92267e185a 14-19,22-49,55,57-60,74-84,114-164,170-171,173,183-187,191-200,292,307-309,317,340-347,364-370,372-394,396-402,404-434,439-440,443-449
+  s_f14d8e5b3f876d::t_11ec7ce500658c 172,403
+  s_f14d8e5b3f876d::t_28fa7843468b16 273,452-463
+frontend/app/ContactForm.tsx
+  s_f14d8e5b3f876d::t_e1cf92267e185a 109-111
+frontend/app/page.tsx
+  s_f14d8e5b3f876d::t_fc038b48385c31 73-75
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "754704fafa43fa43a232a7c38362aba1c224e3b7",
+  "prompts": {},
+  "humans": {
+    "h_e83f79f999df32": {
+      "author": "weilan <weilanc@gmail.com>"
+    }
+  },
+  "sessions": {
+    "s_f14d8e5b3f876d": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019fe847-b966-7730-88b2-3d21e055852e",
+        "model": "gpt-5.5"
+      },
+      "human_author": "weilan <weilanc@gmail.com>"
+    }
+  }
+}
