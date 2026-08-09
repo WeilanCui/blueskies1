@@ -6,11 +6,13 @@ from django.db.models import Prefetch
 
 from core.models import Formulation, Profile
 from core.profiles.matching import (
+    MatchResult,
     matches_chemical_class,
     matches_compound,
     matches_product_category,
     matches_property,
     matches_raw_label,
+    position_factor,
 )
 from core.profiles.constraints import ConstraintImpact
 from skinconcerns.models import RuleTargetType, ConcernRule
@@ -76,7 +78,7 @@ class ConcernRuleEvaluator:
 
             for rule in rules:
                 # Check if rule target matches formulation
-                rule_matches = self._matches_rule_target(rule, formulation)
+                match_result = self._matches_rule_target(rule, formulation)
 
                 # Calculate delta. `weight` is a magnitude — its sign in seed
                 # data is incidental (e.g. PENALIZE stores -10); `rule_kind`
@@ -84,37 +86,56 @@ class ConcernRuleEvaluator:
                 delta = round(abs(rule.weight) * link_confidence)
 
                 # Determine enforcement and score_delta based on rule kind
+                pos_factor = None
+                score_delta = 0
+                enforcement = None
+
                 if rule.rule_kind == "penalize":
-                    if rule_matches:
+                    if match_result.matched:
                         enforcement = "penalize"
                         score_delta = -delta
+                        # Apply position_factor for ingredient-targeted PENALIZE
+                        if rule.target_type in (RuleTargetType.COMPOUND, RuleTargetType.CHEMICAL_CLASS):
+                            pos_factor = position_factor(match_result)
+                            score_delta = round(score_delta * pos_factor)
                     else:
                         continue
                 elif rule.rule_kind == "boost":
-                    if rule_matches:
+                    if match_result.matched:
                         enforcement = "boost"
                         score_delta = max(1, delta)
+                        # Apply position_factor for ingredient-targeted BOOST
+                        if rule.target_type in (RuleTargetType.COMPOUND, RuleTargetType.CHEMICAL_CLASS):
+                            pos_factor = position_factor(match_result)
+                            score_delta = max(1, round(score_delta * pos_factor))
                     else:
                         continue
                 elif rule.rule_kind == "avoid":
-                    if rule_matches:
+                    if match_result.matched:
                         enforcement = "warn"
+                        # AVOID is a safety caution: its warning and its delta
+                        # are position-immune (a trace amount you must avoid is
+                        # still worth avoiding). pos_factor stays None.
                         score_delta = -delta
                     else:
                         continue
                 elif rule.rule_kind == "refer":
-                    if rule_matches:
+                    if match_result.matched:
                         enforcement = "inform"
                         score_delta = 0
                     else:
                         continue
                 elif rule.rule_kind == "recommend":
                     # RECOMMEND rules: track coverage
-                    if rule_matches:
+                    if match_result.matched:
                         matched_labels.append(rule.label)
                         # Matched RECOMMEND produces boost impact
                         enforcement = "boost"
                         score_delta = max(1, delta)
+                        # Apply position_factor for ingredient-targeted RECOMMEND
+                        if rule.target_type in (RuleTargetType.COMPOUND, RuleTargetType.CHEMICAL_CLASS):
+                            pos_factor = position_factor(match_result)
+                            score_delta = max(1, round(score_delta * pos_factor))
                     else:
                         unmatched_labels.append(rule.label)
                         continue
@@ -138,6 +159,7 @@ class ConcernRuleEvaluator:
                     score_delta=score_delta,
                     source="concern",
                     concern_slug=concern.slug,
+                    position_factor=pos_factor,
                 )
                 impacts.append(impact)
 
@@ -158,33 +180,37 @@ class ConcernRuleEvaluator:
 
         return impacts, coverage_summaries
 
-    def _matches_rule_target(self, rule, formulation: Formulation) -> bool:
-        """Check if rule target matches formulation."""
+    def _matches_rule_target(self, rule, formulation: Formulation) -> MatchResult:
+        """Check if rule target matches formulation.
+
+        Returns:
+            MatchResult with matched status and position data if applicable.
+        """
         target_type = rule.target_type
 
         if target_type == RuleTargetType.COMPOUND:
             if not rule.compound_id:
-                return False
+                return MatchResult(matched=False, best_position=None, total_ingredients=None)
             return matches_compound(formulation, rule.compound_id)
 
         if target_type == RuleTargetType.CHEMICAL_CLASS:
             if not rule.chemical_class_id:
-                return False
+                return MatchResult(matched=False, best_position=None, total_ingredients=None)
             return matches_chemical_class(formulation, rule.chemical_class_id)
 
         if target_type == RuleTargetType.PROPERTY:
             if not rule.property_def_id:
-                return False
+                return MatchResult(matched=False, best_position=None, total_ingredients=None)
             return matches_property(formulation, rule.property_def_id)
 
         if target_type == RuleTargetType.FREE_TEXT:
             if not rule.raw_target or not rule.raw_target.strip():
-                return False
+                return MatchResult(matched=False, best_position=None, total_ingredients=None)
             return matches_raw_label(formulation, rule.raw_target)
 
         if target_type == RuleTargetType.PRODUCT_CATEGORY:
             if not rule.product_category or not rule.product_category.strip():
-                return False
+                return MatchResult(matched=False, best_position=None, total_ingredients=None)
             return matches_product_category(formulation, rule.product_category)
 
-        return False
+        return MatchResult(matched=False, best_position=None, total_ingredients=None)

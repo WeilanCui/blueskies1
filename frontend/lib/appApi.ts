@@ -732,6 +732,7 @@ export type ConstraintImpact = {
   score_delta: number;
   source: "constraint" | "concern";
   concern: string | null;
+  position_factor: number | null;
 };
 
 export type CoverageSummary = {
