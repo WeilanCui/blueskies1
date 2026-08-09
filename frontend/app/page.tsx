@@ -80,9 +80,8 @@ export default function Home() {
           </div>
         </div>
 
-        <div
+        <section
           className={styles.landingPreview}
-          role="img"
           aria-label="Blueskies app preview"
         >
           <div className={styles.phoneFrame}>
@@ -152,7 +151,7 @@ export default function Home() {
             <span className={styles.panelKicker}>Context</span>
             <strong>Weather, cycle, routine, skin state</strong>
           </div>
-        </div>
+        </section>
       </section>
 
       <section className={styles.landingSection} id="how-it-works">

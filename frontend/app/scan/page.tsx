@@ -193,7 +193,10 @@ function FormulationDetail({
         ) : null}
         <div className={styles.ingredientList}>
           {formulation.ingredients.map((ingredient) => (
-            <article className={styles.ingredientCard} key={ingredient.id}>
+            <article
+              className={styles.ingredientCard}
+              key={ingredient.position}
+            >
               <span className={styles.shieldIcon} aria-hidden="true" />
               <div>
                 <div className={styles.ingredientTitleRow}>
