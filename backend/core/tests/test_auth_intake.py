@@ -3,9 +3,10 @@ import json
 from django.contrib.auth import get_user_model
 from django.test import Client, TestCase
 from django.urls import reverse
+from django.utils import timezone
 from rest_framework.test import APIClient
 
-from core.models import Profile, ProfileConstraint, SkinProfile
+from core.models import ContactSubmission, Profile, ProfileConstraint, SkinProfile
 from skinconcerns.models import SkinConcern, SkinProfileConcern
 from skinconcerns.seeds.loader import seed_skin_concerns
 
@@ -15,6 +16,14 @@ class AuthApiTests(TestCase):
         self.client = APIClient()
 
     def test_signup_creates_user_profile_and_session(self):
+        ContactSubmission.objects.create(
+            name="Private beta signup",
+            email="alex@example.com",
+            feedback="Joined the private beta waitlist.",
+            source="private_beta",
+            email_verified_at=timezone.now(),
+        )
+
         response = self.client.post(
             reverse("auth-signup"),
             {
@@ -48,6 +57,23 @@ class AuthApiTests(TestCase):
         )
 
         self.assertEqual(response.status_code, 400)
+
+    def test_signup_requires_verified_beta_email(self):
+        response = self.client.post(
+            reverse("auth-signup"),
+            {
+                "email": "alex@example.com",
+                "password": "strong-test-pass-123",
+                "display_name": "Alex",
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(
+            response.data["email"][0],  # pyright: ignore[reportAttributeAccessIssue]
+            "Verify your email before creating an account.",
+        )
 
     def test_login_accepts_email_and_logout_clears_session(self):
         user = get_user_model().objects.create_user(  # pyright: ignore[reportAttributeAccessIssue]

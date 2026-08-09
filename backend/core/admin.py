@@ -278,9 +278,17 @@ class FormulationAdmin(admin.ModelAdmin):
 
 @admin.register(ContactSubmission)
 class ContactSubmissionAdmin(admin.ModelAdmin):
-    list_display = ("name", "email", "user", "status", "source", "created_at")
-    list_filter = ("status", "source", "user", "created_at")
-    readonly_fields = ("created_at", "updated_at")
+    list_display = (
+        "name",
+        "email",
+        "user",
+        "status",
+        "source",
+        "email_verified_at",
+        "created_at",
+    )
+    list_filter = ("status", "source", "user", "email_verified_at", "created_at")
+    readonly_fields = ("created_at", "updated_at", "email_verified_at")
     search_fields = ("name", "email", "feedback", "user__username", "user__email")
 
 

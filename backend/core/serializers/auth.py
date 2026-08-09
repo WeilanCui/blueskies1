@@ -2,7 +2,7 @@ from django.contrib.auth import authenticate, get_user_model
 from django.contrib.auth.password_validation import validate_password
 from rest_framework import serializers
 
-from core.models import Profile
+from core.models import ContactSubmission, Profile
 
 User = get_user_model()
 
@@ -48,6 +48,11 @@ class SignupSerializer(serializers.Serializer):
         email = value.strip().lower()
         if User.objects.filter(email__iexact=email).exists():
             raise serializers.ValidationError("Unable to create an account with these credentials.")
+        if not ContactSubmission.objects.filter(
+            email__iexact=email,
+            email_verified_at__isnull=False,
+        ).exists():
+            raise serializers.ValidationError("Verify your email before creating an account.")
         return email
 
     def validate_password(self, value: str) -> str:

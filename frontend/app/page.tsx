@@ -63,12 +63,11 @@ export default function Home() {
 
       <section className={styles.landingHero}>
         <div className={styles.landingHeroCopy}>
-          <p className="landing-eyebrow">Early access roadmap</p>
+          <p className="landing-eyebrow">Your personal skincare assistant</p>
           <h1>Skincare intelligence based on science and based on you.</h1>
           <p className={styles.landingLede}>
-            Blueskies is being built to help people track their skin in one
-            place, understand their regimen, scan products, and connect changes
-            to ingredients, hormones, weather, location, and product history.
+            It connects what your skin is doing, what you use, and what the
+            evidence says—then helps you decide what belongs in today's routine.
           </p>
           <div className={styles.landingActions}>
             <Link className="primary-button link-button" href="/login">
@@ -245,12 +244,12 @@ export default function Home() {
 
       <section className={styles.contactSection} id="contact">
         <div>
-          <p className="landing-eyebrow">Contact us</p>
-          <h2>Tell us what you want Blueskies to help with.</h2>
+          <p className="landing-eyebrow">Private beta</p>
+          <h2>Start with your verified email, then build your profile.</h2>
           <p>
-            Send your name, email, and feedback. We will reach out shortly as we
-            shape the first consumer experience around skin tracking, regimen
-            capture, product scans, and science-backed personalization.
+            Join the beta list, confirm the code we send, then create your
+            password and skin profile so Blueskies can start learning your
+            skincare context.
           </p>
         </div>
         <ContactForm />

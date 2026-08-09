@@ -173,10 +173,14 @@
   --muted: var(--text-muted);
   --panel: var(--surface-tint);
   --accent: var(--accent-base);
-  --accent-gradient: linear-gradient(135deg, var(--accent), var(--accent-gradient-to));
+  --accent-gradient: linear-gradient(
+    135deg,
+    var(--accent),
+    var(--accent-gradient-to)
+  );
   --accent-soft: color-mix(in srgb, var(--accent) 12%, white);
   --accent-mid: color-mix(in srgb, var(--accent) 32%, white);
-  --on-accent: color-mix(in srgb, var(--accent) 18%, #1f181a);
+  --on-accent: var(--text-inverse);
   --accent-ink: color-mix(in srgb, var(--accent) 52%, var(--text-primary));
   --accent-strong: var(--accent-ink);
   --accent-glow: color-mix(in srgb, var(--accent) 28%, transparent);

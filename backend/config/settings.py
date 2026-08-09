@@ -176,6 +176,13 @@ OPENAI_API_KEY = env("OPENAI_API_KEY", default="")  # pyright: ignore[reportArgu
 OPENAI_MODEL = env("OPENAI_MODEL", default="gpt-4o-mini")  # pyright: ignore[reportArgumentType]
 LITERATURE_EXTRACTOR = env("LITERATURE_EXTRACTOR", default="auto")  # pyright: ignore[reportArgumentType]
 
+MAILGUN_API_KEY = env("MAILGUN_API_KEY", default="")  # pyright: ignore[reportArgumentType]
+MAILGUN_DOMAIN = env("MAILGUN_DOMAIN", default="")  # pyright: ignore[reportArgumentType]
+MAILGUN_FROM_EMAIL = env("MAILGUN_FROM_EMAIL", default="")  # pyright: ignore[reportArgumentType]
+MAILGUN_API_BASE = env("MAILGUN_API_BASE", default="https://api.mailgun.net")  # pyright: ignore[reportArgumentType]
+MAILGUN_REQUEST_TIMEOUT_SECONDS = env.int("MAILGUN_REQUEST_TIMEOUT_SECONDS", default=8)  # pyright: ignore[reportArgumentType]
+CONTACT_VERIFICATION_SECRET = env("CONTACT_VERIFICATION_SECRET", default=SECRET_KEY)  # pyright: ignore[reportArgumentType]
+
 # DRF throttle counters live in the cache, and LocMemCache is per-process: every gunicorn
 # worker would keep its own counts. Any multi-process deployment needs the shared backend.
 _cache_url = env("DJANGO_CACHE_URL", default="")  # pyright: ignore[reportArgumentType]

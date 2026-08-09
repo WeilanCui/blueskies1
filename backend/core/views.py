@@ -1,5 +1,7 @@
 from django.contrib.auth import login as django_login
 from django.contrib.auth import logout as django_logout
+from django.core.exceptions import ImproperlyConfigured, ValidationError
+from django.core.validators import validate_email
 from django.db import connection
 from django.db.models import Count, Prefetch, Q
 from django.http import Http404
@@ -51,7 +53,16 @@ from core.serializers import (
 )
 from core.profiles.recommendations import RecommendationMatcher
 from core.search import paged_search
-from skinconcerns.scoring import ConcernRuleEvaluator
+from core.services.contact_verification import (
+    CONTACT_CODE_TTL,
+    CONTACT_RESEND_COOLDOWN,
+    MAX_CONTACT_VERIFICATION_ATTEMPTS,
+    MailgunDeliveryError,
+    create_contact_verification_code,
+    digest_contact_verification_code,
+    normalize_contact_email,
+    send_contact_verification_code,
+)
 from core.services.weather import get_or_fetch_uv_snapshot
 from core.throttles import (
     AuthRateThrottle,
@@ -59,6 +70,7 @@ from core.throttles import (
     FormulationSubmitRateThrottle,
     SignupRateThrottle,
 )
+from skinconcerns.scoring import ConcernRuleEvaluator
 
 
 class HealthCheckView(APIView):
@@ -719,6 +731,13 @@ class ContactSubmissionViewSet(CreateOnlyModelViewSet):
     permission_classes = [AllowAny]
     throttle_classes = [ContactRateThrottle]
 
+    def _latest_for_email(self, email: str):
+        return (
+            ContactSubmission.objects.filter(email__iexact=email)
+            .order_by("-created_at")
+            .first()
+        )
+
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -732,4 +751,154 @@ class ContactSubmissionViewSet(CreateOnlyModelViewSet):
                 "detail": "Thanks for reaching out. We will reach out shortly.",
             },
             status=status.HTTP_201_CREATED,
+        )
+
+    @action(detail=False, methods=["post"], url_path="request-code")
+    def request_code(self, request):
+        email_value = request.data.get("email")
+        if not isinstance(email_value, str):
+            return Response(
+                {"detail": "Email is required."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        email = normalize_contact_email(email_value)
+        try:
+            validate_email(email)
+        except ValidationError:
+            return Response(
+                {"detail": "Enter a valid email address."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        contact = self._latest_for_email(email)
+        now = timezone.now()
+
+        if contact and contact.email_verified_at:
+            return Response(
+                {
+                    "detail": "You're already verified for Blueskies early access.",
+                    "alreadyVerified": True,
+                },
+                status=status.HTTP_200_OK,
+            )
+
+        if (
+            contact
+            and contact.verification_code_last_sent_at
+            and now - contact.verification_code_last_sent_at < CONTACT_RESEND_COOLDOWN
+        ):
+            return Response(
+                {"detail": "Please wait a minute before requesting another code."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        code = create_contact_verification_code()
+        try:
+            send_contact_verification_code(email, code)
+        except (ImproperlyConfigured, MailgunDeliveryError) as exc:
+            return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+
+        values = {
+            "name": "Private beta signup",
+            "email": email,
+            "feedback": "Joined the private beta waitlist.",
+            "source": "private_beta",
+            "user": request.user if request.user.is_authenticated else None,
+            "user_agent": request.META.get("HTTP_USER_AGENT", "")[:2048],
+            "verification_code_digest": digest_contact_verification_code(email, code),
+            "verification_code_expires_at": now + CONTACT_CODE_TTL,
+            "verification_code_last_sent_at": now,
+            "verification_attempts": 0,
+        }
+
+        if contact:
+            for field, value in values.items():
+                setattr(contact, field, value)
+            contact.save(update_fields=[*values.keys(), "updated_at"])
+        else:
+            contact = ContactSubmission.objects.create(**values)
+
+        return Response(
+            {
+                "id": contact.id,
+                "detail": "Check your email for a six-digit verification code.",
+                "alreadyVerified": False,
+            },
+            status=status.HTTP_201_CREATED,
+        )
+
+    @action(detail=False, methods=["post"], url_path="verify-code")
+    def verify_code(self, request):
+        email_value = request.data.get("email")
+        code_value = request.data.get("code")
+        if not isinstance(email_value, str) or not isinstance(code_value, str):
+            return Response(
+                {"detail": "Email and code are required."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        email = normalize_contact_email(email_value)
+        code = code_value.strip()
+        if not email or not code:
+            return Response(
+                {"detail": "Email and code are required."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        if not code.isdigit() or len(code) != 6:
+            return Response(
+                {"detail": "Enter the six-digit code."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        contact = self._latest_for_email(email)
+        now = timezone.now()
+        if not contact:
+            return Response(
+                {"detail": "Request a new verification code."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        if contact.email_verified_at:
+            return Response(
+                {"detail": "You're already verified for Blueskies early access."},
+                status=status.HTTP_200_OK,
+            )
+        if (
+            not contact.verification_code_digest
+            or not contact.verification_code_expires_at
+            or contact.verification_code_expires_at < now
+        ):
+            return Response(
+                {"detail": "That code has expired. Request a new one."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        if contact.verification_attempts >= MAX_CONTACT_VERIFICATION_ATTEMPTS:
+            return Response(
+                {"detail": "Too many attempts. Request a new code."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if contact.verification_code_digest != digest_contact_verification_code(email, code):
+            contact.verification_attempts += 1
+            contact.save(update_fields=["verification_attempts", "updated_at"])
+            return Response(
+                {"detail": "That code is not correct."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        contact.email_verified_at = now
+        contact.verification_attempts = 0
+        contact.verification_code_digest = ""
+        contact.verification_code_expires_at = None
+        contact.save(
+            update_fields=[
+                "email_verified_at",
+                "verification_attempts",
+                "verification_code_digest",
+                "verification_code_expires_at",
+                "updated_at",
+            ],
+        )
+        return Response(
+            {"detail": "You're verified and on the Blueskies early access list."},
+            status=status.HTTP_200_OK,
         )

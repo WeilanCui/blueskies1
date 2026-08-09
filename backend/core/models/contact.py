@@ -29,6 +29,11 @@ class ContactSubmission(models.Model):
     )
     source = models.CharField(max_length=64, default="landing_page")
     user_agent = models.TextField(blank=True)
+    email_verified_at = models.DateTimeField(null=True, blank=True)
+    verification_code_digest = models.CharField(max_length=64, blank=True)
+    verification_code_expires_at = models.DateTimeField(null=True, blank=True)
+    verification_code_last_sent_at = models.DateTimeField(null=True, blank=True)
+    verification_attempts = models.PositiveSmallIntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -38,6 +43,7 @@ class ContactSubmission(models.Model):
             models.Index(fields=["status", "created_at"]),
             models.Index(fields=["user", "created_at"]),
             models.Index(fields=["email"]),
+            models.Index(fields=["email_verified_at"]),
         ]
 
     def __str__(self) -> str:

@@ -63,6 +63,17 @@ export default function LoginPage() {
     },
   });
 
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("mode") === "signup") {
+      setMode("signup");
+    }
+    const emailParam = params.get("email");
+    if (emailParam) {
+      setEmail(emailParam);
+    }
+  }, []);
+
   function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setTouched({ email: true, password: true });

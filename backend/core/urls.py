@@ -44,6 +44,16 @@ urlpatterns = [
         name="contact-submit",
     ),
     path(
+        "contact/request-code/",
+        ContactSubmissionViewSet.as_view({"post": "request_code"}),
+        name="contact-request-code",
+    ),
+    path(
+        "contact/verify-code/",
+        ContactSubmissionViewSet.as_view({"post": "verify_code"}),
+        name="contact-verify-code",
+    ),
+    path(
         "formulations/submit/",
         FormulationViewSet.as_view({"post": "create"}),
         name="formulation-submit",

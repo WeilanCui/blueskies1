@@ -1,4 +1,147 @@
-.contactForm {
+.contactStack {
+  display: grid;
+  gap: 28px;
+}
+
+.betaSignup {
+  display: grid;
+  gap: 10px;
+  width: min(100%, 610px);
+}
+
+.betaLabel {
+  color: var(--text-primary);
+  display: block;
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.betaInputRow {
+  align-items: center;
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  display: grid;
+  gap: 8px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  min-height: 58px;
+  overflow: hidden;
+  padding: 5px;
+}
+
+.betaInputRow:focus-within {
+  border-color: var(--accent-strong);
+  box-shadow: 0 0 0 4px
+    color-mix(in srgb, var(--accent-strong) 10%, transparent);
+}
+
+.betaInputRow input {
+  appearance: none;
+  background: transparent;
+  border: 0;
+  color: var(--text-primary);
+  font: inherit;
+  min-height: 46px;
+  min-width: 0;
+  outline: 0;
+  padding: 0 18px;
+}
+
+.betaInputRow input:-webkit-autofill,
+.betaInputRow input:-webkit-autofill:hover,
+.betaInputRow input:-webkit-autofill:focus {
+  -webkit-text-fill-color: var(--text-primary);
+  box-shadow: 0 0 0 1000px var(--surface-raised) inset;
+  caret-color: var(--text-primary);
+}
+
+.betaInputRow input::placeholder {
+  color: var(--text-muted);
+}
+
+.betaButton {
+  align-items: center;
+  background: var(--accent);
+  border: 0;
+  border-radius: 999px;
+  color: var(--on-accent, var(--surface-raised));
+  cursor: pointer;
+  display: inline-flex;
+  font: inherit;
+  font-weight: 800;
+  gap: 14px;
+  justify-content: center;
+  min-height: 46px;
+  padding: 0 20px;
+  white-space: nowrap;
+}
+
+.betaButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.betaNote,
+.betaMeta p {
+  color: var(--text-muted);
+  font-size: 13px;
+  margin: 0;
+  padding-left: 18px;
+}
+
+.betaMeta {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: space-between;
+}
+
+.betaMeta button {
+  background: transparent;
+  border: 0;
+  color: var(--accent-strong);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 800;
+  padding: 0;
+}
+
+.verifiedState {
+  background: color-mix(in srgb, var(--surface-raised) 82%, transparent);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 18px;
+}
+
+.verifiedState strong {
+  color: var(--accent-strong);
+}
+
+.verifiedState p {
+  color: var(--text-muted);
+  margin: 4px 0 12px;
+}
+
+.feedbackPanel {
+  border-top: 1px solid color-mix(in srgb, var(--border) 76%, transparent);
+  display: grid;
+  gap: 16px;
+  padding-top: 24px;
+}
+
+.feedbackPanel h3 {
+  color: var(--text-primary);
+  font-size: 1.1rem;
+  margin: 4px 0 6px;
+}
+
+.feedbackPanel p {
+  color: var(--text-muted);
+  margin: 0;
+}
+
+.feedbackForm {
   background: var(--surface-raised);
   border: 1px solid var(--border);
   border-radius: 8px;
@@ -7,7 +150,7 @@
   padding: 16px;
 }
 
-.contactForm button {
+.feedbackForm button {
   background: var(--accent);
   border: none;
   border-radius: 8px;
@@ -20,8 +163,20 @@
   padding: 12px 14px;
 }
 
-.contactForm button:disabled,
-.contactForm button[data-disabled="true"] {
+.feedbackForm button:disabled,
+.feedbackForm button[data-disabled="true"] {
   cursor: not-allowed;
   opacity: 0.7;
+}
+
+@media (max-width: 640px) {
+  .betaInputRow {
+    border-radius: 24px;
+    grid-template-columns: 1fr;
+    padding: 8px;
+  }
+
+  .betaButton {
+    width: 100%;
+  }
 }

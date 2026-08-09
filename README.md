@@ -11,7 +11,8 @@ product.
 ## What It Shows Today
 
 - A roadmap landing page for users and investors at `/`
-- A contact form that stores name, email, and feedback for admin follow-up
+- A landing-page early access form that emails a Mailgun verification code
+  before marking the submission verified for admin follow-up
 - Login/signup at `/login` and a mobile-friendly skin intake at `/intake`
 - A compound browser backed by the Django API at `/compounds`
 - A skincare catalog prototype at `/skincareApi`
@@ -53,6 +54,12 @@ Create an environment file:
 ```bash
 cp .env.example .env
 ```
+
+For landing-page email verification, set the Mailgun values in `.env`:
+`MAILGUN_API_KEY`, `MAILGUN_DOMAIN`, `MAILGUN_FROM_EMAIL`,
+`MAILGUN_API_BASE`, and `CONTACT_VERIFICATION_SECRET`.
+Verified beta emails can then create an account at `/login?mode=signup`;
+after signup, incomplete profiles continue to `/intake`.
 
 Start the backend stack:
 
@@ -358,8 +365,8 @@ The backend includes:
   preferences, cautions, goals, and lifestyle constraints
 - `ProfileConstraintEvaluator` and `RecommendationMatcher` services for matching
   products against personal constraints
-- `ContactSubmission` records from the landing-page contact form, visible in
-  Django admin
+- `ContactSubmission` records from the landing-page form, including Mailgun
+  email verification state, visible in Django admin
 
 ### Type checking
 
