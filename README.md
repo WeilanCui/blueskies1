@@ -123,6 +123,228 @@ npm run lint
 
 Biome is configured in `frontend/biome.json` and scoped to `app/`, `components/`, `hooks/`, and `lib/`.
 
+## Building and Publishing Images
+
+The root `Makefile` builds each service's image and pushes it to the local registry at
+`direct:5000`. This is separate from local development — `docker compose up --build`
+builds its own images and is unaffected.
+
+```bash
+make            # list targets and the current variable values
+make build      # build both images
+make push       # build and push both images
+make clean      # remove the locally built tags
+```
+
+Per-service targets exist too: `build-backend`, `push-frontend`, and so on. The backend
+image serves `backend`, `celery`, and `celery-beat` — they share a build context and
+differ only in their command.
+
+Each image is tagged twice: a mutable `latest` and the abbreviated commit hash, so a
+deployed image can always be traced back to a commit. Building from a working tree with
+uncommitted changes appends `-dirty` to the hash, so such an image can never be mistaken
+for a clean commit's. Deployments should reference the hash tag, not `latest`.
+
+Every input is overridable on the command line:
+
+```bash
+make push TAG=v1.2.3
+make build REGISTRY=localhost:5000 PLATFORM=linux/amd64
+make push BUILD_ARGS='--build-arg SERVER_API_BASE_URL=http://backend:8000'
+```
+
+`REGISTRY`, `PROJECT`, `TAG`, `DOCKER`, `PLATFORM`, `BUILD_ARGS`, `BACKEND_TARGET`, and
+`FRONTEND_TARGET` are all supported; `make help` prints their current values.
+
+Both Dockerfiles are multi-stage, and `BACKEND_TARGET`/`FRONTEND_TARGET` default to
+`prod`. The stage is named explicitly rather than left to the last-stage-wins default, so
+appending a stage cannot silently change what ships. `make build BACKEND_TARGET=dev`
+publishes a development image for debugging.
+
+### Registry prerequisites
+
+`direct:5000` is a plain-HTTP registry, so two things must be true on the build host
+before `make push` will work. The Makefile does not configure either — both are
+root-owned host changes.
+
+1. **`direct` must resolve.** Check with `getent hosts direct`. Add it to `/etc/hosts` or
+   your DNS if it does not, or override with `make push REGISTRY=<ip>:5000`.
+2. **The Docker daemon must accept the insecure registry.** Without this, the push fails
+   with `http: server gave HTTP response to HTTPS client`. Add it to
+   `/etc/docker/daemon.json` and restart the daemon:
+
+   ```json
+   { "insecure-registries": ["direct:5000"] }
+   ```
+
+   ```bash
+   sudo systemctl restart docker
+   ```
+
+Confirm the registry is reachable before pushing, and inspect what landed afterwards:
+
+```bash
+curl -s http://direct:5000/v2/_catalog
+curl -s http://direct:5000/v2/blueskies-backend/tags/list
+```
+
+## Deploying to Docker Swarm
+
+`service-compose.yml` is the Swarm stack file. It runs six services: `web` (Next.js),
+`backend` (Django under gunicorn), `celery`, `celery-beat`, `db`, and `redis`.
+
+**`web` is the only service reachable from outside the swarm.** The browser already talks
+only to the Next.js route handlers in `app/api/`, which proxy to Django over the private
+overlay, so Django never needs to be exposed. Traefik routes
+`blueskies1.tempestnetworks.net` to it over TLS.
+
+### Deploying
+
+```bash
+# On the node matching the placement constraint, once. Swarm does NOT create bind
+# sources the way `docker run` does -- without these the db/redis/beat tasks are
+# rejected with "bind source path does not exist".
+sudo mkdir -p /mnt/persist/blueskies/{postgres,redis,beat}
+# The backend image runs as uid 10001, which must own the beat schedule directory.
+sudo chown 10001:10001 /mnt/persist/blueskies/beat
+
+# Once per swarm, before the first deploy -- see "Credentials" below.
+openssl rand -base64 48 | docker secret create blueskies_django_secret_key -
+openssl rand -base64 24 | docker secret create blueskies_postgres_password -
+
+make release        # build + push + deploy, from a swarm manager
+make deploy-status  # services and any task errors
+```
+
+`release` is `push` followed by `deploy TAG=<revision>`, so the running stack always names
+the commit it was built from (`-dirty` when built from uncommitted work). The two halves
+are also separate targets, because they are needed independently:
+
+```bash
+make deploy   # redeploy after editing service-compose.yml only -- no rebuild, TAG=latest
+make push     # publish images without touching the running stack
+```
+
+The stack file's image references are `${REGISTRY:-direct:5000}/${PROJECT:-blueskies}-*`
+`:${TAG:-latest}`, and the Makefile exports those three variables, so overriding
+`REGISTRY` or `PROJECT` moves both the push and the deploy together. `docker service
+inspect --format '{{.Spec.TaskTemplate.ContainerSpec.Image}}' blueskies1_web` reports which
+revision is live.
+
+`STACK` (default `blueskies1`) and `STACK_FILE` (default `service-compose.yml`) are
+overridable, so a second environment is `make release STACK=blueskies-staging`.
+
+Expect the backend to fail its first attempt or two while Postgres is still being
+scheduled: the entrypoint waits 60s for the database to accept a real connection, then
+exits, and the restart policy retries. This is self-correcting — `POSTGRES_WAIT_SECONDS`
+raises the window if your scheduler is slower than that.
+
+### After adding a hostname, restart Traefik
+
+```bash
+docker service update --force traefik_traefik
+```
+
+Traefik runs three replicas, which all race to solve the same ACME challenge. One wins and
+writes the certificate to the shared store; the others fail with
+`400 malformed :: authorization must be pending` and hold **no certificate in memory**.
+Traefik does not reload another process's writes to that store, so those replicas answer
+the new hostname with a TLS `unrecognized_name` alert — `ERR_SSL_UNRECOGNIZED_NAME_ALERT`
+in the browser — until they are restarted. The rolling restart is safe; the certificate is
+already in the shared store, so no new ACME request is made.
+
+This is deceptive to diagnose, because a request through Cloudflare can land on the one
+healthy replica and look completely fine. Check each origin directly instead:
+
+```bash
+for ip in <manager-ips>; do
+  echo | openssl s_client -connect "$ip:443" -servername blueskies1.tempestnetworks.net \
+    2>&1 | grep -E 'subject=|unrecognized'
+done
+```
+
+Every replica should print `subject=CN = blueskies1.tempestnetworks.net`. Any that print
+`unrecognized name` still need the restart.
+
+Migrations apply themselves: the backend container runs `migrate` on startup, before it
+begins serving. Only `createsuperuser` is a manual step.
+
+### Operating it
+
+Management commands must go through the entrypoint, because `docker exec` bypasses it and
+none of the Redis derivation will have happened:
+
+```bash
+docker exec -it -e DJANGO_MIGRATE_ON_START= $(docker ps -qf name=blueskies1_backend) \
+  /app/deploy/entrypoint.sh python manage.py createsuperuser
+```
+
+`docker exec` inherits the container's environment, so without blanking
+`DJANGO_MIGRATE_ON_START` every management command re-runs `migrate` first. That is
+idempotent and harmless, just noisy.
+
+Things that will bite you if you don't know them:
+
+- **`backend` must stay at `replicas: 1`** while migrations run from the entrypoint. Django
+  takes no global migration lock, so two replicas starting together race each other.
+  Scaling the Django tier means moving migration to a one-shot service first — not raising
+  the replica count.
+- **An image rollback does not roll back applied migrations.** Write migrations reversibly.
+- **A long migration will not be killed by the healthcheck.** The entrypoint holds
+  `/tmp/entrypoint-migrating` while `migrate` runs and the `backend` check treats that as
+  healthy, because no fixed `start_period` can bound an arbitrary migration. A migration
+  blocked on someone else's lock still fails fast: it runs with
+  `lock_timeout=$DJANGO_MIGRATE_LOCK_TIMEOUT` (default 30s), so the task exits and retries
+  rather than sitting healthy forever. `statement_timeout` is deliberately left off, so a
+  slow-but-progressing data migration runs to completion.
+- **`SERVER_API_BASE_URL` is baked into the frontend image at build time.** Next resolves
+  `rewrites()` during `next build` and writes the destinations into the route manifest.
+  Changing the backend address therefore needs a rebuild and re-push, not just a redeploy.
+- **`celery` and `celery-beat` deliberately do not set `DJANGO_MIGRATE_ON_START`.** They
+  share the backend image, and would otherwise all migrate concurrently on every deploy.
+  Instead the entrypoint blocks them on `migrate --check` until `backend` has finished, so
+  a worker never consumes queued tasks against the previous schema. `MIGRATION_WAIT_SECONDS`
+  (default 300) bounds that wait; exceeding it fails the task and the restart policy retries.
+- **`db`, `redis` and `celery-beat` are pinned by placement constraint** to the node holding
+  their data under `/mnt/persist/blueskies/`. Adjust the `node.labels.name` constraint to
+  match your swarm.
+
+### Credentials
+
+The Django secret key and the Postgres password are **Swarm secrets**, declared
+`external: true` so their values exist only on the swarm:
+
+```bash
+openssl rand -base64 48 | docker secret create blueskies_django_secret_key -
+openssl rand -base64 24 | docker secret create blueskies_postgres_password -
+```
+
+Services mount them at `/run/secrets/<name>` and reference them as `DJANGO_SECRET_KEY_FILE`
+and `POSTGRES_PASSWORD_FILE`. `backend/deploy/entrypoint.sh` expands **any** `FOO_FILE` into
+`FOO` before starting the process, so `OPENAI_API_KEY` and `NCBI_API_KEY` follow the same
+path once they stop being empty — add a secret and swap the variable for its `_FILE` form.
+The `postgres` image reads `POSTGRES_PASSWORD_FILE` natively, and `settings.py` reads the
+`_FILE` form of `DJANGO_SECRET_KEY` and `POSTGRES_PASSWORD` itself — necessary because a
+container healthcheck and `docker exec` start from the container's configured environment
+and never see the entrypoint's exports. An explicitly set `FOO` always wins over `FOO_FILE`,
+which is why local `docker compose` development is unaffected.
+
+Rotating a secret Swarm cannot update in place (a secret's contents are immutable):
+
+```bash
+# 1. The postgres image sets the role's password only when it initialises an empty
+#    data directory, so an existing deployment must be told directly.
+docker exec -it $(docker ps -qf name=blueskies1_db) \
+  psql -U blueskies -d blueskies -c "ALTER ROLE blueskies WITH PASSWORD '<new>';"
+
+# 2. Replace the secret under a new name, point the stack file at it, redeploy.
+printf '%s' '<new>' | docker secret create blueskies_postgres_password_v2 -
+```
+
+**Earlier revisions of this repository committed the live secret key and database password
+in plaintext.** Git history is permanent, so both values must be treated as compromised and
+rotated — the key rotation invalidates every existing session, which is expected.
+
 ## Backend Notes
 
 The backend includes:
@@ -150,7 +372,16 @@ pre-commit install
 
 The `pyright` hook runs on every commit, configured via `pyrightconfig.json` at standard type-checking mode scoped to the `backend/` directory. Django-aware typing comes from `django-types` and `djangorestframework-stubs`. A handful of standard-mode diagnostics are downgraded to warnings where they fire on framework/stub limitations (e.g. reverse-relation accessors, abstract-model `Meta`); each downgrade is documented inline in `pyrightconfig.json`.
 
-Note: the hook resolves imports from your installed environment, so install `backend/requirements-dev.txt` (which pulls in the runtime deps) before committing — otherwise pyright reports unresolved third-party imports.
+Note: the hook resolves imports from your installed environment, so install `backend/requirements-dev.txt` (which pulls in the runtime deps) before committing — otherwise pyright reports unresolved third-party imports. `pyrightconfig.json` sets `venvPath`/`venv` to `./.venv`, the layout `.gitignore` already assumes, so a repo-root virtualenv is picked up whether or not it is activated. Resolution order:
+
+1. `./.venv`, if it exists — this takes priority over an activated virtualenv, so a stale `./.venv` will shadow the environment you think you are using. Delete it, or point it at the right place.
+2. Otherwise pyright prints one "subdirectory not found" notice and falls back to the `python` on your PATH, which is what an activated virtualenv or a global install gives you.
+
+If you keep your virtualenv somewhere else and do not want to move it, symlink it — `.venv` is gitignored, so this stays local to your checkout:
+
+```bash
+ln -s /path/to/your/venv .venv
+```
 
 ## Layout
 

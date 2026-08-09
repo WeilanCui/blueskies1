@@ -173,6 +173,9 @@
   display: grid;
   gap: 4px;
   grid-template-columns: 1fr 1fr;
+  /* Neutralize the <fieldset> UA defaults so this renders as it did as a div. */
+  margin: 0;
+  min-inline-size: 0;
   padding: 4px;
 }
 

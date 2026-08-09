@@ -7,8 +7,9 @@ from django.test.utils import CaptureQueriesContext
 from django.urls import reverse
 from rest_framework.test import APIClient
 
-from core.models import Compound, CompoundLiterature, LiteratureReference
+from core.models import Compound
 from core.serializers import CompoundSerializer
+from literature.models import CompoundLiterature, LiteratureReference
 
 
 class CompoundLiteratureCountTests(TestCase):

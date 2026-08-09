@@ -133,7 +133,9 @@ export default function ProductSubmitForm() {
                 <p className="detail-muted">{result.formulation.brand}</p>
               )}
             </div>
-            <span className={`badge badge-${result.formulation.enrichment_status}`}>
+            <span
+              className={`badge badge-${result.formulation.enrichment_status}`}
+            >
               {formatLabel(result.formulation.enrichment_status)}
             </span>
           </div>
@@ -145,25 +147,36 @@ export default function ProductSubmitForm() {
 
           <ul className={styles.ingestResults}>
             {result.ingestion.ingredients.map((ingredient) => (
-              <li className={styles.ingestRow} key={`${ingredient.position}-${ingredient.name}`}>
+              <li
+                className={styles.ingestRow}
+                key={`${ingredient.position}-${ingredient.name}`}
+              >
                 <div className={styles.ingestMain}>
                   <strong>
                     {ingredient.position}. {ingredient.name}
                   </strong>
-                  <span className="tag">{formatLabel(ingredient.parse_status)}</span>
+                  <span className="tag">
+                    {formatLabel(ingredient.parse_status)}
+                  </span>
                 </div>
                 <div className={styles.ingestMeta}>
                   <span>{ingredient.inci_properties} INCI properties</span>
-                  <span>{ingredient.pubchem_descriptors} PubChem descriptors</span>
+                  <span>
+                    {ingredient.pubchem_descriptors} PubChem descriptors
+                  </span>
                   <span>{ingredient.articles_linked} articles</span>
                   {ingredient.compound_id && (
-                    <Link href={`/compounds?compound=${ingredient.compound_id}`}>
+                    <Link
+                      href={`/compounds?compound=${ingredient.compound_id}`}
+                    >
                       Compound #{ingredient.compound_id}
                     </Link>
                   )}
                 </div>
                 {ingredient.errors.length > 0 && (
-                  <p className={styles.ingestErrors}>{ingredient.errors.join(" · ")}</p>
+                  <p className={styles.ingestErrors}>
+                    {ingredient.errors.join(" · ")}
+                  </p>
                 )}
               </li>
             ))}

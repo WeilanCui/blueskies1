@@ -8,7 +8,11 @@ type AppPageHeaderProps = {
   action?: ReactNode;
 };
 
-export function AppPageHeader({ title, description, action }: AppPageHeaderProps) {
+export function AppPageHeader({
+  title,
+  description,
+  action,
+}: AppPageHeaderProps) {
   return (
     <section className={styles.header}>
       <div className={styles.copy}>

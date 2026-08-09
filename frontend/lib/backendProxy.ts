@@ -25,7 +25,8 @@ function appendSetCookies(response: NextResponse, backendResponse: Response) {
     getSetCookie?: () => string[];
   };
   const setCookies = headers.getSetCookie?.() ?? [];
-  const fallbackCookie = setCookies.length === 0 ? headers.get("set-cookie") : null;
+  const fallbackCookie =
+    setCookies.length === 0 ? headers.get("set-cookie") : null;
 
   for (const cookie of setCookies) {
     response.headers.append("set-cookie", cookie);
@@ -65,7 +66,9 @@ export async function proxyBackendJson(
       cache: "no-store",
     });
     const data = await backendResponse.json();
-    const response = NextResponse.json(data, { status: backendResponse.status });
+    const response = NextResponse.json(data, {
+      status: backendResponse.status,
+    });
     appendSetCookies(response, backendResponse);
     return response;
   } catch {

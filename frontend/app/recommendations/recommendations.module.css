@@ -79,6 +79,28 @@
   line-height: 1.4;
 }
 
+.coverage {
+  /* semantic <ul>; visual reset keeps the plain-text look */
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.4;
+  word-break: break-word;
+  overflow-wrap: break-word;
+}
+
+.coverageLine {
+  display: block;
+  margin-bottom: 4px;
+}
+
+.coverageLabel {
+  font-weight: 500;
+  color: var(--foreground);
+}
+
 .emptyState {
   padding: 48px 16px;
   text-align: center;

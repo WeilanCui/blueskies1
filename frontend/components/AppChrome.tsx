@@ -1,20 +1,25 @@
 "use client";
 
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { getMe, logout, type AuthUser } from "../lib/appApi";
+import { type AuthUser, getMe, logout } from "../lib/appApi";
+import styles from "./AppChrome.module.css";
 import { AppTabNav, type AppTabNavActive } from "./AppTabNav";
 import { Button } from "./Button";
-import styles from "./AppChrome.module.css";
 
 type AppChromeProps = {
   active: AppTabNavActive;
 };
 
 function getProfileName(user: AuthUser | undefined): string {
-  return user?.display_name?.trim() || user?.username?.trim() || user?.email?.trim() || "Profile";
+  return (
+    user?.display_name?.trim() ||
+    user?.username?.trim() ||
+    user?.email?.trim() ||
+    "Profile"
+  );
 }
 
 function getInitials(user: AuthUser | undefined): string {

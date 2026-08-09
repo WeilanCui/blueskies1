@@ -12,16 +12,24 @@ export async function GET(request: Request, context: RouteContext) {
 export async function PUT(request: Request, context: RouteContext) {
   const { id } = await context.params;
   const body = await request.json();
-  return proxyBackendJson(request, `/api/reactions/${encodeURIComponent(id)}/`, {
-    body,
-  });
+  return proxyBackendJson(
+    request,
+    `/api/reactions/${encodeURIComponent(id)}/`,
+    {
+      body,
+    },
+  );
 }
 
 export async function PATCH(request: Request, context: RouteContext) {
   const { id } = await context.params;
   const body = await request.json();
-  return proxyBackendJson(request, `/api/reactions/${encodeURIComponent(id)}/`, {
-    method: "PATCH",
-    body,
-  });
+  return proxyBackendJson(
+    request,
+    `/api/reactions/${encodeURIComponent(id)}/`,
+    {
+      method: "PATCH",
+      body,
+    },
+  );
 }

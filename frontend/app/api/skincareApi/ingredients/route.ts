@@ -1,13 +1,9 @@
-import { NextResponse } from "next/server";
+import { proxyBackendJson } from "../../../../lib/backendProxy";
 
-import { getServerApiBaseUrl } from "../../../../lib/apiBaseUrl";
-
-export async function GET() {
-  const baseUrl = getServerApiBaseUrl();
-  const response = await fetch(`${baseUrl}/api/skincare/ingredients/`, {
-    cache: "no-store",
-  });
-
-  const data = await response.json().catch(() => ({}));
-  return NextResponse.json(data, { status: response.status });
+export async function GET(request: Request) {
+  const query = new URL(request.url).searchParams.toString();
+  return proxyBackendJson(
+    request,
+    `/api/compounds/search/${query ? `?${query}` : ""}`,
+  );
 }
