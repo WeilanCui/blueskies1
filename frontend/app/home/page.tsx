@@ -346,6 +346,9 @@ export default function HomePage() {
                         )
                       : styles.signalSegment
                   }
+                  // Decorative aria-hidden progress track generated from a
+                  // length — the index is the segment's only identity.
+                  // biome-ignore lint/suspicious/noArrayIndexKey: index is the segment identity
                   key={index}
                 />
               ))}

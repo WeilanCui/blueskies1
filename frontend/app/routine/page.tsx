@@ -629,102 +629,103 @@ export default function RoutinePage() {
                   </div>
                   <strong>{routine.items.length} products</strong>
                 </div>
-                <div className={styles.routineProductList} role="list">
+                <div className={styles.routineProductList}>
                   {routine.items.length > 0 ? (
                     <>
                       <p className={styles.dragHint}>
                         Drag products to reorder your routine.
                       </p>
-                      {routine.items.map((item, index) => {
-                        const isDragging =
-                          dragState?.routineId === routine.id &&
-                          dragState.itemId === item.id;
-                        const isDragOver =
-                          dragOverItemId === item.id &&
-                          dragState?.routineId === routine.id &&
-                          dragState.itemId !== item.id;
+                      <ul className={styles.routineProductItems}>
+                        {routine.items.map((item, index) => {
+                          const isDragging =
+                            dragState?.routineId === routine.id &&
+                            dragState.itemId === item.id;
+                          const isDragOver =
+                            dragOverItemId === item.id &&
+                            dragState?.routineId === routine.id &&
+                            dragState.itemId !== item.id;
 
-                        return (
-                          <div
-                            className={[
-                              styles.routineProductCard,
-                              isDragging
-                                ? styles.routineProductCardDragging
-                                : "",
-                              isDragOver
-                                ? styles.routineProductCardDragOver
-                                : "",
-                            ]
-                              .filter(Boolean)
-                              .join(" ")}
-                            draggable={!reorderRoutineMutation.isPending}
-                            key={item.id}
-                            role="listitem"
-                            aria-grabbed={isDragging}
-                            onDragStart={(event) => {
-                              event.dataTransfer.effectAllowed = "move";
-                              event.dataTransfer.setData(
-                                "text/plain",
-                                String(item.id),
-                              );
-                              setDragState({
-                                routineId: routine.id,
-                                itemId: item.id,
-                              });
-                            }}
-                            onDragOver={(event) => {
-                              if (
-                                !dragState ||
-                                dragState.routineId !== routine.id
-                              ) {
-                                return;
-                              }
-                              event.preventDefault();
-                              event.dataTransfer.dropEffect = "move";
-                              setDragOverItemId(item.id);
-                            }}
-                            onDragLeave={() => {
-                              if (dragOverItemId === item.id) {
-                                setDragOverItemId(null);
-                              }
-                            }}
-                            onDrop={(event) => {
-                              event.preventDefault();
-                              if (
-                                !dragState ||
-                                dragState.routineId !== routine.id
-                              ) {
+                          return (
+                            <li
+                              className={[
+                                styles.routineProductCard,
+                                isDragging
+                                  ? styles.routineProductCardDragging
+                                  : "",
+                                isDragOver
+                                  ? styles.routineProductCardDragOver
+                                  : "",
+                              ]
+                                .filter(Boolean)
+                                .join(" ")}
+                              draggable={!reorderRoutineMutation.isPending}
+                              key={item.id}
+                              aria-grabbed={isDragging}
+                              onDragStart={(event) => {
+                                event.dataTransfer.effectAllowed = "move";
+                                event.dataTransfer.setData(
+                                  "text/plain",
+                                  String(item.id),
+                                );
+                                setDragState({
+                                  routineId: routine.id,
+                                  itemId: item.id,
+                                });
+                              }}
+                              onDragOver={(event) => {
+                                if (
+                                  !dragState ||
+                                  dragState.routineId !== routine.id
+                                ) {
+                                  return;
+                                }
+                                event.preventDefault();
+                                event.dataTransfer.dropEffect = "move";
+                                setDragOverItemId(item.id);
+                              }}
+                              onDragLeave={() => {
+                                if (dragOverItemId === item.id) {
+                                  setDragOverItemId(null);
+                                }
+                              }}
+                              onDrop={(event) => {
+                                event.preventDefault();
+                                if (
+                                  !dragState ||
+                                  dragState.routineId !== routine.id
+                                ) {
+                                  clearDragState();
+                                  return;
+                                }
+                                handleRoutineReorder(
+                                  routine,
+                                  dragState.itemId,
+                                  item.id,
+                                );
                                 clearDragState();
-                                return;
-                              }
-                              handleRoutineReorder(
-                                routine,
-                                dragState.itemId,
-                                item.id,
-                              );
-                              clearDragState();
-                            }}
-                            onDragEnd={clearDragState}
-                          >
-                            <span
-                              className={styles.dragHandle}
-                              aria-hidden="true"
+                              }}
+                              onDragEnd={clearDragState}
                             >
-                              ⋮⋮
-                            </span>
-                            <span>{index + 1}</span>
-                            <div>
-                              <strong>{item.display_name}</strong>
-                              <em>
-                                {item.product?.brand ||
-                                  item.raw_product_name ||
-                                  item.routine_step}
-                              </em>
-                            </div>
-                            <small>{item.routine_step}</small>
-                          </div>
-                        );
-                      })}
+                              <span
+                                className={styles.dragHandle}
+                                aria-hidden="true"
+                              >
+                                ⋮⋮
+                              </span>
+                              <span>{index + 1}</span>
+                              <div>
+                                <strong>{item.display_name}</strong>
+                                <em>
+                                  {item.product?.brand ||
+                                    item.raw_product_name ||
+                                    item.routine_step}
+                                </em>
+                              </div>
+                              <small>{item.routine_step}</small>
+                            </li>
+                          );
+                        })}
+                      </ul>
                     </>
                   ) : (
                     <p className={styles.emptyState}>

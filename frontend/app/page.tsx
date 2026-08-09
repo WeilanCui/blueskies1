@@ -82,6 +82,7 @@ export default function Home() {
 
         <div
           className={styles.landingPreview}
+          role="img"
           aria-label="Blueskies app preview"
         >
           <div className={styles.phoneFrame}>

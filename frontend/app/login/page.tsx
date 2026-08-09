@@ -147,7 +147,10 @@ export default function LoginPage() {
             </p>
           </div>
 
-          <div className={styles.authTabs} aria-label="Choose login or signup">
+          <fieldset
+            className={styles.authTabs}
+            aria-label="Choose login or signup"
+          >
             <button
               type="button"
               className={
@@ -176,7 +179,7 @@ export default function LoginPage() {
             >
               Sign up
             </button>
-          </div>
+          </fieldset>
 
           <form className={styles.authForm} onSubmit={submit}>
             {mode === "signup" && (

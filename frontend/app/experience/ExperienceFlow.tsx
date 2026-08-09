@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { Button } from "../../components/Button";
 import { Panel } from "../../components/Panel";
 import { UploadButton } from "../../components/UploadButton";
 import FaceMap from "./FaceMap";

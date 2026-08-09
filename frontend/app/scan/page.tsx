@@ -192,11 +192,8 @@ function FormulationDetail({
           </div>
         ) : null}
         <div className={styles.ingredientList}>
-          {formulation.ingredients.map((ingredient, index) => (
-            <article
-              className={styles.ingredientCard}
-              key={`${ingredient.name}-${index}`}
-            >
+          {formulation.ingredients.map((ingredient) => (
+            <article className={styles.ingredientCard} key={ingredient.id}>
               <span className={styles.shieldIcon} aria-hidden="true" />
               <div>
                 <div className={styles.ingredientTitleRow}>
@@ -328,6 +325,11 @@ export default function ScanPage() {
   }, [selectedFile]);
 
   // Decode barcode only for barcode-specific uploads.
+  // startBarcodeLookup is a plain function declaration, so it is a new
+  // identity every render; adding it to the deps would re-run the decode on
+  // every render and it calls setState, so that loops. It only touches refs
+  // and stable setters, so the captured closure is never stale.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: adding startBarcodeLookup loops the effect
   useEffect(() => {
     if (!selectedFile) {
       return;
@@ -469,6 +471,10 @@ export default function ScanPage() {
     }
   }, [routineTarget, routineTargets]);
 
+  // These deps are the trigger, not values the body reads: the routine message
+  // clears whenever the user picks a different product or routine. Dropping
+  // them would leave the effect running once and the stale message on screen.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: deps are the reset trigger
   useEffect(() => {
     if (preserveRoutineMessageRef.current) {
       preserveRoutineMessageRef.current = false;
@@ -621,6 +627,10 @@ export default function ScanPage() {
                 {selectedProduct.ingredients.map((ingredient, index) => (
                   <article
                     className={styles.ingredientCard}
+                    // CatalogIngredient carries no id, and INCI position is the
+                    // ingredient's identity — the list is ordered and never
+                    // reordered client-side.
+                    // biome-ignore lint/suspicious/noArrayIndexKey: INCI position is the identity
                     key={`${ingredient.name}-${index}`}
                   >
                     <span className={styles.shieldIcon} aria-hidden="true" />
