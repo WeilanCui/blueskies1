@@ -150,7 +150,16 @@ pre-commit install
 
 The `pyright` hook runs on every commit, configured via `pyrightconfig.json` at standard type-checking mode scoped to the `backend/` directory. Django-aware typing comes from `django-types` and `djangorestframework-stubs`. A handful of standard-mode diagnostics are downgraded to warnings where they fire on framework/stub limitations (e.g. reverse-relation accessors, abstract-model `Meta`); each downgrade is documented inline in `pyrightconfig.json`.
 
-Note: the hook resolves imports from your installed environment, so install `backend/requirements-dev.txt` (which pulls in the runtime deps) before committing — otherwise pyright reports unresolved third-party imports. `pyrightconfig.json` points at `./.venv` first, so a virtualenv in the repo root is picked up whether or not it is activated; if you installed the deps somewhere else, pyright prints one "subdirectory not found" notice and falls back to the `python` on your PATH.
+Note: the hook resolves imports from your installed environment, so install `backend/requirements-dev.txt` (which pulls in the runtime deps) before committing — otherwise pyright reports unresolved third-party imports. `pyrightconfig.json` sets `venvPath`/`venv` to `./.venv`, the layout `.gitignore` already assumes, so a repo-root virtualenv is picked up whether or not it is activated. Resolution order:
+
+1. `./.venv`, if it exists — this takes priority over an activated virtualenv, so a stale `./.venv` will shadow the environment you think you are using. Delete it, or point it at the right place.
+2. Otherwise pyright prints one "subdirectory not found" notice and falls back to the `python` on your PATH, which is what an activated virtualenv or a global install gives you.
+
+If you keep your virtualenv somewhere else and do not want to move it, symlink it — `.venv` is gitignored, so this stays local to your checkout:
+
+```bash
+ln -s /path/to/your/venv .venv
+```
 
 ## Layout
 
