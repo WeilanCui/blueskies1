@@ -191,7 +191,8 @@ h1 {
 .contact-field[aria-invalid="true"] [data-slot="textarea"] {
   background: var(--status-warning-bg);
   border-color: var(--warning);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--status-warning-text) 12.0%, transparent);
+  box-shadow: 0 0 0 3px
+    color-mix(in srgb, var(--status-warning-text) 12.0%, transparent);
 }
 
 .contact-field [data-slot="field-error"] {
@@ -406,6 +407,13 @@ h1 {
 .contact-help {
   background: var(--surface-subtle);
   color: var(--text-secondary);
+}
+
+.contact-inline-note {
+  color: var(--text-secondary);
+  font-size: 14px;
+  line-height: 1.45;
+  margin: 0;
 }
 
 .contact-success {

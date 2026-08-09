@@ -268,11 +268,7 @@ export default function LoginPage() {
             <h2>
               {mode === "signup" ? "Create your account." : "Welcome back."}
             </h2>
-            <p>
-              {mode === "signup"
-                ? "Verify your email from the private beta form first, then create your password and start the mobile-friendly intake."
-                : "Sign in to continue your intake and keep building your skincare profile."}
-            </p>
+    
           </div>
 
           <fieldset
@@ -372,6 +368,9 @@ export default function LoginPage() {
                 value={verificationCode}
               >
                 <Label>Verification code</Label>
+                {verificationMessage && (
+                  <p className="contact-inline-note">{verificationMessage}</p>
+                )}
                 <Input
                   inputMode="numeric"
                   maxLength={6}
@@ -381,7 +380,6 @@ export default function LoginPage() {
                 />
               </TextField>
             )}
-
             {(mode === "login" || signupStep === "account") && (
               <TextField
                 className="contact-field"
@@ -411,11 +409,13 @@ export default function LoginPage() {
               </TextField>
             )}
 
-            {mode === "signup" && verificationMessage && (
-              <p className="contact-success">{verificationMessage}</p>
-            )}
+            {mode === "signup" &&
+              signupStep !== "verifyCode" &&
+              verificationMessage && (
+                <p className="contact-success">{verificationMessage}</p>
+              )}
 
-            {mode === "signup" && signupStep === "verifyCode" && (
+            {/* {mode === "signup" && signupStep === "verifyCode" && (
               <p className="contact-help">
                 Enter the code sent to {trimmedEmail.toLowerCase()}.{" "}
                 <button
@@ -430,8 +430,7 @@ export default function LoginPage() {
                   Use another email.
                 </button>
               </p>
-            )}
-
+            )} */}
 
             <Button
               type="submit"
