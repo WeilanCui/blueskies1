@@ -875,16 +875,17 @@ class RecommendationConfidenceAPITests(APITestCase):
         results = data["results"]
 
         # Both have score 100, but high-confidence should come first
-        high_conf_result = None
-        low_conf_result = None
-        for result in results:
-            if result["product_name"] == "Product High Conf":
-                high_conf_result = result
-            elif result["product_name"] == "Product Low Conf":
-                low_conf_result = result
+        high_conf_matches = [
+            result for result in results if result["product_name"] == "Product High Conf"
+        ]
+        low_conf_matches = [
+            result for result in results if result["product_name"] == "Product Low Conf"
+        ]
 
-        self.assertIsNotNone(high_conf_result)
-        self.assertIsNotNone(low_conf_result)
+        self.assertTrue(high_conf_matches, "expected the high-confidence product")
+        self.assertTrue(low_conf_matches, "expected the low-confidence product")
+        high_conf_result = high_conf_matches[0]
+        low_conf_result = low_conf_matches[0]
         self.assertEqual(high_conf_result["final_score"], 100)
         self.assertEqual(low_conf_result["final_score"], 100)
         self.assertEqual(high_conf_result["confidence_band"], "high")
@@ -943,16 +944,19 @@ class RecommendationConfidenceAPITests(APITestCase):
         data = response.json()
         results = data["results"]
 
-        high_score_result = None
-        low_score_result = None
-        for result in results:
-            if result["product_name"] == "Product High Score":
-                high_score_result = result
-            elif result["product_name"] == "Product Low Score":
-                low_score_result = result
+        high_score_matches = [
+            result
+            for result in results
+            if result["product_name"] == "Product High Score"
+        ]
+        low_score_matches = [
+            result for result in results if result["product_name"] == "Product Low Score"
+        ]
 
-        self.assertIsNotNone(high_score_result)
-        self.assertIsNotNone(low_score_result)
+        self.assertTrue(high_score_matches, "expected the high-score product")
+        self.assertTrue(low_score_matches, "expected the low-score product")
+        high_score_result = high_score_matches[0]
+        low_score_result = low_score_matches[0]
         # High score should rank first despite lower confidence
         # (MODERATE penalize = severity weight 8 -> 100 - 8 = 92)
         self.assertEqual(high_score_result["final_score"], 100)
