@@ -6,7 +6,7 @@
 ## 2. Scoring integration
 
 - [x] 2.1 Constraint evaluator: scale PENALIZE/BOOST deltas for compound/class targets; EXCLUDE/WARN emission untouched; other targets factor=None
-- [x] 2.2 Concern-rule evaluator (if `bridge-concern-rules` landed): same scaling for PENALIZE/BOOST/RECOMMEND, AVOID delta scaled but warning kept; guard so this change also applies cleanly if it lands first (constraints only)
+- [x] 2.2 Concern-rule evaluator (if `bridge-concern-rules` landed): same scaling for PENALIZE/BOOST/RECOMMEND, AVOID fully position-immune (warning and delta both unscaled); guard so this change also applies cleanly if it lands first (constraints only)
 - [x] 2.3 Impact dataclass + serializer gain nullable `position_factor`
 
 ## 3. Tests
