@@ -8,6 +8,16 @@
   // kept at "error" so the pre-commit hook blocks genuine regressions.
   "include": ["backend"],
   "extraPaths": ["backend"],
+
+  // Resolve third-party imports from the project virtualenv. Without this
+  // pyright uses whatever `python` is on PATH, which for anyone who installed
+  // requirements-dev.txt into ./.venv rather than globally means every Django
+  // and DRF import is reported unresolved — 200+ spurious errors that bury the
+  // real ones and make the pre-commit hook useless. If ./.venv does not exist
+  // pyright prints one "subdirectory not found" notice and falls back to the
+  // default interpreter search, so a global install still works.
+  "venvPath": ".",
+  "venv": ".venv",
   "exclude": [
     "**/migrations",
     "**/__pycache__",

@@ -12,7 +12,7 @@ if TYPE_CHECKING:
 
     from core.models.daily_checkin import DailyProductUse
     from core.models.formulation import Formulation
-    from core.models.literature_discovery_target import (
+    from literature.models.discovery_target import (
         LiteratureDiscoveryEvent,
         LiteratureDiscoveryTarget,
     )

@@ -10,7 +10,7 @@ from core.models.metadata import SourceMetadata, SourceType
 if TYPE_CHECKING:
     from django.db.models import Manager
 
-    from core.models.profiles import ProfileConstraint
+    from core.models.profile_constraint import ProfileConstraint
 
 __all__ = [
     "PropertyDomain",

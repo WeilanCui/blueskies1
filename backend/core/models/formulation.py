@@ -13,13 +13,13 @@ if TYPE_CHECKING:
     from django.db.models import Manager
 
     from core.models.daily_checkin import DailyProductUse
-    from core.models.interactions import InteractionAssertion
-    from core.models.literature_discovery_target import (
+    from literature.models.interactions import InteractionAssertion
+    from literature.models.discovery_target import (
         LiteratureDiscoveryEvent,
         LiteratureDiscoveryTarget,
     )
     from core.models.properties import PropertyAssertion
-    from core.models.profiles import ProfileConstraint
+    from core.models.profile_constraint import ProfileConstraint
     from core.models.reaction import ReactionEvent
     from core.models.routine import RoutineItem
 

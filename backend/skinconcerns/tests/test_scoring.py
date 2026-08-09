@@ -187,9 +187,7 @@ class ConcernRuleEvaluatorTests(TestCase):
         result = self.evaluator.evaluate(
             self.profile, self.formulation_with_retinol, context=context
         )
-        # evaluate() returns either a list of impacts (bridge) or a
-        # (impacts, coverage) tuple (once coverage scoring lands); tolerate both.
-        impacts = result[0] if isinstance(result, tuple) else result
+        impacts = result
 
         self.assertEqual(len(impacts), 1)
         self.assertEqual(impacts[0].enforcement, "penalize")
