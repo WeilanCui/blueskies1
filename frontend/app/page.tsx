@@ -206,9 +206,9 @@ export default function Home() {
         </div>
       </section>
 
-      <section className={styles.landingSection}>
+      {/* <section className={styles.landingSection}>
         <div className={styles.sectionHeading}>
-          <p className="landing-eyebrow">Regimen intelligence</p>
+          <p className="landing-eyebrow">igence</p>
           <h2>Know what a product is and how it works for you.</h2>
         </div>
         <div className={styles.intelligenceGrid}>
@@ -223,7 +223,7 @@ export default function Home() {
             </article>
           ))}
         </div>
-      </section>
+      </section> */}
 
       <section
         className={[styles.landingSection, styles.platformSection].join(" ")}

@@ -16,6 +16,7 @@ const appRoutes: Array<{ prefix: string; active: AppTabNavActive }> = [
   { prefix: "/profile", active: "home" },
   { prefix: "/scan", active: "scan" },
   { prefix: "/routine", active: "routine" },
+  { prefix: "/calendar", active: "calendar" },
   { prefix: "/reactions", active: "reactions" },
   { prefix: "/intake", active: "intake" },
 ];

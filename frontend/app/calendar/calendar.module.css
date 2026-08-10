@@ -1,0 +1,345 @@
+.calendarPage {
+  display: grid;
+  gap: 12px;
+  margin: 0 auto;
+  max-width: 720px;
+  width: 100%;
+}
+
+.intro {
+  display: grid;
+  gap: 8px;
+  padding: 10px 2px 2px;
+}
+
+.intro h1,
+.monthHeader h2,
+.dayCardHeader h2,
+.cardHeader h2 {
+  color: var(--text-primary);
+  font-family: var(--font-serif);
+  font-weight: 500;
+  line-height: 1.05;
+  margin: 0;
+}
+
+.intro h1 {
+  font-size: 2.2rem;
+}
+
+.intro p,
+.cardHeader p,
+.dayCard p {
+  color: var(--text-secondary);
+  line-height: 1.45;
+  margin: 0;
+}
+
+.eyebrow {
+  color: var(--text-muted);
+  font-family: var(--font-sans);
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0;
+  margin: 0 0 2px;
+  text-transform: uppercase;
+}
+
+.segmented {
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  display: grid;
+  gap: 3px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  padding: 4px;
+}
+
+.segmentButton {
+  background: transparent;
+  border: 0;
+  border-radius: 999px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 800;
+  min-height: 36px;
+  padding: 8px 10px;
+}
+
+.segmentButtonActive {
+  background: var(--accent-base);
+  color: var(--text-inverse);
+}
+
+.monthCard,
+.dayCard,
+.detailCard,
+.productCard {
+  background: color-mix(in srgb, var(--surface-raised) 92.0%, transparent);
+  border: 1px solid color-mix(in srgb, var(--border) 88.0%, transparent);
+  border-radius: 8px;
+  box-shadow: var(--card-shadow);
+}
+
+.monthCard {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+}
+
+.monthHeader,
+.dayCardHeader {
+  align-items: baseline;
+  display: flex;
+  justify-content: space-between;
+}
+
+.monthHeader h2,
+.dayCardHeader h2,
+.cardHeader h2 {
+  font-size: 1.22rem;
+}
+
+.monthHeader span,
+.dayCardHeader span {
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.weekHeader {
+  color: var(--text-muted);
+  display: grid;
+  font-size: 0.72rem;
+  font-weight: 800;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  justify-items: center;
+}
+
+.monthGrid {
+  display: grid;
+  gap: 7px;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+}
+
+.dayCell,
+.daySpacer {
+  aspect-ratio: 1;
+  border-radius: 8px;
+  display: block;
+  min-width: 0;
+}
+
+.dayCell {
+  align-items: start;
+  border: 0;
+  color: var(--text-secondary);
+  cursor: pointer;
+  display: flex;
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: 850;
+  justify-content: start;
+  line-height: 1;
+  padding: 7px;
+  position: relative;
+  text-align: left;
+}
+
+.dayCell:hover {
+  outline: 2px solid color-mix(in srgb, var(--accent-base) 32.0%, transparent);
+  outline-offset: 2px;
+}
+
+.dayCell:focus-visible,
+.daySelected {
+  outline: 2px solid var(--text-primary);
+  outline-offset: 2px;
+}
+
+.dayEmpty {
+  background: transparent;
+  border: 1px dashed color-mix(in srgb, var(--border-dashed) 78.0%, transparent);
+}
+
+.dayWithReaction::after {
+  background: var(--status-warning-text);
+  border: 1px solid var(--surface-raised);
+  border-radius: 999px;
+  content: "";
+  height: 7px;
+  position: absolute;
+  right: 4px;
+  top: 4px;
+  width: 7px;
+}
+
+.dayRough {
+  background: color-mix(
+    in srgb,
+    var(--accent-base) 82.0%,
+    var(--surface-raised)
+  );
+  color: var(--text-inverse);
+}
+
+.dayOkay {
+  background: color-mix(
+    in srgb,
+    var(--accent-base) 46.0%,
+    var(--surface-raised)
+  );
+}
+
+.dayGreat {
+  background: color-mix(
+    in srgb,
+    var(--accent-base) 30.0%,
+    var(--surface-raised)
+  );
+}
+
+.legend {
+  align-items: center;
+  color: var(--text-muted);
+  display: flex;
+  flex-wrap: wrap;
+  font-size: 0.72rem;
+  gap: 8px;
+  justify-content: space-between;
+}
+
+.legendScale {
+  align-items: center;
+  display: inline-flex;
+  gap: 4px;
+}
+
+.legendDot {
+  border-radius: 4px;
+  display: inline-block;
+  height: 10px;
+  width: 10px;
+}
+
+.dayCard,
+.detailCard,
+.productCard {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+}
+
+.tagList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.tagList span {
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+  font-weight: 750;
+  padding: 7px 12px;
+}
+
+.cardHeader {
+  display: grid;
+  gap: 4px;
+}
+
+.cardHeader p {
+  font-size: 0.82rem;
+}
+
+.productList {
+  display: grid;
+}
+
+.detailList {
+  display: grid;
+  gap: 10px;
+}
+
+.detailRow {
+  background: color-mix(in srgb, var(--surface-subtle) 58.0%, transparent);
+  border: 1px solid color-mix(in srgb, var(--border) 88.0%, transparent);
+  border-radius: 8px;
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+}
+
+.detailRow div {
+  display: grid;
+  gap: 3px;
+}
+
+.detailRow strong {
+  color: var(--text-primary);
+  font-size: 0.94rem;
+}
+
+.detailRow span,
+.detailRow p,
+.emptyText {
+  color: var(--text-secondary);
+  font-size: 0.84rem;
+  line-height: 1.45;
+  margin: 0;
+}
+
+.productRow {
+  align-items: center;
+  border-top: 1px solid var(--divider);
+  color: var(--text-primary);
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+  padding: 12px 0;
+}
+
+.productRow:first-child {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.productRow:last-child {
+  padding-bottom: 0;
+}
+
+.productRow strong {
+  color: var(--accent-base);
+  font-size: 0.86rem;
+}
+
+@media (min-width: 760px) {
+  .calendarPage {
+    max-width: 820px;
+  }
+
+  .intro {
+    align-items: end;
+    grid-template-columns: 0.85fr 1.15fr;
+    padding-top: 18px;
+  }
+
+  .intro h1 {
+    font-size: 2.55rem;
+  }
+
+  .monthGrid {
+    gap: 9px;
+  }
+
+  .monthCard,
+  .dayCard,
+  .productCard {
+    padding: 18px;
+  }
+}

@@ -1,4 +1,5 @@
 import {
+  CalendarDaysIcon,
   HomeIcon,
   MagnifyingGlassIcon,
   PresentationChartBarIcon,
@@ -15,6 +16,7 @@ export type AppTabNavActive =
   | "intake"
   | "catalog"
   | "routine"
+  | "calendar"
   | "reactions"
   | "forYou";
 
@@ -26,6 +28,12 @@ const tabs = [
   { id: "home", label: "Home", href: "/home", icon: HomeIcon },
   { id: "scan", label: "Products", href: "/scan", icon: MagnifyingGlassIcon },
   { id: "routine", label: "Routine", href: "/routine", icon: SunIcon },
+  {
+    id: "calendar",
+    label: "Calendar",
+    href: "/calendar",
+    icon: CalendarDaysIcon,
+  },
   {
     id: "reactions",
     label: "Reactions",

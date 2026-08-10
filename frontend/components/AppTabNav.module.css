@@ -15,7 +15,7 @@
   background: var(--surface-raised);
   display: grid;
   gap: 2px;
-  grid-template-columns: repeat(5, minmax(76px, 1fr));
+  grid-template-columns: repeat(6, minmax(76px, 1fr));
   min-width: max-content;
 }
 
@@ -55,7 +55,8 @@
     background: var(--surface-raised);
     border: 0;
     border-radius: 8px;
-    box-shadow: 0 8px 20px color-mix(in srgb, var(--text-secondary) 5.0%, transparent);
+    box-shadow: 0 8px 20px
+      color-mix(in srgb, var(--text-secondary) 5.0%, transparent);
     gap: 2px;
     min-width: 0;
     padding: 6px 8px;

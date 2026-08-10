@@ -126,6 +126,8 @@ class ProfileLocationApiTests(TestCase):
             city="New York",
             region="NY",
             country="US",
+            latitude=Decimal("40.7128"),
+            longitude=Decimal("-74.0060"),
             precision="postal_code",
         )
         ProfileLocation.objects.create(
@@ -166,13 +168,23 @@ class ProfileLocationApiTests(TestCase):
             label="Home",
             is_default=True,
         )
-        response_mock = Mock()
-        response_mock.json.return_value = [
+        epa_response = Mock()
+        epa_response.json.return_value = [
             {"UV_INDEX": "5", "DATE": "2026-06-14"},
             {"UV_INDEX": "8", "DATE": "2026-06-15"},
         ]
-        response_mock.raise_for_status.return_value = None
-        mock_get.return_value = response_mock
+        epa_response.raise_for_status.return_value = None
+        weather_response = Mock()
+        weather_response.json.return_value = {
+            "current": {
+                "time": "2026-06-15T12:00",
+                "temperature_2m": 27.4,
+                "relative_humidity_2m": 63,
+                "cloud_cover": 42,
+            }
+        }
+        weather_response.raise_for_status.return_value = None
+        mock_get.side_effect = [epa_response, weather_response]
 
         response = self.client.post(
             reverse("profile-location-refresh-weather", args=[profile_location.id]),  # pyright: ignore[reportAttributeAccessIssue]
@@ -184,8 +196,13 @@ class ProfileLocationApiTests(TestCase):
         snapshot = WeatherSnapshot.objects.get()
         self.assertEqual(snapshot.location, location)
         self.assertEqual(snapshot.uv_index, Decimal("8.0"))
+        self.assertEqual(snapshot.temperature_c, Decimal("27.4"))
+        self.assertEqual(snapshot.humidity_percent, 63)
+        self.assertEqual(snapshot.cloud_cover_percent, 42)
         self.assertEqual(response.data["weather_snapshot"]["uv_index"], "8.0")  # pyright: ignore[reportAttributeAccessIssue]
+        self.assertEqual(response.data["weather_snapshot"]["humidity_percent"], 63)  # pyright: ignore[reportAttributeAccessIssue]
         self.assertIn("/getEnvirofactsUVDAILY/ZIP/10001/JSON", mock_get.call_args.args[0])
+        self.assertIn("current=temperature_2m", mock_get.call_args_list[1].args[0])
 
     def test_refresh_weather_rejects_location_without_weather_sharing(self):
         location = Location.objects.create(

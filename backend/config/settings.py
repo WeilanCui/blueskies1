@@ -167,10 +167,16 @@ INCI_API_BASE = env("INCI_API_BASE", default="https://inciapi.com/v1")  # pyrigh
 
 EPA_UV_API_BASE = env(
     "EPA_UV_API_BASE",
-    default="https://data.epa.gov/efservice",  # pyright: ignore[reportArgumentType]
+    default="https://data.epa.gov/dmapservice",  # pyright: ignore[reportArgumentType]
 )
 EPA_UV_CACHE_MINUTES = env.int("EPA_UV_CACHE_MINUTES", default=180)  # pyright: ignore[reportArgumentType]
 EPA_UV_REQUEST_TIMEOUT_SECONDS = env.int("EPA_UV_REQUEST_TIMEOUT_SECONDS", default=8)  # pyright: ignore[reportArgumentType]
+OPEN_METEO_API_BASE = env("OPEN_METEO_API_BASE", default="https://api.open-meteo.com")  # pyright: ignore[reportArgumentType]
+OPEN_METEO_GEOCODING_API_BASE = env(
+    "OPEN_METEO_GEOCODING_API_BASE",
+    default="https://geocoding-api.open-meteo.com",  # pyright: ignore[reportArgumentType]
+)
+OPEN_METEO_REQUEST_TIMEOUT_SECONDS = env.int("OPEN_METEO_REQUEST_TIMEOUT_SECONDS", default=8)  # pyright: ignore[reportArgumentType]
 
 OPENAI_API_KEY = env("OPENAI_API_KEY", default="")  # pyright: ignore[reportArgumentType]
 OPENAI_MODEL = env("OPENAI_MODEL", default="gpt-4o-mini")  # pyright: ignore[reportArgumentType]
