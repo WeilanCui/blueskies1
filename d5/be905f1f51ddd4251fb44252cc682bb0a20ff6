@@ -1,0 +1,72 @@
+frontend/components/AppTabNav.tsx
+  s_f14d8e5b3f876d::t_c4a7398bc4b972 2,19,31-36
+frontend/app/page.tsx
+  h_e83f79f999df32 209,211,226
+frontend/app/home/page.tsx
+  s_f14d8e5b3f876d::t_27012a81ebb154 11
+  s_f14d8e5b3f876d::t_6a7c25c9f5b1f9 45,49,156
+  s_f14d8e5b3f876d::t_2a62763625c587 3,6,9,54-62,250-253
+  h_e83f79f999df32 76
+frontend/components/AppTabNav.module.css
+  s_f14d8e5b3f876d::t_b25f97edc02314 18
+  s_f14d8e5b3f876d::t_88527afc933501 58-59
+frontend/components/AppFrame.tsx
+  s_f14d8e5b3f876d::t_c09be342bb661a 19
+backend/core/tests/test_locations.py
+  s_f14d8e5b3f876d::t_2ed65262d3531f 129-130,171-172,176-187,199-201,203,205
+backend/config/settings.py
+  s_f14d8e5b3f876d::t_0ab79488e36a8f 170,174-179
+frontend/app/calendar/page.tsx
+  s_f14d8e5b3f876d::t_9759f053dafb1d 284-287
+  s_f14d8e5b3f876d::t_1a3e2c20515aed 344-365,367-374,378-392,394-400,403-421
+  s_f14d8e5b3f876d::t_f148a76802ee51 319-321
+  s_f14d8e5b3f876d::t_e7fd71493c335f 165-167,178-183,194-195,204,206-207,211-212,219-232,237-238
+  s_f14d8e5b3f876d::t_188638e4890fcd 87-99,103,108-122
+  s_f14d8e5b3f876d::t_51248b0139d4c5 164,196-203
+  s_f14d8e5b3f876d::t_874259048bcb27 1-6,14-16,26-86,100-102,104-107,123-139,141-152,155-163,168-177,184-193,210,213-218,235-236,239-246,248-249,251-269,274-278,281-283,289,301,325-343,366,393,422-428,441-444
+  s_f14d8e5b3f876d::t_27912e00fa525b 17-25,279-280
+  s_f14d8e5b3f876d::t_88527afc933501 153-154,205,208-209,270-273
+  s_f14d8e5b3f876d::t_08edfbdfbadb22 7-13
+  s_f14d8e5b3f876d::t_bc2534183bd7be 140
+  s_f14d8e5b3f876d::t_18fe4319fd6ec5 233-234,290-300,302-318,322-324,375-377,401-402
+  s_f14d8e5b3f876d::t_c679faa331709a 429-440
+  h_e83f79f999df32 247,250
+  s_f14d8e5b3f876d::t_4d6f91879c7456 288
+backend/core/services/weather.py
+  s_f14d8e5b3f876d::t_53d5753be67c30 7,29-38,125-126,130-137,143-159,164,166,169-186,217-280,283-294
+  s_f14d8e5b3f876d::t_f3fa493b954f8e 281-282,351-367
+frontend/app/calendar/calendar.module.css
+  s_f14d8e5b3f876d::t_d86d44c19f6a1c 138,141-143,145-146,148,185
+  s_f14d8e5b3f876d::t_6e4961f6b65ec0 1-77,79-134,162-166,179,186-188,194-196,202-227,229-260,279,295-345
+  s_f14d8e5b3f876d::t_88527afc933501 180-184,189-193,197-201
+  s_f14d8e5b3f876d::t_8f9bcdadf24f63 136,140,144
+  s_f14d8e5b3f876d::t_2c4408c907ed22 78,135,137,139,147,149-161,167-178,228,261-278,280-294
+frontend/app/home/LocationContextPanel.tsx
+  s_f14d8e5b3f876d::t_53f483478f5bdc 24
+  s_f14d8e5b3f876d::t_317fb659ec8783 4,18-23,25-35
+  s_f14d8e5b3f876d::t_565a100af3fba2 1-2,5-10,12,17,36-40,42-57,59,61-73,76-78,81,83-87,89-98,103-109,114-121,126-133,136-142,145-152,154,158,160,163-170
+  s_f14d8e5b3f876d::t_2f3e4211a736a7 99-102,110-113,122-125,134-135,143-144,153,155-157,159,161-162
+  s_f14d8e5b3f876d::t_3821cc294c2a0a 3
+  h_e83f79f999df32 11,13-16,41,58,60,74-75,79-80,82,88
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "d5be905f1f51ddd4251fb44252cc682bb0a20ff6",
+  "prompts": {},
+  "humans": {
+    "h_e83f79f999df32": {
+      "author": "weilan <weilanc@gmail.com>"
+    }
+  },
+  "sessions": {
+    "s_f14d8e5b3f876d": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019fe847-b966-7730-88b2-3d21e055852e",
+        "model": "gpt-5.5"
+      },
+      "human_author": "weilan <weilanc@gmail.com>"
+    }
+  }
+}
