@@ -4,11 +4,15 @@ import { ArrowPathIcon, MapPinIcon } from "@heroicons/react/24/outline";
 import { useMemo } from "react";
 
 import { Button } from "../../components/Button";
-import {
-  type LocationContext,
-} from "../../lib/appApi";
+import type { LocationContext } from "../../lib/appApi";
 import styles from "./home.module.css";
-import { useLocationContextData, useLocationForm, getWeatherDisplay, formatUvValue, formatLocation } from "./locationHooks";
+import {
+  formatLocation,
+  formatUvValue,
+  getWeatherDisplay,
+  useLocationContextData,
+  useLocationForm,
+} from "./locationHooks";
 
 type LocationContextPanelProps = {
   enabled: boolean;
@@ -71,15 +75,14 @@ export function LocationContextPanel({
                 {formatLocation(profileLocation)}
               </span>
               <strong>{uvRisk.label}</strong>
-              {/* <p>{summaryText}</p> */}
-              
+              <p>{summaryText}</p>
             </div>
           </div>
 
           {weatherSnapshot && (
             <div className={styles.weatherMetaGrid}>
               {weatherStats.map((item) => (
-                <div className={[styles.uvDial, uvRisk.className].join(" ")} key={item.label}>
+                <div className={styles.weatherMetaItem} key={item.label}>
                   <span>{item.label}</span>
                   <strong>{item.value}</strong>
                 </div>
