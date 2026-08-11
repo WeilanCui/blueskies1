@@ -1,0 +1,14 @@
+service-compose.yml
+  h_e83f79f999df32 15,85
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "1e9f5e95df8c940de551755fac6c120dd07e42d4",
+  "prompts": {},
+  "humans": {
+    "h_e83f79f999df32": {
+      "author": "weilan <weilanc@gmail.com>"
+    }
+  }
+}
