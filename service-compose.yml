@@ -12,7 +12,7 @@
 # Image references interpolate REGISTRY, PROJECT and TAG from the deploying shell's
 # environment (the Makefile exports them); the defaults below are what a bare
 # `docker stack deploy` resolves to.
-version: '3.9'
+version: "3.9"
 
 secrets:
   # external: the values are created with `docker secret create` on the swarm and are
@@ -32,7 +32,6 @@ networks:
       encrypted: "true"
 
 services:
-
   web:
     image: ${REGISTRY:-direct:5000}/${PROJECT:-blueskies}-frontend:${TAG:-latest}
     environment:
@@ -83,7 +82,7 @@ services:
         - traefik.docker.network=public
         - traefik.constraint-label=traefik-public
 
-        - traefik.http.routers.blueskies-https.rule=Host(`blueskies1.tempestnetworks.net`)
+        - traefik.http.routers.blueskies-https.rule=Host(`cereneskin.com`)
         - traefik.http.routers.blueskies-https.entrypoints=https
         - traefik.http.routers.blueskies-https.tls=true
         - traefik.http.routers.blueskies-https.tls.certresolver=le
