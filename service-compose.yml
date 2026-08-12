@@ -41,7 +41,7 @@ services:
       # Runtime value for the route handlers in app/api/. The rewrites in
       # next.config.ts were already resolved at build time from the image's build arg.
       - SERVER_API_BASE_URL=http://backend:8000
-      - NEXT_PUBLIC_API_BASE_URL=https://blueskies1.tempestnetworks.net
+      - NEXT_PUBLIC_API_BASE_URL=https://cereneskin.com
     networks:
       - public
       - blueskies
@@ -82,10 +82,38 @@ services:
         - traefik.docker.network=public
         - traefik.constraint-label=traefik-public
 
-        - traefik.http.routers.blueskies-https.rule=Host(`cereneskin.com`)
+        # Two routers, one per hostname, because a router carries exactly one certresolver
+        # and these two hosts cannot use the same one. Both point at the same `blueskies`
+        # service, so the `.service=` reference has to be explicit once more than one
+        # router exists.
+
+        # blueskies1.tempestnetworks.net: DNS-01. Its zone lives in the Cloudflare account
+        # the shared Traefik's credentials are scoped to, so the standard `le` resolver
+        # works and the host can stay proxied (orange cloud).
+        - traefik.http.routers.blueskies-https.rule=Host(`blueskies1.tempestnetworks.net`)
         - traefik.http.routers.blueskies-https.entrypoints=https
         - traefik.http.routers.blueskies-https.tls=true
         - traefik.http.routers.blueskies-https.tls.certresolver=le
+        - traefik.http.routers.blueskies-https.service=blueskies
+
+        # cereneskin.com: TLS-ALPN-01. This domain is registered in a DIFFERENT Cloudflare
+        # account (nameservers davina/andy vs kip/edna), and Traefik carries one credential
+        # set, so lego cannot see the zone -- DNS-01 fails with "failed to find zone
+        # cereneskin.com.: zone could not be found", no certificate is issued, and the
+        # browser gets a Cloudflare 525. TLS-ALPN-01 needs no API access at all.
+        #
+        # The cost: Let's Encrypt must reach port 443 on the origin, so this host MUST stay
+        # DNS-only (grey cloud) -- behind the proxy the challenge dies with "Cannot
+        # negotiate ALPN protocol acme-tls/1". During issuance point the A record at exactly
+        # one manager IP: Traefik publishes 443 in host mode, so only the replica LE
+        # actually connects to can solve it. Re-enabling the orange cloud breaks renewal
+        # ~60 days later, not today.
+        - traefik.http.routers.blueskies-cerene-https.rule=Host(`cereneskin.com`)
+        - traefik.http.routers.blueskies-cerene-https.entrypoints=https
+        - traefik.http.routers.blueskies-cerene-https.tls=true
+        - traefik.http.routers.blueskies-cerene-https.tls.certresolver=tls
+        - traefik.http.routers.blueskies-cerene-https.service=blueskies
+
         - traefik.http.services.blueskies.loadbalancer.server.port=3000
 
   backend:
@@ -103,9 +131,11 @@ services:
       - REDIS_URL=redis://redis:6379/0
       - DJANGO_SECRET_KEY_FILE=/run/secrets/blueskies_django_secret_key
       - DJANGO_DEBUG=False
-      - DJANGO_ALLOWED_HOSTS=backend,localhost,127.0.0.1,blueskies1.tempestnetworks.net
-      - DJANGO_CSRF_TRUSTED_ORIGINS=https://blueskies1.tempestnetworks.net
-      - DJANGO_CORS_ALLOWED_ORIGINS=https://blueskies1.tempestnetworks.net
+      # Both public hostnames are routed to `web`, so both must be accepted here or the
+      # one that is missing 400s on every write with DisallowedHost / CSRF failure.
+      - DJANGO_ALLOWED_HOSTS=backend,localhost,127.0.0.1,cereneskin.com,blueskies1.tempestnetworks.net
+      - DJANGO_CSRF_TRUSTED_ORIGINS=https://cereneskin.com,https://blueskies1.tempestnetworks.net
+      - DJANGO_CORS_ALLOWED_ORIGINS=https://cereneskin.com,https://blueskies1.tempestnetworks.net
       - DJANGO_CORS_ALLOW_CREDENTIALS=True
       - DJANGO_SESSION_COOKIE_SECURE=True
       - DJANGO_CSRF_COOKIE_SECURE=True
