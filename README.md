@@ -202,8 +202,10 @@ curl -s http://direct:5000/v2/blueskies-backend/tags/list
 
 **`web` is the only service reachable from outside the swarm.** The browser already talks
 only to the Next.js route handlers in `app/api/`, which proxy to Django over the private
-overlay, so Django never needs to be exposed. Traefik routes
-`blueskies1.tempestnetworks.net` to it over TLS.
+overlay, so Django never needs to be exposed. Traefik routes two hostnames to it over TLS —
+`cereneskin.com` and `blueskies1.tempestnetworks.net` — as two routers onto the same
+`blueskies` service, because they need different certificate resolvers (see below). Both
+must appear in `DJANGO_ALLOWED_HOSTS` and in the CSRF/CORS origin lists.
 
 ### Deploying
 
@@ -265,13 +267,65 @@ healthy replica and look completely fine. Check each origin directly instead:
 
 ```bash
 for ip in <manager-ips>; do
-  echo | openssl s_client -connect "$ip:443" -servername blueskies1.tempestnetworks.net \
+  echo | openssl s_client -connect "$ip:443" -servername cereneskin.com \
     2>&1 | grep -E 'subject=|unrecognized'
 done
 ```
 
-Every replica should print `subject=CN = blueskies1.tempestnetworks.net`. Any that print
+Every replica should print `subject=CN = cereneskin.com`. Any that print
 `unrecognized name` still need the restart.
+
+### Two hostnames, two certificate resolvers
+
+A Traefik router carries exactly one `certresolver`, and the two public hostnames cannot
+share one, so `web` declares two routers pointing at the same `blueskies` service. Once
+more than one router exists, the `traefik.http.routers.<name>.service=blueskies` reference
+has to be explicit on each.
+
+`blueskies1.tempestnetworks.net` uses the standard `le` resolver (DNS-01) and may stay
+proxied behind Cloudflare. `cereneskin.com` uses `tls` (TLS-ALPN-01) and may not.
+
+#### Why cereneskin.com uses TLS-ALPN-01, and why it must stay grey-clouded
+
+`le` solves DNS-01 through Cloudflare, and Traefik carries a single Cloudflare credential
+set scoped to the account that holds `tempestnetworks.*` and `stevecoursen.com`.
+`cereneskin.com` is registered in a **different** Cloudflare account — different assigned
+nameserver pair (`davina`/`andy` vs `kip`/`edna`) — so lego cannot enumerate the zone and
+every attempt fails with:
+
+```
+acme: error presenting token: cloudflare: failed to find zone cereneskin.com.:
+zone could not be found
+```
+
+No certificate is issued, Traefik answers the handshake with `unrecognized name`, and
+Cloudflare reports that to the browser as a **525**. The `tls` resolver solves TLS-ALPN-01
+instead and needs no API credentials at all.
+
+The trade-off is that Let's Encrypt must reach port 443 on the origin directly, so
+`cereneskin.com` must be **DNS-only (grey cloud)** in Cloudflare: no proxy, no CDN, no WAF,
+and the origin IP is public. Behind the proxy the challenge dies with:
+
+```
+403 :: urn:ietf:params:acme:error:unauthorized ::
+Cannot negotiate ALPN protocol "acme-tls/1" for tls-alpn-01 challenge
+```
+
+Once a certificate exists, re-enabling the orange cloud does not break anything today — it
+breaks the renewal about 60 days later.
+
+Watch the failed-authorization rate limit while sorting this out. All three Traefik
+replicas attempt the challenge independently, and Let's Encrypt allows only **5 failed
+authorizations per hostname per hour**; a single deploy against a still-proxied record
+exhausts it in under a minute and blocks retries with a `429` for the rest of the hour. Fix
+the DNS record first, then let Traefik retry on its own — no redeploy needed.
+
+During issuance, point the A record at exactly **one** manager IP. Traefik publishes 443 in
+`host` mode (no ingress load balancing), and all three replicas attempt the challenge, but
+only the one Let's Encrypt actually connects to can complete it. Once the certificate is in
+the shared ACME store (`/mnt/persist/traefik2` is NFS from `direct`, so all nodes see it),
+run the `docker service update --force traefik_traefik` above and every replica serves the
+host; more A records can be added after that if you want the redundancy back.
 
 Migrations apply themselves: the backend container runs `migrate` on startup, before it
 begins serving. Only `createsuperuser` is a manual step.
