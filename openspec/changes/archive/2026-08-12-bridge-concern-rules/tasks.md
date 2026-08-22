@@ -20,10 +20,10 @@
 
 ## 5. Tests
 
-- [ ] 5.1 Matching-extraction parity: existing constraint tests pass unchanged
+- [x] 5.1 Matching-extraction parity: existing constraint tests pass unchanged
 - [x] 5.2 Evaluator unit tests: each kind, confidence scaling, inactive link/rule ignored, product-category targeting
 - [x] 5.3 API tests: mixed constraint+concern impacts with correct `source`/`concern`; no-concern profile identical to today
-- [ ] 5.4 Full suite green
+- [x] 5.4 Full suite green (238 tests; sole failure is the unrelated pre-existing core.tests.test_locations weather-snapshot test)
 
 ## 6. Docs
 
