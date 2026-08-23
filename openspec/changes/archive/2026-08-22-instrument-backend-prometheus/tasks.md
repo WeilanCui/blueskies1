@@ -64,4 +64,4 @@
 - [x] 10.3 Locally: `docker compose exec celery curl -s http://localhost:9808/metrics | grep celery_task_total`
 - [x] 10.4 Trigger one recommendation score call and confirm `blueskies_recommendation_score_seconds_count` incremented on the next scrape
 - [x] 10.5 Trigger one formulation ingest and confirm `blueskies_formulation_ingest_total{result="created"}` incremented
-- [x] 10.6 Operator action post-merge (documented in PR body): deploy to swarm with flag `False`, confirm baseline; flip to `True`, redeploy, verify all three scrape targets return `200` from a shell inside the overlay.
+- [ ] 10.6 Operator action post-merge (documented in PR body): deploy to swarm with flag `False`, confirm baseline; flip to `True`, redeploy, verify all three scrape targets return `200` from a shell inside the overlay.

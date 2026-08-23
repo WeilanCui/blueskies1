@@ -1,8 +1,10 @@
 """Bootstrap functions for enabling Prometheus metrics on worker and beat processes."""
 import logging
+import os
+from pathlib import Path
 
 from django.conf import settings
-from prometheus_client import start_http_server
+from prometheus_client import start_http_server, CollectorRegistry, multiprocess
 
 logger = logging.getLogger(__name__)
 
@@ -24,7 +26,19 @@ def enable_worker_metrics():
     from . import celery_metrics  # noqa: F401 — registers task_* signal handlers on import
 
     port = settings.PROMETHEUS_CELERY_WORKER_PORT
-    start_http_server(port)
+
+    # Enable prometheus_client multiprocess mode for celery worker (prefork pool).
+    # The prefork pool forks child processes; without multiprocess mode, child process
+    # task signals write to the parent's in-memory registry, which the parent's HTTP
+    # server never sees. With multiprocess mode enabled, each process writes to files
+    # in PROMETHEUS_MULTIPROC_DIR, and the HTTP server aggregates them on each scrape.
+    multiproc_dir = settings.PROMETHEUS_MULTIPROC_DIR
+    os.environ["PROMETHEUS_MULTIPROC_DIR"] = multiproc_dir
+    Path(multiproc_dir).mkdir(parents=True, exist_ok=True)
+
+    multiproc_registry = CollectorRegistry()
+    multiprocess.MultiProcessCollector(multiproc_registry)
+    start_http_server(port, registry=multiproc_registry)
     _worker_started = True
     logger.info("Prometheus worker metrics server listening on :%s", port)
 
@@ -44,6 +58,15 @@ def enable_beat_metrics():
 
     celery_metrics.register_beat_tick_handler()
     port = settings.PROMETHEUS_CELERY_BEAT_PORT
-    start_http_server(port)
+
+    # Enable prometheus_client multiprocess mode for consistency with worker.
+    # See enable_worker_metrics() for details.
+    multiproc_dir = settings.PROMETHEUS_MULTIPROC_DIR
+    os.environ["PROMETHEUS_MULTIPROC_DIR"] = multiproc_dir
+    Path(multiproc_dir).mkdir(parents=True, exist_ok=True)
+
+    multiproc_registry = CollectorRegistry()
+    multiprocess.MultiProcessCollector(multiproc_registry)
+    start_http_server(port, registry=multiproc_registry)
     _beat_started = True
     logger.info("Prometheus beat metrics server listening on :%s", port)

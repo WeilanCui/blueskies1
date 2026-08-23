@@ -216,6 +216,9 @@ services:
       - LITERATURE_EXTRACTOR=auto
       - NCBI_API_KEY=
       - PROMETHEUS_METRICS_ENABLED=true
+      - PROMETHEUS_MULTIPROC_DIR=/tmp/prometheus_multiproc
+    tmpfs:
+      - /tmp/prometheus_multiproc:size=64m
     expose:
       - "9808"
     networks:
@@ -277,6 +280,9 @@ services:
       - LITERATURE_DAILY_COMPOUND_LIMIT=25
       - LITERATURE_DAILY_ENRICH=False
       - PROMETHEUS_METRICS_ENABLED=true
+      - PROMETHEUS_MULTIPROC_DIR=/tmp/prometheus_multiproc
+    tmpfs:
+      - /tmp/prometheus_multiproc:size=64m
     expose:
       - "9809"
     volumes:

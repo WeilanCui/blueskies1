@@ -135,11 +135,15 @@ def ingest_product_by_barcode(barcode: str) -> BarcodeScanResult:
             FORMULATION_INGEST_TOTAL.labels(result="updated").inc()
             return _barcode_scan_result(existing, barcode=barcode, created=False)
 
+        # Record that the formulation was created immediately after the transaction commits,
+        # before attempting async enrichment. If .delay() fails, the formulation was still
+        # successfully created and persisted, so the metric should reflect that.
+        FORMULATION_INGEST_TOTAL.labels(result="created").inc()
+
         # After the transaction commits, enqueue async enrichment.
         from core.tasks import enrich_formulation_ingredients  # avoid circular import
         enrich_formulation_ingredients.delay(formulation.pk)  # pyright: ignore[reportFunctionMemberAccess]
 
-        FORMULATION_INGEST_TOTAL.labels(result="created").inc()
         return BarcodeScanResult(
             formulation_id=formulation.pk,
             product_id=product_obj.pk,

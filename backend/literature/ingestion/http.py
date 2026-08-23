@@ -144,6 +144,13 @@ def _request(kind, url, *, params, headers, limiter, timeout, max_retries, backo
         raise
     finally:
         if service:  # only record when caller identified the service
-            outcome = classify_http_outcome(status_code_seen, exc_captured)
+            # When exc_captured is an HttpError with status_code=None (from exhausted retries),
+            # classify based on the underlying requests exception instead, so network failures
+            # are classified as "transport_error" rather than "success".
+            exc_for_classification = exc_captured
+            if isinstance(exc_captured, HttpError) and exc_captured.status_code is None and last_exc is not None:
+                exc_for_classification = last_exc
+
+            outcome = classify_http_outcome(status_code_seen, exc_for_classification)
             elapsed = time.perf_counter() - start
             EXTERNAL_API_REQUEST_SECONDS.labels(service=service, outcome=outcome).observe(elapsed)
