@@ -1,7 +1,10 @@
 """Tests for the backend-observability capability."""
+import importlib
+import time as _time
 from unittest import mock
 
 from django.test import Client, TestCase, override_settings
+from django.urls import clear_url_caches
 
 from core.observability import bootstrap, metrics as obs_metrics
 from core.observability.celery_metrics import (
@@ -286,3 +289,95 @@ class BootstrapDisabledTests(TestCase):
             bootstrap.enable_beat_metrics()
             mock_start.assert_not_called()
         self.assertFalse(bootstrap._beat_started)
+
+
+class RealUrlconfMetricsGateTests(TestCase):
+    """Round 3 fix: exercise the real config/urls.py conditional gate, not just fixture URLconfs."""
+
+    def _reload_config_urls(self):
+        import config.urls
+        importlib.reload(config.urls)
+        clear_url_caches()
+
+    def tearDown(self):
+        # Restore config.urls to its module-import default (flag off).
+        with override_settings(PROMETHEUS_METRICS_ENABLED=False):
+            self._reload_config_urls()
+
+    @override_settings(ROOT_URLCONF="config.urls", PROMETHEUS_METRICS_ENABLED=True)
+    def test_real_urlconf_registers_metrics_when_flag_on(self):
+        self._reload_config_urls()
+        try:
+            client = Client()
+            resp = client.get("/metrics")
+            self.assertEqual(resp.status_code, 200, resp.content)
+        finally:
+            # Reset back to flag-off state to leave the module clean.
+            with override_settings(PROMETHEUS_METRICS_ENABLED=False):
+                self._reload_config_urls()
+
+    @override_settings(ROOT_URLCONF="config.urls", PROMETHEUS_METRICS_ENABLED=False)
+    def test_real_urlconf_omits_metrics_when_flag_off(self):
+        self._reload_config_urls()
+        client = Client()
+        resp = client.get("/metrics")
+        self.assertEqual(resp.status_code, 404)
+
+
+class CeleryPrerunPostrunSignalTests(TestCase):
+    """Test signal dispatch regression for task_prerun and task_postrun."""
+
+    @staticmethod
+    def _sample_count(metric, labels):
+        """Extract the count value of a histogram metric sample by its label set."""
+        for sample_family in metric.collect():
+            for sample in sample_family.samples:
+                if sample.name.endswith("_count") and sample.labels == labels:
+                    return sample.value
+        return 0.0
+
+    def test_celery_task_prerun_postrun_signals_record_runtime(self):
+        """Signal dispatch for task_prerun and task_postrun records runtime histogram."""
+        from celery.signals import task_postrun, task_prerun
+        from core.observability.celery_metrics import (
+            CELERY_TASK_RUNTIME_SECONDS,
+            _task_start_times,
+        )
+
+        class _FakeTask:
+            name = "test.observability.timed_task"
+
+        task_id = "test-prerun-postrun-id"
+        before_count = self._sample_count(
+            CELERY_TASK_RUNTIME_SECONDS, {"task": _FakeTask.name}
+        )
+
+        # Dispatch prerun signal
+        task_prerun.send(
+            sender=_FakeTask(),
+            task_id=task_id,
+            task=_FakeTask(),
+            args=[],
+            kwargs={},
+        )
+        self.assertIn(task_id, _task_start_times, "prerun did not record start time")
+
+        # Small delay to ensure measurable elapsed time
+        _time.sleep(0.001)
+
+        # Dispatch postrun signal
+        task_postrun.send(
+            sender=_FakeTask(),
+            task_id=task_id,
+            task=_FakeTask(),
+            args=[],
+            kwargs={},
+            retval=None,
+            state="SUCCESS",
+        )
+
+        self.assertNotIn(task_id, _task_start_times, "postrun did not pop start time")
+        after_count = self._sample_count(
+            CELERY_TASK_RUNTIME_SECONDS, {"task": _FakeTask.name}
+        )
+        self.assertEqual(after_count - before_count, 1)
