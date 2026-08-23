@@ -4,7 +4,7 @@ import threading
 import time
 from collections import defaultdict
 
-from celery.signals import beat_init, task_failure, task_postrun, task_prerun, task_retry, task_success, worker_process_init
+from celery.signals import task_failure, task_postrun, task_prerun, task_retry, task_success, worker_process_init
 from prometheus_client import Counter, Histogram
 
 from . import metrics
@@ -166,17 +166,19 @@ def register_beat_tick_handler():
     daemon_thread = threading.Thread(target=_update_beat_seconds_since_last_tick, daemon=True)
     daemon_thread.start()
 
-    # Connect beat_init signal
-    @beat_init.connect
-    def _on_beat_init(sender, **_kw):
-        try:
-            global _last_tick_ts
-            with _beat_tick_lock:
-                _last_tick_ts = time.time()
-                last_tick_gauge.set(_last_tick_ts)
-            logger.info("Prometheus beat metrics initialized")
-        except Exception:
-            logger.exception("Error in beat_init metrics handler")
+    # `register_beat_tick_handler()` itself runs from a `beat_init` dispatch
+    # (bootstrap.enable_beat_metrics is wired to `beat_init.connect` in
+    # config/celery.py), so connecting ANOTHER `beat_init` receiver here would
+    # never fire — celery's dispatcher snapshots the receiver list before the
+    # dispatch loop starts (celery/utils/dispatch/signal.py). Seed the
+    # last-tick gauge inline instead.
+    try:
+        with _beat_tick_lock:
+            _last_tick_ts = time.time()
+            last_tick_gauge.set(_last_tick_ts)
+        logger.info("Prometheus beat metrics initialized")
+    except Exception:
+        logger.exception("Error seeding initial beat metrics")
 
     # Monkey-patch the Scheduler.tick method to update metrics
     try:
