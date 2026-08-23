@@ -1,5 +1,4 @@
 """Prometheus metrics registry for custom domain metrics."""
-import time
 from typing import Literal
 
 from prometheus_client import Counter, Gauge, Histogram

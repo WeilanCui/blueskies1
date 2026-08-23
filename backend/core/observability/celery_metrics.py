@@ -2,7 +2,6 @@
 import logging
 import threading
 import time
-from collections import defaultdict
 
 from celery.signals import task_failure, task_postrun, task_prerun, task_retry, task_success, worker_process_init
 from prometheus_client import Counter, Histogram
