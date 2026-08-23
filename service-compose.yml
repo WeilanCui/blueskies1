@@ -150,6 +150,10 @@ services:
       # Set ONLY here. celery and celery-beat share this image and would otherwise
       # migrate concurrently with this service on every deploy.
       - DJANGO_MIGRATE_ON_START=true
+      # Prometheus metrics: exposed on /metrics (overlay-internal only, no Traefik route)
+      - PROMETHEUS_METRICS_ENABLED=true
+    tmpfs:
+      - /tmp/prometheus_multiproc:size=64m
     networks:
       - blueskies
     sysctls:
@@ -211,6 +215,9 @@ services:
       - OPENAI_MODEL=gpt-4o-mini
       - LITERATURE_EXTRACTOR=auto
       - NCBI_API_KEY=
+      - PROMETHEUS_METRICS_ENABLED=true
+    expose:
+      - "9808"
     networks:
       - blueskies
     sysctls:
@@ -269,6 +276,9 @@ services:
       - LITERATURE_DAILY_MINUTE=15
       - LITERATURE_DAILY_COMPOUND_LIMIT=25
       - LITERATURE_DAILY_ENRICH=False
+      - PROMETHEUS_METRICS_ENABLED=true
+    expose:
+      - "9809"
     volumes:
       # The beat schedule is state: without this it is lost on every restart and the
       # nightly job can fire twice. The image runs as uid 10001, so this host path must

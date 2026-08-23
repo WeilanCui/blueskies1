@@ -69,7 +69,7 @@ def _headers() -> dict[str, str]:
 def _get(path: str, params: dict | None = None) -> dict:
     base = settings.INCI_API_BASE.rstrip("/")
     url = f"{base}{path}"
-    return request_json(url, params=params, headers=_headers(), limiter=_LIMITER)
+    return request_json(url, params=params, headers=_headers(), limiter=_LIMITER, service="inci")
 
 
 def search_ingredients(query: str, limit: int = 10) -> list[InciIngredient]:

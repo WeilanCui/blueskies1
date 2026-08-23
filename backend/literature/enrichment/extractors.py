@@ -4,11 +4,13 @@ from __future__ import annotations
 
 import json
 import logging
+import time
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 
 from django.conf import settings
 
+from core.observability.metrics import EXTERNAL_API_REQUEST_SECONDS
 from literature.ingestion.relevance import classify_relevance, infer_role_in_paper
 from literature.models import RelevanceCategory, RoleInPaper
 from literature.seeds.property_definitions import FUNCTIONAL_CLASS_VALUES
@@ -152,15 +154,33 @@ class OpenAIExtractor(LiteratureExtractor):
         client = OpenAI(api_key=self.api_key)
         system_prompt = _build_system_prompt()
         user_prompt = _build_user_prompt(context)
-        response = client.chat.completions.create(
-            model=self.model,
-            response_format={"type": "json_object"},
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_prompt},
-            ],
-            temperature=0.1,
-        )
+
+        start = time.perf_counter()
+        outcome = "success"
+        try:
+            response = client.chat.completions.create(
+                model=self.model,
+                response_format={"type": "json_object"},
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_prompt},
+                ],
+                temperature=0.1,
+            )
+        except Exception as exc:
+            # Best-effort classification: openai raises subclasses of openai.APIError with status_code
+            status_code = getattr(exc, "status_code", None) or getattr(exc, "http_status", None)
+            if status_code == 429:
+                outcome = "rate_limited"
+            elif status_code and status_code >= 400:
+                outcome = "http_error"
+            else:
+                outcome = "transport_error"
+            raise
+        finally:
+            elapsed = time.perf_counter() - start
+            EXTERNAL_API_REQUEST_SECONDS.labels(service="openai", outcome=outcome).observe(elapsed)
+
         content = response.choices[0].message.content or "{}"
         try:
             payload = json.loads(content)

@@ -60,7 +60,7 @@ def name_to_cids(name: str) -> list[int]:
     """Resolve a chemical/INCI name to PubChem CIDs (first is best match)."""
     url = f"{BASE}/compound/name/{_escape(name)}/cids/JSON"
     try:
-        data = request_json(url, limiter=_LIMITER)
+        data = request_json(url, limiter=_LIMITER, service="pubchem")
     except HttpError as exc:
         logger.info("PubChem name resolution failed for %r: %s", name, exc)
         return []
@@ -71,7 +71,7 @@ def cid_properties(cid: int) -> dict:
     """Fetch computed descriptors for a CID."""
     fields = ",".join(PROPERTY_FIELDS)
     url = f"{BASE}/compound/cid/{cid}/property/{fields}/JSON"
-    data = request_json(url, limiter=_LIMITER)
+    data = request_json(url, limiter=_LIMITER, service="pubchem")
     props = data.get("PropertyTable", {}).get("Properties", [])
     return props[0] if props else {}
 
@@ -79,7 +79,7 @@ def cid_properties(cid: int) -> dict:
 def cid_synonyms(cid: int) -> list[str]:
     url = f"{BASE}/compound/cid/{cid}/synonyms/JSON"
     try:
-        data = request_json(url, limiter=_LIMITER)
+        data = request_json(url, limiter=_LIMITER, service="pubchem")
     except HttpError as exc:
         logger.info("PubChem synonyms failed for CID %s: %s", cid, exc)
         return []
@@ -90,7 +90,7 @@ def cid_synonyms(cid: int) -> list[str]:
 def cid_pubmed_ids(cid: int) -> list[str]:
     url = f"{BASE}/compound/cid/{cid}/xrefs/PubMedID/JSON"
     try:
-        data = request_json(url, limiter=_LIMITER)
+        data = request_json(url, limiter=_LIMITER, service="pubchem")
     except HttpError as exc:
         logger.info("PubChem PubMed xref failed for CID %s: %s", cid, exc)
         return []
