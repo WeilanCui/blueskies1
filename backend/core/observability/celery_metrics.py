@@ -83,8 +83,11 @@ def _on_task_postrun(task_id, task, args, kwargs, retval, state, **_kw):
 
 
 @task_success.connect
-def _on_task_success(sender, task_id, result, **_kw):
-    """Increment task success counter."""
+def _on_task_success(sender, result=None, **_kw):
+    """Increment task success counter.
+
+    Celery's task_success signal sends (sender, result) — no task_id.
+    """
     try:
         CELERY_TASK_TOTAL.labels(task=sender.name, state="SUCCESS").inc()
     except Exception:
@@ -103,8 +106,11 @@ def _on_task_failure(sender, task_id, exception, einfo, **_kw):
 
 
 @task_retry.connect
-def _on_task_retry(sender, task_id, reason, einfo, **_kw):
-    """Increment task retry counter."""
+def _on_task_retry(sender, request=None, reason=None, einfo=None, **_kw):
+    """Increment task retry counter.
+
+    Celery's task_retry signal sends (sender, request, reason, einfo) — no task_id.
+    """
     try:
         CELERY_TASK_RETRY_TOTAL.labels(task=sender.name).inc()
     except Exception:

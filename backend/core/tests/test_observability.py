@@ -7,6 +7,7 @@ from core.observability import bootstrap, metrics as obs_metrics
 from core.observability.celery_metrics import (
     CELERY_TASK_TOTAL,
     CELERY_TASK_FAILURE_TOTAL,
+    CELERY_TASK_RETRY_TOTAL,
 )
 
 
@@ -219,6 +220,51 @@ class MetricLabelCardinalityTests(TestCase):
 
         # Fail if no samples were observed (vacuous test).
         self.assertGreater(len(observed_samples), 0)
+
+    @staticmethod
+    def _sample_value(metric, labels):
+        """Extract the value of a metric sample by its label set."""
+        for sample_family in metric.collect():
+            for sample in sample_family.samples:
+                if sample.name.endswith("_total") and sample.labels == labels:
+                    return sample.value
+        return 0.0
+
+    def test_celery_task_success_signal_increments_counter(self):
+        """Celery task_success signal dispatch increments counter."""
+        from celery.signals import task_success
+
+        class _FakeTask:
+            name = "test.observability.fake_task"
+
+        before = self._sample_value(
+            CELERY_TASK_TOTAL,
+            {"task": _FakeTask.name, "state": "SUCCESS"},
+        )
+        task_success.send(sender=_FakeTask(), result=None)
+        after = self._sample_value(
+            CELERY_TASK_TOTAL,
+            {"task": _FakeTask.name, "state": "SUCCESS"},
+        )
+        self.assertEqual(after - before, 1)
+
+    def test_celery_task_retry_signal_increments_counter(self):
+        """Celery task_retry signal dispatch increments counter."""
+        from celery.signals import task_retry
+
+        class _FakeTask:
+            name = "test.observability.fake_retry_task"
+
+        before = self._sample_value(
+            CELERY_TASK_RETRY_TOTAL,
+            {"task": _FakeTask.name},
+        )
+        task_retry.send(sender=_FakeTask(), request=None, reason="test", einfo=None)
+        after = self._sample_value(
+            CELERY_TASK_RETRY_TOTAL,
+            {"task": _FakeTask.name},
+        )
+        self.assertEqual(after - before, 1)
 
 
 class BootstrapDisabledTests(TestCase):
