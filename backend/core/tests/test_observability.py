@@ -74,7 +74,7 @@ class MetricsEndpointEnabledTests(TestCase):
         self.assertEqual(metrics_resp.status_code, 200)
         self.assertIn(b"django_http_responses_total_by_status_view_method_total", metrics_resp.content)
         # Verify that the health-check view is mentioned in the metrics
-        self.assertIn(b"core:health-check", metrics_resp.content)
+        self.assertIn(b'view="health-check"', metrics_resp.content)
 
     @override_settings(
         ROOT_URLCONF="core.tests._urls_metrics_enabled",
@@ -93,32 +93,49 @@ class MetricsEndpointEnabledTests(TestCase):
         REST_FRAMEWORK={
             "DEFAULT_THROTTLE_CLASSES": [
                 "rest_framework.throttling.AnonRateThrottle",
-                "rest_framework.throttling.UserRateThrottle",
             ],
-            # Force all anonymous requests to be throttled immediately (0 per day)
+            # Allow exactly one anonymous request per day; the second is a 429.
             "DEFAULT_THROTTLE_RATES": {
-                "anon": "0/day",
-                "user": "600/min",
+                "anon": "1/day",
             },
         },
     )
     def test_throttled_request_still_counted(self):
         """Throttled (429) requests are still recorded in metrics."""
-        client = Client()
-        # Hit the health check endpoint as an anonymous user; with the throttle rate
-        # set to "0/day", the first request should be throttled
-        # (Note: The health check endpoint may not use DRF throttling; we'll try a
-        # DRF endpoint instead)
-        # Instead, let's use a list endpoint that would be throttled
-        resp = client.get("/api/compounds/")
-        # Either 429 (throttled) or 200 (health check might not use throttling)
-        # but we should still record something
+        # DRF caches THROTTLE_RATES on the class body at import time, so
+        # @override_settings(REST_FRAMEWORK=...) does not propagate. Patch it
+        # for the scope of this test instead, and clear the cache so any per-
+        # scope history from another test cannot leak in.
+        from django.core.cache import cache
+        from rest_framework.throttling import AnonRateThrottle, SimpleRateThrottle
 
-        # Scrape metrics and verify that responses are being recorded
-        metrics_resp = client.get("/metrics")
-        self.assertEqual(metrics_resp.status_code, 200)
-        # The status code should be in the metrics (either 200, 429, or other)
-        self.assertIn(b"django_http_responses_total_by_status_view_method_total", metrics_resp.content)
+        cache.clear()
+        with mock.patch.dict(
+            SimpleRateThrottle.THROTTLE_RATES, {"anon": "1/day"}, clear=False
+        ):
+            # Also flush any cached .rate/.num_requests/.duration on instances the
+            # AnonRateThrottle class already produced in the process.
+            AnonRateThrottle.rate = "1/day"
+            try:
+                client = Client()
+                # First anonymous request consumes the day's quota.
+                first = client.get("/api/compounds/")
+                self.assertEqual(first.status_code, 200, first.content)
+                # Second one should 429 with `anon: 1/day`.
+                second = client.get("/api/compounds/")
+                self.assertEqual(second.status_code, 429, second.content)
+
+                # Scrape metrics and verify the 429 status was recorded.
+                metrics_resp = client.get("/metrics")
+                self.assertEqual(metrics_resp.status_code, 200)
+                self.assertIn(
+                    b"django_http_responses_total_by_status_view_method_total",
+                    metrics_resp.content,
+                )
+                self.assertIn(b'status="429"', metrics_resp.content)
+            finally:
+                del AnonRateThrottle.rate
+                cache.clear()
 
 
 class MetricsEndpointDisabledTests(TestCase):
