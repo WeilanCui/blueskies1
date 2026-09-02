@@ -57,7 +57,7 @@ services:
       start_period: 30s
     deploy:
       mode: replicated
-      replicas: 2
+      replicas: 0
       resources:
         limits:
           cpus: "1"
@@ -87,6 +87,11 @@ services:
         # service, so the `.service=` reference has to be explicit once more than one
         # router exists.
 
+        - traefik.http.middlewares.blueskies-blocking.plugin.sablier.names=blueskies1_web
+        - traefik.http.middlewares.blueskies-blocking.plugin.sablier.sablierUrl=http://sablier:10000
+        - traefik.http.middlewares.blueskies-blocking.plugin.sablier.sessionDuration=5m
+        - traefik.http.middlewares.blueskies-blocking.plugin.sablier.blocking.timeout=30s
+
         # blueskies1.tempestnetworks.net: DNS-01. Its zone lives in the Cloudflare account
         # the shared Traefik's credentials are scoped to, so the standard `le` resolver
         # works and the host can stay proxied (orange cloud).
@@ -95,6 +100,7 @@ services:
         - traefik.http.routers.blueskies-https.tls=true
         - traefik.http.routers.blueskies-https.tls.certresolver=le
         - traefik.http.routers.blueskies-https.service=blueskies
+        - traefik.http.routers.blueskies-https.middlewares=blueskies-blocking@swarm
 
         # cereneskin.com: TLS-ALPN-01. This domain is registered in a DIFFERENT Cloudflare
         # account (nameservers davina/andy vs kip/edna), and Traefik carries one credential
@@ -113,6 +119,7 @@ services:
         - traefik.http.routers.blueskies-cerene-https.tls=true
         - traefik.http.routers.blueskies-cerene-https.tls.certresolver=tls
         - traefik.http.routers.blueskies-cerene-https.service=blueskies
+        - traefik.http.routers.blueskies-cerene-https.middlewares=blueskies-blocking@swarm
 
         - traefik.http.routers.blueskies-moondrip-https.rule=Host(`mymoondrip.com`)
         - traefik.http.routers.blueskies-moondrip-https.entrypoints=https
