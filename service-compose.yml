@@ -114,6 +114,12 @@ services:
         - traefik.http.routers.blueskies-cerene-https.tls.certresolver=tls
         - traefik.http.routers.blueskies-cerene-https.service=blueskies
 
+        - traefik.http.routers.blueskies-moondrip-https.rule=Host(`mymoondrip.com`)
+        - traefik.http.routers.blueskies-moondrip-https.entrypoints=https
+        - traefik.http.routers.blueskies-moondrip-https.tls=true
+        - traefik.http.routers.blueskies-moondrip-https.tls.certresolver=tls
+        - traefik.http.routers.blueskies-moondrip-https.service=blueskies
+
         - traefik.http.services.blueskies.loadbalancer.server.port=3000
 
   backend:
@@ -133,9 +139,9 @@ services:
       - DJANGO_DEBUG=False
       # Both public hostnames are routed to `web`, so both must be accepted here or the
       # one that is missing 400s on every write with DisallowedHost / CSRF failure.
-      - DJANGO_ALLOWED_HOSTS=backend,localhost,127.0.0.1,cereneskin.com,blueskies1.tempestnetworks.net
-      - DJANGO_CSRF_TRUSTED_ORIGINS=https://cereneskin.com,https://blueskies1.tempestnetworks.net
-      - DJANGO_CORS_ALLOWED_ORIGINS=https://cereneskin.com,https://blueskies1.tempestnetworks.net
+      - DJANGO_ALLOWED_HOSTS=backend,localhost,127.0.0.1,cereneskin.com,blueskies1.tempestnetworks.net,mymoondrip.com
+      - DJANGO_CSRF_TRUSTED_ORIGINS=https://cereneskin.com,https://blueskies1.tempestnetworks.net,https://mymoondrip.com
+      - DJANGO_CORS_ALLOWED_ORIGINS=https://cereneskin.com,https://blueskies1.tempestnetworks.net,https://mymoondrip.com
       - DJANGO_CORS_ALLOW_CREDENTIALS=True
       - DJANGO_SESSION_COOKIE_SECURE=True
       - DJANGO_CSRF_COOKIE_SECURE=True
