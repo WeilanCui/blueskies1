@@ -1,0 +1,36 @@
+frontend/app/routine/routine.module.css
+  s_9b001b950e14a6::t_f252069a40277d 309,330-364,366,368-395,408,420-421,604-620
+  s_9b001b950e14a6::t_15ee34d5800725 365,367,396-407,409-419,422-446,621-636
+frontend/lib/appApi.ts
+  s_9b001b950e14a6::t_98737cf360aa95 499-501,542-555
+frontend/app/routine/page.tsx
+  s_9b001b950e14a6::t_6435e74e865b70 733-757,781-838
+  s_9b001b950e14a6::t_c44c48fb85305c 623-636,638-640,642-644,713,715-723,730-732,758-778
+  s_9b001b950e14a6::t_8112f06327d407 10,13,153-155,159-162,164,183-187,213-218,220-230,232-239,247-296,359-360,394-397,399-401,416-421,425-440
+  s_9b001b950e14a6::t_602f8d2e48e67d 398
+  s_9b001b950e14a6::t_c551fc3fd64ede 645-710
+  s_9b001b950e14a6::t_fc99efff7fe7b3 163,219
+backend/core/tests/test_routines.py
+  s_9b001b950e14a6::t_9cf6225150d4c8 131,147
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "9e90572178b6db07be5e3b4e6c6dea9d45a713e6",
+  "prompts": {},
+  "humans": {
+    "h_e83f79f999df32": {
+      "author": "weilan <weilanc@gmail.com>"
+    }
+  },
+  "sessions": {
+    "s_9b001b950e14a6": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019ec82e-f0cb-7780-8d97-7d9fbe270ba9",
+        "model": "gpt-5.5"
+      },
+      "human_author": "weilan <weilanc@gmail.com>"
+    }
+  }
+}
