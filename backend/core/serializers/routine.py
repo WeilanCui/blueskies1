@@ -112,7 +112,6 @@ class RoutineSerializer(serializers.ModelSerializer):
         profile = self.context["profile"]
         routine = Routine.objects.create(profile=profile, **validated_data)
         self._replace_items(routine, items)
-        self._deactivate_competing(routine)
         return routine
 
     @transaction.atomic
@@ -123,7 +122,6 @@ class RoutineSerializer(serializers.ModelSerializer):
         instance.save()
         if items is not None:
             self._sync_items(instance, items)
-        self._deactivate_competing(instance)
         return instance
 
     def _replace_items(self, routine: Routine, items: list[dict]) -> None:
@@ -170,16 +168,6 @@ class RoutineSerializer(serializers.ModelSerializer):
             kept_ids.append(created.id)
 
         routine.items.exclude(pk__in=kept_ids).delete()
-
-    def _deactivate_competing(self, routine: Routine) -> None:
-        if not routine.is_active:
-            return
-        Routine.objects.filter(
-            profile=routine.profile,
-            time_of_day=routine.time_of_day,
-            is_active=True,
-        ).exclude(pk=routine.pk).update(is_active=False)
-
 
 def infer_routine_step_from_product(product: Product | None) -> str:
     if product is None:

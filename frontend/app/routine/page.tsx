@@ -7,8 +7,10 @@ import { useEffect, useMemo, useState } from "react";
 import { AppPageHeader } from "../../components/AppPageHeader";
 import { Button } from "../../components/Button";
 import {
+  archiveRoutine,
   type CatalogProduct,
   createRoutine,
+  deleteRoutine,
   getCatalogProducts,
   getDailyCheckIns,
   getMe,
@@ -148,11 +150,18 @@ export default function RoutinePage() {
   const [selectedRoutineId, setSelectedRoutineId] = useState<number | null>(
     null,
   );
+  const [routineMode, setRoutineMode] = useState<"active" | "archived">(
+    "active",
+  );
   const [completed, setCompleted] = useState<number[]>([]);
   const [skinFeel, setSkinFeel] = useState("good");
   const [notes, setNotes] = useState("");
-  const [addTimeOfDay, setAddTimeOfDay] = useState<RoutineTimeOfDay>("am");
-  const [customLabel, setCustomLabel] = useState("");
+  const [newRoutineName, setNewRoutineName] = useState("");
+  const [newRoutineTimeOfDay, setNewRoutineTimeOfDay] =
+    useState<RoutineTimeOfDay>("am");
+  const [newRoutineCustomLabel, setNewRoutineCustomLabel] = useState("");
+  const [isCreateRoutineOpen, setIsCreateRoutineOpen] = useState(false);
+  const [addRoutineId, setAddRoutineId] = useState("");
   const [selectedProductId, setSelectedProductId] = useState("");
   const [manualProductName, setManualProductName] = useState("");
   const [selectedStep, setSelectedStep] = useState("treatment");
@@ -169,6 +178,11 @@ export default function RoutinePage() {
   const routinesQuery = useQuery({
     queryKey: ["routines", "active"],
     queryFn: () => getRoutines(true),
+    enabled: meQuery.isSuccess,
+  });
+  const archivedRoutinesQuery = useQuery({
+    queryKey: ["routines", "archived"],
+    queryFn: () => getRoutines(false),
     enabled: meQuery.isSuccess,
   });
   const todayQuery = useQuery({
@@ -196,40 +210,89 @@ export default function RoutinePage() {
       queryClient.invalidateQueries({ queryKey: ["daily-checkins"] });
     },
   });
+  const createRoutineMutation = useMutation({
+    mutationFn: createRoutine,
+    onSuccess: (routine) => {
+      setMessage("Routine created.");
+      setNewRoutineName("");
+      setNewRoutineCustomLabel("");
+      setIsCreateRoutineOpen(false);
+      setAddRoutineId(String(routine.id));
+      setSelectedRoutineId(routine.id);
+      setRoutineMode("active");
+      queryClient.invalidateQueries({ queryKey: ["routines"] });
+    },
+    onError: (error) => {
+      setMessage(
+        error instanceof Error ? error.message : "Could not create routine.",
+      );
+    },
+  });
   const saveRoutineMutation = useMutation({
-    mutationFn: async (payload: {
-      routine?: Routine;
-      item: RoutineItemPayload;
-    }) => {
-      if (payload.routine) {
-        const items = [
-          ...payload.routine.items.map(itemToPayload),
-          payload.item,
-        ].map((item, index) => ({ ...item, position: index + 1 }));
-        return updateRoutine(
-          payload.routine.id,
-          routineToPayload(payload.routine, items),
-        );
-      }
-      const label = payload.item.raw_product_name || "Routine";
-      return createRoutine({
-        name:
-          addTimeOfDay === "custom"
-            ? customLabel.trim() || label
-            : addTimeOfDay === "am"
-              ? "AM Routine"
-              : "PM Routine",
-        time_of_day: addTimeOfDay,
-        custom_time_label: addTimeOfDay === "custom" ? customLabel.trim() : "",
-        is_active: true,
-        items: [payload.item],
-      });
+    mutationFn: async (payload: { routine: Routine; item: RoutineItemPayload }) => {
+      const items = [...payload.routine.items.map(itemToPayload), payload.item].map(
+        (item, index) => ({ ...item, position: index + 1 }),
+      );
+      return updateRoutine(
+        payload.routine.id,
+        routineToPayload(payload.routine, items),
+      );
     },
     onSuccess: () => {
       setMessage("Routine updated.");
       setManualProductName("");
       setSelectedProductId("");
       queryClient.invalidateQueries({ queryKey: ["routines"] });
+    },
+    onError: (error) => {
+      setMessage(
+        error instanceof Error ? error.message : "Could not update routine.",
+      );
+    },
+  });
+  const archiveRoutineMutation = useMutation({
+    mutationFn: archiveRoutine,
+    onSuccess: () => {
+      setMessage("Routine archived.");
+      setSelectedRoutineId(null);
+      queryClient.invalidateQueries({ queryKey: ["routines"] });
+    },
+    onError: (error) => {
+      setMessage(
+        error instanceof Error ? error.message : "Could not archive routine.",
+      );
+    },
+  });
+  const restoreRoutineMutation = useMutation({
+    mutationFn: (routine: Routine) =>
+      updateRoutine(
+        routine.id,
+        routineToPayload(
+          { ...routine, is_active: true },
+          routine.items.map(itemToPayload),
+        ),
+      ),
+    onSuccess: () => {
+      setMessage("Routine restored.");
+      queryClient.invalidateQueries({ queryKey: ["routines"] });
+    },
+    onError: (error) => {
+      setMessage(
+        error instanceof Error ? error.message : "Could not restore routine.",
+      );
+    },
+  });
+  const deleteRoutineMutation = useMutation({
+    mutationFn: deleteRoutine,
+    onSuccess: () => {
+      setMessage("Routine deleted.");
+      setSelectedRoutineId(null);
+      queryClient.invalidateQueries({ queryKey: ["routines"] });
+    },
+    onError: (error) => {
+      setMessage(
+        error instanceof Error ? error.message : "Could not delete routine.",
+      );
     },
   });
   const reorderRoutineMutation = useMutation({
@@ -293,6 +356,8 @@ export default function RoutinePage() {
   }, [todayQuery.data]);
 
   const routines = routinesQuery.data ?? [];
+  const archivedRoutines = archivedRoutinesQuery.data ?? [];
+  const managedRoutines = routineMode === "active" ? routines : archivedRoutines;
   const products = productsQuery.data ?? [];
   const selectedRoutine = useMemo(() => {
     if (selectedRoutineId !== null) {
@@ -326,16 +391,14 @@ export default function RoutinePage() {
   }
 
   function addRoutineItem() {
-    const existingRoutine =
-      addTimeOfDay === "custom"
-        ? routines.find(
-            (routine) =>
-              routine.time_of_day === "custom" &&
-              routine.custom_time_label.toLowerCase() ===
-                customLabel.trim().toLowerCase(),
-          )
-        : routines.find((routine) => routine.time_of_day === addTimeOfDay);
-    const position = (existingRoutine?.items.length ?? 0) + 1;
+    const existingRoutine = routines.find(
+      (routine) => String(routine.id) === addRoutineId,
+    );
+    if (!existingRoutine) {
+      setMessage("Choose a routine first.");
+      return;
+    }
+    const position = existingRoutine.items.length + 1;
     const selectedProduct = products.find(
       (product) => String(product.product_id) === selectedProductId,
     );
@@ -350,11 +413,31 @@ export default function RoutinePage() {
       setMessage("Choose a catalog product or enter a product name.");
       return;
     }
-    if (addTimeOfDay === "custom" && !customLabel.trim()) {
+    saveRoutineMutation.mutate({ routine: existingRoutine, item });
+  }
+
+  function createEmptyRoutine() {
+    const customLabel = newRoutineCustomLabel.trim();
+    if (newRoutineTimeOfDay === "custom" && !customLabel) {
       setMessage("Add a custom routine label first.");
       return;
     }
-    saveRoutineMutation.mutate({ routine: existingRoutine, item });
+    const defaultName =
+      newRoutineTimeOfDay === "custom"
+        ? customLabel
+        : newRoutineTimeOfDay === "am"
+          ? "AM Routine"
+          : newRoutineTimeOfDay === "pm"
+            ? "PM Routine"
+            : "Routine";
+    createRoutineMutation.mutate({
+      name: newRoutineName.trim() || defaultName,
+      time_of_day: newRoutineTimeOfDay,
+      custom_time_label:
+        newRoutineTimeOfDay === "custom" ? newRoutineCustomLabel.trim() : "",
+      is_active: true,
+      items: [],
+    });
   }
 
   function handleRoutineReorder(
@@ -537,98 +620,222 @@ export default function RoutinePage() {
 
         {activeView === "routine" && (
           <section className={styles.myRoutineView}>
-            <article className={styles.routineGroup}>
-              <div className={styles.routineGroupHeader}>
-                <div>
-                  <span aria-hidden="true">+</span>
-                  <h2>Add product</h2>
-                </div>
-                <strong>Catalog or manual</strong>
-              </div>
-              <div className={styles.routineAddGrid}>
-                <label>
-                  <span>Routine</span>
-                  <select
-                    value={addTimeOfDay}
-                    onChange={(event) =>
-                      setAddTimeOfDay(event.target.value as RoutineTimeOfDay)
+            <div className={styles.routineManagerToolbar}>
+              <div className={styles.routineModeTabs} aria-label="Routine status">
+                {[
+                  ["active", "Active"],
+                  ["archived", "Archived"],
+                ].map(([value, label]) => (
+                  <button
+                    className={
+                      routineMode === value
+                        ? [
+                            styles.routineModeButton,
+                            styles.routineModeButtonActive,
+                          ].join(" ")
+                        : styles.routineModeButton
                     }
+                    key={value}
+                    type="button"
+                    onClick={() => setRoutineMode(value as typeof routineMode)}
                   >
-                    <option value="am">AM Routine</option>
-                    <option value="pm">PM Routine</option>
-                    <option value="custom">Custom</option>
-                  </select>
-                </label>
-                {addTimeOfDay === "custom" ? (
-                  <label>
-                    <span>Custom label</span>
-                    <input
-                      value={customLabel}
-                      onChange={(event) => setCustomLabel(event.target.value)}
-                      placeholder="Post-workout, weekly mask..."
-                    />
-                  </label>
+                    {label}
+                  </button>
+                ))}
+              </div>
+              <div className={styles.routineOverflow}>
+                <button
+                  className={styles.overflowButton}
+                  type="button"
+                  aria-label="Routine menu"
+                  aria-expanded={isCreateRoutineOpen}
+                  onClick={() =>
+                    setIsCreateRoutineOpen((current) => !current)
+                  }
+                >
+                  ...
+                </button>
+                {isCreateRoutineOpen ? (
+                  <div className={styles.overflowPanel}>
+                    <div className={styles.routineAddGrid}>
+                      <label>
+                        <span>Name</span>
+                        <input
+                          value={newRoutineName}
+                          onChange={(event) =>
+                            setNewRoutineName(event.target.value)
+                          }
+                          placeholder="Gym AM, travel PM..."
+                        />
+                      </label>
+                      <label>
+                        <span>Timing</span>
+                        <select
+                          value={newRoutineTimeOfDay}
+                          onChange={(event) =>
+                            setNewRoutineTimeOfDay(
+                              event.target.value as RoutineTimeOfDay,
+                            )
+                          }
+                        >
+                          <option value="am">AM</option>
+                          <option value="pm">PM</option>
+                          <option value="any">Any</option>
+                          <option value="custom">Custom</option>
+                        </select>
+                      </label>
+                      {newRoutineTimeOfDay === "custom" ? (
+                        <label>
+                          <span>Label</span>
+                          <input
+                            value={newRoutineCustomLabel}
+                            onChange={(event) =>
+                              setNewRoutineCustomLabel(event.target.value)
+                            }
+                            placeholder="Post-workout, weekly mask..."
+                          />
+                        </label>
+                      ) : null}
+                    </div>
+                    <Button
+                      className={styles.saveButton}
+                      type="button"
+                      isDisabled={createRoutineMutation.isPending}
+                      onPress={createEmptyRoutine}
+                    >
+                      {createRoutineMutation.isPending
+                        ? "Creating..."
+                        : "Create routine"}
+                    </Button>
+                  </div>
                 ) : null}
-                <label>
-                  <span>Catalog product</span>
-                  <select
-                    value={selectedProductId}
-                    onChange={(event) =>
-                      setSelectedProductId(event.target.value)
-                    }
-                  >
-                    <option value="">Choose product...</option>
-                    {products.map((product) => (
-                      <option value={product.product_id} key={product.id}>
-                        {product.brand} {product.name}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <label>
-                  <span>Manual product</span>
-                  <input
-                    value={manualProductName}
-                    onChange={(event) =>
-                      setManualProductName(event.target.value)
-                    }
-                    placeholder="Or type a product name"
-                  />
-                </label>
-                <label>
-                  <span>Step</span>
-                  <select
-                    value={selectedStep}
-                    onChange={(event) => setSelectedStep(event.target.value)}
-                    disabled={Boolean(selectedProductId)}
-                  >
-                    {routineSteps.map(([value, label]) => (
-                      <option value={value} key={value}>
-                        {label}
-                      </option>
-                    ))}
-                  </select>
-                </label>
               </div>
-              <Button
-                className={styles.saveButton}
-                type="button"
-                isDisabled={saveRoutineMutation.isPending}
-                onPress={addRoutineItem}
-              >
-                {saveRoutineMutation.isPending ? "Adding..." : "Add to routine"}
-              </Button>
-            </article>
+            </div>
 
-            {routines.map((routine) => (
+            {managedRoutines.length === 0 ? (
+              <p className={styles.emptyState}>
+                {routineMode === "active"
+                  ? "Create a routine to start building your steps."
+                  : "Archived routines will appear here."}
+              </p>
+            ) : null}
+
+            {managedRoutines.map((routine) => (
               <article className={styles.routineGroup} key={routine.id}>
                 <div className={styles.routineGroupHeader}>
                   <div>
                     <span>{routineIcon(routine.time_of_day)}</span>
                     <h2>{displayRoutineName(routine)}</h2>
                   </div>
-                  <strong>{routine.items.length} products</strong>
+                  <div className={styles.routineHeaderActions}>
+                    <strong>{routine.items.length} products</strong>
+                    {routine.is_active ? (
+                      <>
+                        <button
+                          className={styles.routineActionButton}
+                          type="button"
+                          onClick={() =>
+                            setAddRoutineId((current) =>
+                              current === String(routine.id)
+                                ? ""
+                                : String(routine.id),
+                            )
+                          }
+                        >
+                          Add
+                        </button>
+                        <button
+                          className={styles.routineActionButton}
+                          type="button"
+                          onClick={() =>
+                            archiveRoutineMutation.mutate(routine.id)
+                          }
+                          disabled={archiveRoutineMutation.isPending}
+                        >
+                          Archive
+                        </button>
+                      </>
+                    ) : (
+                      <button
+                        className={styles.routineActionButton}
+                        type="button"
+                        onClick={() => restoreRoutineMutation.mutate(routine)}
+                        disabled={restoreRoutineMutation.isPending}
+                      >
+                        Restore
+                      </button>
+                    )}
+                    <button
+                      className={[
+                        styles.routineActionButton,
+                        styles.dangerAction,
+                      ].join(" ")}
+                      type="button"
+                      onClick={() => deleteRoutineMutation.mutate(routine.id)}
+                      disabled={deleteRoutineMutation.isPending}
+                    >
+                      Delete
+                    </button>
+                  </div>
                 </div>
+                {addRoutineId === String(routine.id) ? (
+                  <div className={styles.routineInlineForm}>
+                    <div className={styles.routineAddGrid}>
+                      <label>
+                        <span>Catalog product</span>
+                        <select
+                          value={selectedProductId}
+                          onChange={(event) =>
+                            setSelectedProductId(event.target.value)
+                          }
+                        >
+                          <option value="">Choose product...</option>
+                          {products.map((product) => (
+                            <option value={product.product_id} key={product.id}>
+                              {product.brand} {product.name}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                      <label>
+                        <span>Manual product</span>
+                        <input
+                          value={manualProductName}
+                          onChange={(event) =>
+                            setManualProductName(event.target.value)
+                          }
+                          placeholder="Or type a product name"
+                        />
+                      </label>
+                      <label>
+                        <span>Step</span>
+                        <select
+                          value={selectedStep}
+                          onChange={(event) =>
+                            setSelectedStep(event.target.value)
+                          }
+                          disabled={Boolean(selectedProductId)}
+                        >
+                          {routineSteps.map(([value, label]) => (
+                            <option value={value} key={value}>
+                              {label}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                    </div>
+                    <Button
+                      className={styles.saveButton}
+                      type="button"
+                      isDisabled={saveRoutineMutation.isPending}
+                      onPress={addRoutineItem}
+                    >
+                      {saveRoutineMutation.isPending
+                        ? "Adding..."
+                        : "Add product"}
+                    </Button>
+                  </div>
+                ) : null}
                 <div className={styles.routineProductList}>
                   {routine.items.length > 0 ? (
                     <>

@@ -496,8 +496,9 @@ export function getCatalogProduct(id: string): Promise<CatalogProduct> {
   );
 }
 
-export function getRoutines(activeOnly = true): Promise<Routine[]> {
-  const suffix = activeOnly ? "?active=true" : "";
+export function getRoutines(activeOnly: boolean | "all" = true): Promise<Routine[]> {
+  const suffix =
+    activeOnly === "all" ? "" : activeOnly ? "?active=true" : "?active=false";
   return requestJson<Routine[]>(
     `/api/routines${suffix}`,
     {},
@@ -536,6 +537,22 @@ export function archiveRoutine(id: number): Promise<Routine> {
     { method: "POST" },
     "Could not archive routine.",
   );
+}
+
+export async function deleteRoutine(id: number): Promise<void> {
+  const response = await fetch(`/api/routines/${id}`, {
+    method: "DELETE",
+    credentials: "same-origin",
+  });
+  if (!response.ok) {
+    let data: unknown = null;
+    try {
+      data = await response.json();
+    } catch {
+      data = null;
+    }
+    throw new Error(getErrorMessage(data, "Could not delete routine."));
+  }
 }
 
 export function addProductToRoutine(

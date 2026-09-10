@@ -306,7 +306,7 @@
   justify-content: space-between;
 }
 
-.routineGroupHeader div {
+.routineGroupHeader > div:first-child {
   align-items: center;
   display: flex;
   gap: 10px;
@@ -325,6 +325,123 @@
   flex: 0 0 auto;
   font-size: 0.82rem;
   padding: 6px 10px;
+}
+
+.routineHeaderActions {
+  align-items: center;
+  display: flex;
+  flex: 0 0 auto;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.routineActionButton {
+  background: color-mix(in srgb, var(--surface-tint) 66.0%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent-strong) 20.0%, transparent);
+  border-radius: 999px;
+  color: var(--text-muted);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 900;
+  min-height: 34px;
+  padding: 6px 11px;
+}
+
+.routineActionButton:disabled {
+  cursor: progress;
+  opacity: 0.58;
+}
+
+.dangerAction {
+  border-color: color-mix(in srgb, var(--status-danger-text) 26.0%, transparent);
+  color: var(--status-danger-text);
+}
+
+.routineManagerToolbar {
+  align-items: center;
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  position: relative;
+}
+
+.routineModeTabs {
+  background: var(--accent-soft);
+  border-radius: 999px;
+  display: inline-grid;
+  gap: 4px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  padding: 5px;
+}
+
+.routineModeButton {
+  background: transparent;
+  border: 0;
+  border-radius: 999px;
+  color: var(--text-muted);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.84rem;
+  font-weight: 900;
+  min-height: 38px;
+  min-width: 112px;
+  padding: 8px 12px;
+}
+
+.routineModeButtonActive {
+  background: var(--surface-raised);
+  box-shadow: 0 8px 18px color-mix(in srgb, var(--text-secondary) 9.0%, transparent);
+  color: var(--text-primary);
+}
+
+.routineOverflow {
+  position: relative;
+}
+
+.overflowButton {
+  align-items: center;
+  background: var(--surface-raised);
+  border: 1px solid color-mix(in srgb, var(--accent-strong) 18.0%, transparent);
+  border-radius: 999px;
+  color: var(--text-primary);
+  cursor: pointer;
+  display: inline-flex;
+  font: inherit;
+  font-size: 1rem;
+  font-weight: 900;
+  height: 48px;
+  justify-content: center;
+  letter-spacing: 0;
+  line-height: 1;
+  min-width: 48px;
+  padding: 0 14px 6px;
+}
+
+.overflowPanel {
+  background: var(--surface-raised);
+  border: 1px solid color-mix(in srgb, var(--border) 82.0%, transparent);
+  border-radius: 8px;
+  box-shadow: 0 18px 44px color-mix(in srgb, var(--text-secondary) 18.0%, transparent);
+  display: grid;
+  gap: 14px;
+  max-width: min(420px, calc(100vw - 32px));
+  padding: 16px;
+  position: absolute;
+  right: 0;
+  top: calc(100% + 8px);
+  width: 420px;
+  z-index: 4;
+}
+
+.routineInlineForm {
+  background: color-mix(in srgb, var(--surface-tint) 52.0%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent-strong) 14.0%, transparent);
+  border-radius: 8px;
+  display: grid;
+  gap: 14px;
+  padding: 14px;
 }
 
 .routineProductList {
@@ -482,6 +599,41 @@
   .routineGroupHeader,
   .routineProductCard {
     align-items: start;
+  }
+
+  .routineGroupHeader {
+    flex-direction: column;
+  }
+
+  .routineGroupHeader > div:first-child,
+  .routineHeaderActions,
+  .routineManagerToolbar,
+  .routineModeTabs {
+    width: 100%;
+  }
+
+  .routineHeaderActions {
+    justify-content: flex-start;
+  }
+
+  .routineModeButton {
+    min-width: 0;
+  }
+
+  .routineManagerToolbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .routineOverflow,
+  .overflowButton,
+  .overflowPanel {
+    width: 100%;
+  }
+
+  .overflowPanel {
+    max-width: none;
+    position: static;
   }
 
   .routineProductCard {

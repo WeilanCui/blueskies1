@@ -128,7 +128,7 @@ class RoutineApiTests(TestCase):
             [second.id, first.id],  # pyright: ignore[reportAttributeAccessIssue]
         )
 
-    def test_activating_same_timing_deactivates_prior_routine_in_domain_logic(self):
+    def test_same_timing_routines_can_stay_active(self):
         existing = Routine.objects.create(
             profile=self.profile,
             name="Old AM",
@@ -144,7 +144,7 @@ class RoutineApiTests(TestCase):
 
         self.assertEqual(response.status_code, 201)
         existing.refresh_from_db()
-        self.assertFalse(existing.is_active)
+        self.assertTrue(existing.is_active)
         self.assertTrue(Routine.objects.get(name="New AM").is_active)
 
     def test_user_only_sees_own_routines(self):
