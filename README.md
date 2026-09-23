@@ -291,9 +291,9 @@ answered:
 ```bash
 for ip in <manager-ips>; do
   for host in blueskies1.tempestnetworks.net cereneskin.com mymoondrip.com; do
-    printf '%s %s: ' "$ip" "$host"
-    echo | openssl s_client -connect "$ip:443" -servername "$host" \
-      2>&1 | grep -E 'subject=|unrecognized' | head -1
+    out=$(echo | timeout 5 openssl s_client -connect "$ip:443" -servername "$host" \
+      2>&1 | grep -m1 -E 'subject=|unrecognized')
+    printf '%s %s: %s\n' "$ip" "$host" "${out:-FAILED: no certificate or no handshake}"
   done
 done
 ```
@@ -307,7 +307,10 @@ for every host:
 | `cereneskin.com` | `CN = cereneskin.com` |
 | `mymoondrip.com` | `CN = mymoondrip.com` |
 
-A line containing `unrecognized` means that edge has no certificate for the host yet.
+A line containing `unrecognized` means that edge has no certificate for the host yet. A
+`FAILED` line means the handshake did not complete at all (edge unreachable, connection
+refused, or timed out); check that edge by hand
+with the same `openssl s_client` command.
 
 Migrations apply themselves: the backend container runs `migrate` on startup, before it
 begins serving. Only `createsuperuser` is a manual step.
