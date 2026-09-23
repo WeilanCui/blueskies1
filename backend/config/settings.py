@@ -199,6 +199,12 @@ else:
 
 CELERY_BROKER_URL = env("CELERY_BROKER_URL", default="redis://redis:6379/0")  # pyright: ignore[reportArgumentType]
 CELERY_RESULT_BACKEND = env("CELERY_RESULT_BACKEND", default="redis://redis:6379/1")  # pyright: ignore[reportArgumentType]
+
+PROMETHEUS_METRICS_ENABLED = env.bool("PROMETHEUS_METRICS_ENABLED", default=False)  # pyright: ignore[reportArgumentType]
+PROMETHEUS_CELERY_WORKER_PORT = env.int("PROMETHEUS_CELERY_WORKER_PORT", default=9808)  # pyright: ignore[reportArgumentType]
+PROMETHEUS_CELERY_BEAT_PORT = env.int("PROMETHEUS_CELERY_BEAT_PORT", default=9809)  # pyright: ignore[reportArgumentType]
+PROMETHEUS_MULTIPROC_DIR = env("PROMETHEUS_MULTIPROC_DIR", default="/tmp/prometheus_multiproc")  # pyright: ignore[reportArgumentType]
+
 CELERY_ACCEPT_CONTENT = ["json"]
 CELERY_TASK_SERIALIZER = "json"
 CELERY_RESULT_SERIALIZER = "json"
@@ -220,3 +226,20 @@ CELERY_BEAT_SCHEDULE = {
         },
     },
 }
+
+# --- Prometheus metrics integration (conditional) ---
+if PROMETHEUS_METRICS_ENABLED:
+    INSTALLED_APPS = list(INSTALLED_APPS)
+    INSTALLED_APPS.append("django_prometheus")
+
+    MIDDLEWARE = [
+        "django_prometheus.middleware.PrometheusBeforeMiddleware",
+        *MIDDLEWARE,
+        "django_prometheus.middleware.PrometheusAfterMiddleware",
+    ]
+
+    DATABASES["default"]["ENGINE"] = "django_prometheus.db.backends.postgresql"
+
+    # Wrap the Redis cache backend if present
+    if _cache_url:
+        CACHES["default"]["BACKEND"] = "django_prometheus.cache.backends.redis.RedisCache"

@@ -144,6 +144,37 @@ Things to preserve when changing this area:
   every edge. Router labels must set `tls=true` without `tls.certresolver`; add new names to
   the certificate inventory before deploying the router and verify every manager directly.
 
+## Observability
+
+Prometheus metrics are surfaced by three backend processes, all gated on
+`PROMETHEUS_METRICS_ENABLED` (default `False` in `docker-compose.yml`, `true` in
+`service-compose.yml`). Scrape targets — all overlay-internal, never published to
+Traefik or the host:
+
+- `backend:8000/metrics` — `django_http_*`, `django_db_*`, `blueskies_*` families.
+- `celery:9808/metrics` — `celery_task_*` + `blueskies_*`.
+- `celery-beat:9809/metrics` — `celery_beat_last_tick_seconds`, `celery_beat_seconds_since_last_tick`.
+
+Enabling the flag also switches Django's DB backend to
+`django_prometheus.db.backends.postgresql` (per-query counters) and wraps the Redis cache
+backend to record cache hits/misses. Gunicorn runs in `prometheus_client` multiprocess
+mode via a tmpfs at `$PROMETHEUS_MULTIPROC_DIR` (`/tmp/prometheus_multiproc`); the
+entrypoint clears that directory on start so stale worker files never leak across
+restarts.
+
+Custom domain metrics live in `backend/core/observability/metrics.py`. Label values are
+`Literal`-typed and enforced by `core.tests.test_observability` to keep Prometheus series
+count bounded. Any new gauge MUST pass `multiprocess_mode=` because the backend runs in
+multiproc mode.
+
+Celery signal handlers in `core/observability/celery_metrics.py` wrap every body in
+`try/except` so a metrics bug can never fail a task. `bootstrap.enable_worker_metrics()`
+and `bootstrap.enable_beat_metrics()` short-circuit when the flag is off (zero-cost when
+disabled — no port binding, no signal receivers).
+
+To sample locally: `PROMETHEUS_METRICS_ENABLED=true docker compose up -d backend celery`,
+then `docker compose exec backend python -c "import urllib.request; print(urllib.request.urlopen('http://localhost:8000/metrics').read().decode())"`.
+
 ## Conventions reference
 
 `CODEX.md` holds the full engineering checklist (backend, frontend, styling, review). Commit migrations alongside model changes. Update README/docs when setup or behavior changes.

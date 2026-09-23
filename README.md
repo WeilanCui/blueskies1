@@ -430,6 +430,39 @@ If you keep your virtualenv somewhere else and do not want to move it, symlink i
 ln -s /path/to/your/venv .venv
 ```
 
+### Observability
+
+The backend, Celery worker, and Celery beat can expose Prometheus scrape endpoints when
+`PROMETHEUS_METRICS_ENABLED=true`. Provisioning Prometheus itself is out of scope for this
+repo — the stack only publishes the targets. Three overlay-internal scrape endpoints:
+
+- Backend HTTP: `GET /metrics` on the backend service (port 8000). Includes
+  `django_http_*`, `django_db_*`, and the custom `blueskies_*` families.
+- Celery worker: `GET :9808/metrics` on each worker replica. Includes `celery_task_*`
+  families plus the same `blueskies_*` metrics.
+- Celery beat: `GET :9809/metrics` on the beat container. Includes
+  `celery_beat_last_tick_seconds` and `celery_beat_seconds_since_last_tick` for
+  scheduler liveness.
+
+`PROMETHEUS_METRICS_ENABLED` defaults to `False` in local `docker-compose.yml` (no cost,
+no ports bound). It is set to `true` in `service-compose.yml` for the production swarm.
+None of the scrape endpoints are published to the host or Traefik; they are reachable only
+inside the swarm overlay. To sample locally, override the env for the affected service:
+
+```bash
+PROMETHEUS_METRICS_ENABLED=true docker compose up -d backend
+docker compose exec backend python -c "import urllib.request; print(urllib.request.urlopen('http://localhost:8000/metrics').read().decode())"
+```
+
+Custom metric families:
+
+- `blueskies_formulation_ingest_total{result=created|updated|rejected|error}`
+- `blueskies_recommendation_score_seconds{excluded,confidence_band}` (histogram)
+- `blueskies_external_api_request_seconds{service=inci|pubchem|pubmed|openai,outcome=success|http_error|transport_error|rate_limited}` (histogram)
+
+Label values are `Literal`-typed in `backend/core/observability/metrics.py` and enforced
+by a cardinality test to keep Prometheus series count bounded.
+
 ## Layout
 
 ```text

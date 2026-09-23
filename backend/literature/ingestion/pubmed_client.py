@@ -43,7 +43,7 @@ def esearch(term: str, retmax: int = 20) -> list[str]:
     params = _common_params()
     params.update({"term": term, "retmax": str(retmax), "retmode": "json"})
     try:
-        data = request_json(f"{EUTILS}/esearch.fcgi", params=params, limiter=_LIMITER)
+        data = request_json(f"{EUTILS}/esearch.fcgi", params=params, limiter=_LIMITER, service="pubmed")
     except HttpError as exc:
         logger.info("PubMed esearch failed for %r: %s", term, exc)
         return []
@@ -57,7 +57,7 @@ def efetch(pmids: list[str]) -> list[PubMedArticle]:
     params = _common_params()
     params.update({"id": ",".join(pmids), "retmode": "xml"})
     try:
-        xml_text = request_text(f"{EUTILS}/efetch.fcgi", params=params, limiter=_LIMITER)
+        xml_text = request_text(f"{EUTILS}/efetch.fcgi", params=params, limiter=_LIMITER, service="pubmed")
     except HttpError as exc:
         logger.info("PubMed efetch failed for %s: %s", pmids, exc)
         return []

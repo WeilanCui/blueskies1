@@ -75,6 +75,21 @@ if [ -n "${REDIS_URL:-}" ]; then
     [ -z "${DJANGO_CACHE_URL:-}" ] && export DJANGO_CACHE_URL="$REDIS_URL"
 fi
 
+# --- Prometheus multiprocess dir --------------------------------------------
+#
+# Prometheus multiprocess mode writes per-process metric files that the
+# collector aggregates at scrape time. The directory is cleared on each
+# startup to avoid stale files from previous runs.
+
+case "${PROMETHEUS_METRICS_ENABLED:-}" in
+    1|true|True|TRUE|yes|on)
+        : "${PROMETHEUS_MULTIPROC_DIR:=/tmp/prometheus_multiproc}"
+        export PROMETHEUS_MULTIPROC_DIR
+        mkdir -p "$PROMETHEUS_MULTIPROC_DIR"
+        rm -rf "$PROMETHEUS_MULTIPROC_DIR"/* 2>/dev/null || true
+        ;;
+esac
+
 # --- Wait for the database --------------------------------------------------
 #
 # Swarm has no depends_on. Without this, all three backend services crash-loop
