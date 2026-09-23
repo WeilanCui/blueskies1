@@ -290,12 +290,24 @@ answered:
 
 ```bash
 for ip in <manager-ips>; do
-  echo | openssl s_client -connect "$ip:443" -servername cereneskin.com \
-    2>&1 | grep -E 'subject=|unrecognized'
+  for host in blueskies1.tempestnetworks.net cereneskin.com mymoondrip.com; do
+    printf '%s %s: ' "$ip" "$host"
+    echo | openssl s_client -connect "$ip:443" -servername "$host" \
+      2>&1 | grep -E 'subject=|unrecognized' | head -1
+  done
 done
 ```
 
-Every manager should print `subject=CN = cereneskin.com`.
+Add any new hostname to the inner loop. Every manager should print the expected subject
+for every host:
+
+| Host | Expected subject |
+| --- | --- |
+| `blueskies1.tempestnetworks.net` | `CN = *.tempestnetworks.net` |
+| `cereneskin.com` | `CN = cereneskin.com` |
+| `mymoondrip.com` | `CN = mymoondrip.com` |
+
+A line containing `unrecognized` means that edge has no certificate for the host yet.
 
 Migrations apply themselves: the backend container runs `migrate` on startup, before it
 begins serving. Only `createsuperuser` is a manual step.
