@@ -309,8 +309,7 @@ for every host:
 
 A line containing `unrecognized` means that edge has no certificate for the host yet. A
 `FAILED` line means the handshake did not complete at all (edge unreachable, connection
-refused, or timed out); check that edge by hand
-with the same `openssl s_client` command.
+refused, or timed out); check that edge by hand with the same `openssl s_client` command.
 
 Migrations apply themselves: the backend container runs `migrate` on startup, before it
 begins serving. Only `createsuperuser` is a manual step.
