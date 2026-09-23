@@ -289,6 +289,8 @@ Check every manager directly rather than through Cloudflare, which hides which e
 answered:
 
 ```bash
+# Run from a swarm manager or other Linux host. `timeout` is GNU coreutils; on macOS,
+# `brew install coreutils` and use `gtimeout`, or every probe prints FAILED.
 for ip in <manager-ips>; do
   for host in blueskies1.tempestnetworks.net cereneskin.com mymoondrip.com; do
     out=$(echo | timeout 5 openssl s_client -connect "$ip:443" -servername "$host" \
