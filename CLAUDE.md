@@ -139,11 +139,10 @@ Things to preserve when changing this area:
 - `settings.py` keeps the discrete `POSTGRES_*` path; `DJANGO_CACHE_URL` switches DRF
   throttle counters from per-process LocMemCache to shared Redis.
 - The `web` image must keep `curl` and answer 2xx at `/` — that is its healthcheck.
-- Traefik runs three replicas that race on ACME, so a newly routed hostname ends up in only
-  one replica's memory; the rest answer `unrecognized_name`. Run
-  `docker service update --force traefik_traefik` after adding a host, and verify per-origin
-  with `openssl s_client -servername` rather than through Cloudflare, which hides which
-  replica answered.
+- Traefik's three routing replicas do not run ACME. A singleton external issuer publishes
+  immutable certificate bundles and one sync task per manager activates the same bundle on
+  every edge. Router labels must set `tls=true` without `tls.certresolver`; add new names to
+  the certificate inventory before deploying the router and verify every manager directly.
 
 ## Conventions reference
 

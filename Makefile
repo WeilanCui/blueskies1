@@ -103,10 +103,10 @@ push: push-backend push-frontend ## Build and push both images
 # stack file should not rebuild images, and the swarm pulls from the registry rather
 # than from this machine. Use `release` (or `make push deploy`) to do both.
 #
-# The stack must be deployed from a swarm manager. Deploying a new hostname also needs
-# `docker service update --force traefik_traefik` afterwards -- Traefik's replicas race
-# on ACME and only the winner holds the new certificate. That is left manual because it
-# restarts the ingress for every stack on the swarm, not just this one.
+# The stack must be deployed from a swarm manager. A new hostname must already be in the
+# traefik-acme certificate inventory before its router is deployed; Traefik no longer runs
+# ACME itself, so no Traefik restart is needed afterwards. See "TLS certificates" in the
+# README.
 
 deploy: ## Deploy the stack to Docker Swarm (does not build or push)
 	$(DOCKER) stack deploy -c $(STACK_FILE) $(DEPLOY_FLAGS) $(STACK)
