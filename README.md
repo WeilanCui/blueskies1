@@ -202,10 +202,10 @@ curl -s http://direct:5000/v2/blueskies-backend/tags/list
 
 **`web` is the only service reachable from outside the swarm.** The browser already talks
 only to the Next.js route handlers in `app/api/`, which proxy to Django over the private
-overlay, so Django never needs to be exposed. Traefik routes two hostnames to it over TLS —
-`cereneskin.com` and `blueskies1.tempestnetworks.net` — as two routers onto the same
-`blueskies` service, because they need different certificate resolvers (see below). Both
-must appear in `DJANGO_ALLOWED_HOSTS` and in the CSRF/CORS origin lists.
+overlay, so Django never needs to be exposed. Traefik routes three hostnames to it over
+TLS (`blueskies1.tempestnetworks.net`, `cereneskin.com` and `mymoondrip.com`) as three
+routers onto the same `blueskies` service. All three must appear in `DJANGO_ALLOWED_HOSTS`
+and in the CSRF/CORS origin lists.
 
 ### Deploying
 
@@ -248,22 +248,45 @@ scheduled: the entrypoint waits 60s for the database to accept a real connection
 exits, and the restart policy retries. This is self-correcting — `POSTGRES_WAIT_SECONDS`
 raises the window if your scheduler is slower than that.
 
-### After adding a hostname, restart Traefik
+### TLS certificates
 
-```bash
-docker service update --force traefik_traefik
-```
+Traefik does not request certificates itself, and the routers in `service-compose.yml`
+set `tls=true` with no `tls.certresolver`. Certificates come from the separate
+`traefik-acme` stack:
 
-Traefik runs three replicas, which all race to solve the same ACME challenge. One wins and
-writes the certificate to the shared store; the others fail with
-`400 malformed :: authorization must be pending` and hold **no certificate in memory**.
-Traefik does not reload another process's writes to that store, so those replicas answer
-the new hostname with a TLS `unrecognized_name` alert — `ERR_SSL_UNRECOGNIZED_NAME_ALERT`
-in the browser — until they are restarted. The rolling restart is safe; the certificate is
-already in the shared store, so no new ACME request is made.
+- `traefik-acme_issuer` is a single replica that obtains every certificate listed in the
+  inventory (the `traefik-acme_traefik_acme_inventory_*` Swarm config) and publishes each
+  one as an immutable bundle under `/mnt/persist/traefik-acme/published`.
+- `traefik-acme_cert-sync` runs once per manager and writes the current bundle into the
+  Traefik file provider directory on that node, so every edge replica serves the same
+  certificate.
+- `traefik-acme_challenge` runs once per manager and answers
+  `/.well-known/acme-challenge/` on port 80 from the issuer's shared webroot.
 
-This is deceptive to diagnose, because a request through Cloudflare can land on the one
-healthy replica and look completely fine. Check each origin directly instead:
+Before, three Traefik replicas each ran ACME and raced each other for the same challenge,
+which left the losers holding no certificate until a forced restart. That failure mode is
+gone, and adding a hostname no longer needs `docker service update --force
+traefik_traefik`.
+
+`blueskies1.tempestnetworks.net` is covered by the `*.tempestnetworks.net` wildcard, which
+the issuer obtains with Cloudflare DNS-01. `cereneskin.com` and `mymoondrip.com` sit in a
+different Cloudflare account that the issuer's API token cannot see, so they use HTTP-01
+through the challenge service instead. That needs port 80 on the managers to reach
+`traefik-acme_challenge` for `/.well-known/acme-challenge/`.
+
+#### Adding a hostname
+
+1. Add the name to the certificate inventory in the `traefik-acme` stack and redeploy that
+   stack, so the issuer obtains the certificate and cert-sync activates it on every
+   manager. Do this first: a router deployed before its certificate exists answers the
+   handshake with a TLS `unrecognized_name` alert.
+2. Add a router to `web` in `service-compose.yml` with `tls=true`, no `certresolver`, and
+   an explicit `.service=blueskies` (required once more than one router points at the
+   service). Add the host to `DJANGO_ALLOWED_HOSTS` and the CSRF/CORS origin lists.
+3. `make deploy`.
+
+Check every manager directly rather than through Cloudflare, which hides which edge
+answered:
 
 ```bash
 for ip in <manager-ips>; do
@@ -272,60 +295,7 @@ for ip in <manager-ips>; do
 done
 ```
 
-Every replica should print `subject=CN = cereneskin.com`. Any that print
-`unrecognized name` still need the restart.
-
-### Two hostnames, two certificate resolvers
-
-A Traefik router carries exactly one `certresolver`, and the two public hostnames cannot
-share one, so `web` declares two routers pointing at the same `blueskies` service. Once
-more than one router exists, the `traefik.http.routers.<name>.service=blueskies` reference
-has to be explicit on each.
-
-`blueskies1.tempestnetworks.net` uses the standard `le` resolver (DNS-01) and may stay
-proxied behind Cloudflare. `cereneskin.com` uses `tls` (TLS-ALPN-01) and may not.
-
-#### Why cereneskin.com uses TLS-ALPN-01, and why it must stay grey-clouded
-
-`le` solves DNS-01 through Cloudflare, and Traefik carries a single Cloudflare credential
-set scoped to the account that holds `tempestnetworks.*` and `stevecoursen.com`.
-`cereneskin.com` is registered in a **different** Cloudflare account — different assigned
-nameserver pair (`davina`/`andy` vs `kip`/`edna`) — so lego cannot enumerate the zone and
-every attempt fails with:
-
-```
-acme: error presenting token: cloudflare: failed to find zone cereneskin.com.:
-zone could not be found
-```
-
-No certificate is issued, Traefik answers the handshake with `unrecognized name`, and
-Cloudflare reports that to the browser as a **525**. The `tls` resolver solves TLS-ALPN-01
-instead and needs no API credentials at all.
-
-The trade-off is that Let's Encrypt must reach port 443 on the origin directly, so
-`cereneskin.com` must be **DNS-only (grey cloud)** in Cloudflare: no proxy, no CDN, no WAF,
-and the origin IP is public. Behind the proxy the challenge dies with:
-
-```
-403 :: urn:ietf:params:acme:error:unauthorized ::
-Cannot negotiate ALPN protocol "acme-tls/1" for tls-alpn-01 challenge
-```
-
-Once a certificate exists, re-enabling the orange cloud does not break anything today — it
-breaks the renewal about 60 days later.
-
-Watch the failed-authorization rate limit while sorting this out. All three Traefik
-replicas attempt the challenge independently, and Let's Encrypt allows only **5 failed
-authorizations per hostname per hour**; a single deploy against a still-proxied record
-exhausts it in under a minute and blocks retries with a `429` for the rest of the hour. Fix
-the DNS record first, then let Traefik retry on its own — no redeploy needed.
-
-During issuance, point the A record at exactly **one** manager IP. Traefik publishes 443 in
-`host` mode (no ingress load balancing), and all three replicas attempt the challenge, but
-only the one Let's Encrypt actually connects to can complete it. Once the certificate is in
-the shared ACME store (`/mnt/persist/traefik2` is NFS from `direct`, so all nodes see it),
-run the `docker service update --force traefik_traefik` above and every replica serves the
-host; more A records can be added after that if you want the redundancy back.
+Every manager should print `subject=CN = cereneskin.com`.
 
 Migrations apply themselves: the backend container runs `migrate` on startup, before it
 begins serving. Only `createsuperuser` is a manual step.
